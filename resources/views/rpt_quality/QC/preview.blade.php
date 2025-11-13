@@ -76,7 +76,7 @@
                     {{ $wcName }} ({{ $wc }}) | Oil Type: {{ $oilTypeName }}
                 </h4>
 
-                @include('rpt_quality.QC._table', ['rows' => $rows])
+                @include('rpt_quality.QC._table', ['rows' => $rows, 'workCenter' => $firstRow->work_center ?? $wc,])
             @endforeach
         @endif
 
