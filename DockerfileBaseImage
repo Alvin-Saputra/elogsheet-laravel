@@ -1,0 +1,41 @@
+# syntax=docker/dockerfile:1.4
+####################################
+# Base stage: install system deps + PHP extensions (only once)
+####################################
+FROM php:8.3-apache AS base
+
+ARG TZ=Asia/Jakarta
+ENV TZ=${TZ}
+WORKDIR /var/www/html
+
+# Install system libs & php extensions in one layer
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+        libzip-dev \
+        libpng-dev \
+        libjpeg-dev \
+        libfreetype6-dev \
+        libwebp-dev \
+        unzip \
+        git \
+        ca-certificates \
+        curl \
+        tzdata \
+  && docker-php-ext-configure gd --with-jpeg --with-freetype --with-webp \
+  && docker-php-ext-install -j$(nproc) pdo pdo_mysql mysqli zip gd \
+  && ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime \
+  && echo ${TZ} > /etc/timezone \
+  && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
+  && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Ganti DocumentRoot ke folder public Laravel
+RUN sed -i 's|DocumentRoot /var/www/html|DocumentRoot /var/www/html/public|' /etc/apache2/sites-available/000-default.conf
+
+# Enable Apache mod_rewrite
+RUN a2enmod rewrite
+
+# Permission Laravel storage + cache
+# RUN chown -R www-data:www-data /var/www/html  \
+#     && chmod -R 775 /var/www/html \
+#     && chown -R www-data:www-data storage bootstrap/cache \
+#     && chmod -R 775 storage bootstrap/cache

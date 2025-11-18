@@ -1,0 +1,83 @@
+# syntax=docker/dockerfile:1.4
+####################################
+# Base stage: install system deps + PHP extensions (only once)
+####################################
+FROM php:8.3-apache AS base
+
+ARG TZ=Asia/Jakarta
+ENV TZ=${TZ}
+WORKDIR /var/www/html
+
+# Install system libs & php extensions in one layer
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+        libzip-dev \
+        libpng-dev \
+        libjpeg-dev \
+        libfreetype6-dev \
+        libwebp-dev \
+        unzip \
+        git \
+        ca-certificates \
+        curl \
+        tzdata \
+  && docker-php-ext-configure gd --with-jpeg --with-freetype --with-webp \
+  && docker-php-ext-install -j$(nproc) pdo pdo_mysql mysqli zip gd \
+  && ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime \
+  && echo ${TZ} > /etc/timezone \
+  && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
+  && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Ganti DocumentRoot ke folder public Laravel
+RUN sed -i 's|DocumentRoot /var/www/html|DocumentRoot /var/www/html/public|' /etc/apache2/sites-available/000-default.conf
+
+# Permission Laravel storage + cache
+# RUN chown -R www-data:www-data /var/www/html  \
+#     && chmod -R 775 /var/www/html \
+#     && chown -R www-data:www-data storage bootstrap/cache \
+#     && chmod -R 775 storage bootstrap/cache
+
+####################################
+# Vendor stage: run composer (reuses base so GD/other exts exist)
+####################################
+FROM base AS vendor
+
+# Install Composer (official installer) into /usr/local/bin/composer
+RUN curl -sS https://getcomposer.org/installer -o composer-setup.php \
+  && php composer-setup.php --install-dir=/usr/local/bin --filename=composer \
+  && rm -f composer-setup.php
+
+# Copy composer files first to leverage caching
+COPY composer.json composer.lock* /var/www/html/
+
+# Use BuildKit cache for Composer cache to speed up repeated builds.
+# This will create vendor/ based on composer.lock / composer.json
+RUN --mount=type=cache,target=/root/.composer \
+    composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader --classmap-authoritative --no-scripts
+
+# If your project requires running scripts that produce files in vendor,
+# they will be present in /var/www/html/vendor
+
+####################################
+# Final stage: runtime image (reuses base so extensions are present)
+####################################
+FROM base AS final
+
+WORKDIR /var/www/html
+
+# Copy vendor from vendor stage (cacheable)
+COPY --from=vendor /var/www/html/vendor /var/www/html/vendor
+# Copy rest of application (dockerignore should exclude vendor/node_modules)
+COPY . .
+
+# Set permissions only where needed (avoid chown -R on entire app)
+RUN chown -R www-data:www-data storage bootstrap/cache \
+ && chmod -R 775 storage bootstrap/cache
+
+# Copy entrypoint (see below)
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+EXPOSE 80 443 8000
+
+ENTRYPOINT ["docker-entrypoint.sh"]

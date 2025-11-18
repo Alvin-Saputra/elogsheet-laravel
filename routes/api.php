@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Auth\LoginController;
 
 /*
 |--------------------------------------------------------------------------
@@ -14,6 +15,21 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
+// Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+//     return $request->user();
+// });
+
+Route::get('health', function () {
+	return response()->json([
+		'status' => 'ok',
+		'timestamp' => now()->toDateTimeString(),
+	], 200);
+});
+Route::post('login', [LoginController::class, 'login']);
+// Simple healthcheck (unauthenticated)
+
+// Protected API routes using token-based auth (Sanctum)
+Route::middleware('auth:sanctum')->group(function () {
+	Route::post('logout', [LoginController::class, 'logout']);
+	Route::get('me', [LoginController::class, 'me']);
 });

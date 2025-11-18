@@ -13,6 +13,9 @@ return new class extends Migration
      */
     public function up()
     {
+        if(Schema::hasTable('l_s_pretreatment_bleaching_filtrations')) {
+            return ;
+        }
         Schema::create('l_s_pretreatment_bleaching_filtrations', function (Blueprint $table) {
             $table->id();
             $table->timestamps();

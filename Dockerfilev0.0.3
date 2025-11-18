@@ -1,0 +1,50 @@
+FROM raphtekt28/laravel-base as base
+
+####################################
+# Vendor stage: run composer (reuses base so GD/other exts exist)
+####################################
+FROM base AS vendor
+
+# Install Composer (official installer) into /usr/local/bin/composer
+RUN curl -sS https://getcomposer.org/installer -o composer-setup.php \
+  && php composer-setup.php --install-dir=/usr/local/bin --filename=composer \
+  && rm -f composer-setup.php
+
+# Copy composer files first to leverage caching
+COPY composer.json composer.lock* /var/www/html/
+
+# Use BuildKit cache for Composer cache to speed up repeated builds.
+# This will create vendor/ based on composer.lock / composer.json
+RUN --mount=type=cache,target=/root/.composer \
+    composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader --classmap-authoritative --no-scripts
+
+# If your project requires running scripts that produce files in vendor,
+# they will be present in /var/www/html/vendor
+
+####################################
+# Final stage: runtime image (reuses base so extensions are present)
+####################################
+FROM base AS final
+
+WORKDIR /var/www/html
+
+# Copy vendor from vendor stage (cacheable)
+COPY --from=vendor /var/www/html/vendor /var/www/html/vendor
+# Copy rest of application (dockerignore should exclude vendor/node_modules)
+COPY . .
+
+# Set permissions only where needed (avoid chown -R on entire app)
+RUN chown -R www-data:www-data storage bootstrap/cache \
+ && chmod -R 775 storage bootstrap/cache
+
+
+EXPOSE 80 443 8000
+
+RUN  php artisan storage:link \
+  && php artisan package:discover --ansi \
+  && php artisan config:clear \
+  && php artisan cache:clear \
+  && php artisan route:clear \  
+  && php artisan view:clear
+
+CMD ["php", "artisan", "serve" ,"--host=0.0.0.0","--port=8000"]

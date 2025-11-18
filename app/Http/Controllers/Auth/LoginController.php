@@ -79,10 +79,17 @@ class LoginController extends Controller
         $user = \App\Models\MUser::where('username', $request->username)
             ->where('password', $request->password) // plain text check
             ->first();
-
+        // var_dump($user); exit;
         if ($user) {
             Auth::login($user);
             return $this->afterLoginSuccess($request);
+        }
+
+        if ($request->expectsJson() || $request->wantsJson() || $request->isJson()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Username atau Password salah.'
+            ], 401);
         }
 
         return back()->with('error', 'Username atau Password salah.');
@@ -130,6 +137,36 @@ class LoginController extends Controller
 
         session()->put('menus', $menus);
 
+        // If this is an API / JSON request, return JSON (and issue a token)
+        if ($request->expectsJson() || $request->wantsJson() || $request->isJson()) {
+            // Issue a personal access token for API clients if the user model supports it
+            $user = auth()->user();
+            $token = null;
+             $token = $user->createToken('api-token')->plainTextToken;
+
+            $payload = [
+                'success' => true,
+                'message' => 'Login berhasil! Selamat datang.',
+                'user' => $user,
+                'business_unit' => [
+                    'code' => $bu->bu_code ?? '-',
+                    'name' => $bu->bu_name ?? '-',
+                ],
+                'plant' => [
+                    'code' => $pl->plant_code ?? '-',
+                    'name' => $pl->plant_name ?? '-',
+                ],
+                'menus' => $menus,
+            ];
+
+            if ($token) {
+                $payload['token'] = $token;
+                $payload['token_type'] = 'Bearer';
+            }
+
+            return response()->json($payload, 200);
+        }
+
         return redirect()->route('dashboard')
             ->with('success', 'Login berhasil! Selamat datang.');
     }
@@ -138,8 +175,43 @@ class LoginController extends Controller
 
     public function logout(Request $request)
     {
+        // If the user is authenticated via token, revoke the current access token
+        $user = $request->user();
+        if ($user && method_exists($user, 'currentAccessToken') && $user->currentAccessToken()) {
+            // revoke current token
+            $user->currentAccessToken()->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Berhasil logout.'
+            ], 200);
+        }
+
+        // Otherwise, fallback to session logout for web
         Auth::logout();
         $request->session()->flush(); // hapus semua session
+        if ($request->expectsJson() || $request->wantsJson() || $request->isJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Berhasil logout.'
+            ], 200);
+        }
+
         return redirect()->route('login')->with('success', 'Berhasil logout.');
+    }
+
+    /**
+     * Return authenticated user info for API clients.
+     */
+    public function me(Request $request)
+    {
+        if ($request->expectsJson() || $request->wantsJson() || $request->isJson()) {
+            return response()->json([
+                'success' => true,
+                'user' => $request->user(),
+            ], 200);
+        }
+
+        return redirect()->route('dashboard');
     }
 }

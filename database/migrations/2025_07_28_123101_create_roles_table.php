@@ -13,6 +13,9 @@ return new class extends Migration
      */
     public function up()
     {
+        if(Schema::hasTable('m_role')) {
+            return ;
+        }
         Schema::create('m_role', function (Blueprint $table) {
             $table->string('role_code', 10)->primary();
             $table->string('role_name', 30)->nullable();
