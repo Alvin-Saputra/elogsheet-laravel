@@ -32,9 +32,9 @@ class RptDailyStorageTankAnalyticalController extends Controller
         $report = LSDailyStorageTankAnalytical::findOrFail($id);
         $userRole = Auth::user()->roles;
 
-        if ($userRole === "LEAD" or $userRole === "LEAD_PROD") {
+        if ($userRole === "LEAD" or $userRole === "LEAD_QC") {
             $report->update(['prepared_status' => 'Approved', 'prepared_status_remarks' => null, 'prepared_date' => now(), 'prepared_by' => auth()->user()->username ?? auth()->user()->name]);
-        } elseif ($userRole === "MGR" or $userRole === "MGR_PROD") {
+        } elseif ($userRole === "MGR" or $userRole === "MGR_PROD" or $userRole === "ADM") {
             $report->update(['approved_status' => 'Approved', 'approved_status_remarks' => null, 'approved_date' => now(), 'approved_by' => auth()->user()->username ?? auth()->user()->name]);
         }
         return back()->with('success', "Tiket {$report->id} berhasil di-approve.");
@@ -47,9 +47,9 @@ class RptDailyStorageTankAnalyticalController extends Controller
         $report = LSDailyStorageTankAnalytical::findOrFail($id);
         $userRole = Auth::user()->roles;
 
-        if ($userRole === "LEAD" or $userRole === "LEAD_PROD") {
+        if ($userRole === "LEAD" or $userRole === "LEAD_QC") {
             $report->update(['prepared_status' => 'Rejected', 'prepared_status_remarks' => $request->remark, 'prepared_date' => now(), 'prepared_by' => auth()->user()->username ?? auth()->user()->name]);
-        } elseif ($userRole === "MGR" or $userRole === "MGR_PROD") {
+        } elseif ($userRole === "MGR" or $userRole === "MGR_PROD" or $userRole === "ADM") {
             $report->update(['approved_status' => 'Rejected', 'approved_status_remarks' => $request->remark, 'approved_date' => now(), 'approved_by' => auth()->user()->username ?? auth()->user()->name]);
         }
         return back()->with('success', "Tiket {$report->id} berhasil di-reject.");

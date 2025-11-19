@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('page_title', 'Laporan Daily Storage Tank Analytical')
+@section('page_title', 'Laporan Daily Quality Composite Fractionation')
 
 @section('content')
     <div class="bg-white p-6 rounded shadow-md">
@@ -16,12 +16,12 @@
                     </svg>
 
                     <div>
-                        <h2 class="text-lg font-semibold text-gray-800">Daily Storage Tank Analytical
+                        <h2 class="text-lg font-semibold text-gray-800">Daily Quality Composite Fractionation
                         </h2>
                         <div class="text-sm text-gray-600 mt-1">
                             <span class="font-medium text-gray-700">Kode Logsheet:</span>
                             <span class="inline-block px-2 py-1 text-xs font-semibold text-red-800 bg-red-100 rounded">
-                                F/QCO-001
+                                F/QCO-003
                             </span>
                         </div>
                     </div>
@@ -53,7 +53,7 @@
 
         {{-- Filter --}}
         <div class="bg-gray-50 p-4 rounded-md shadow-sm mb-6">
-            <form method="GET" action="{{ route('daily-storage-tank-analytical.index') }}"
+            <form method="GET" action="{{ route('daily-quality-composite-fractionation.index') }}"
                 class="flex flex-wrap items-end gap-4">
                 <div class="w-full sm:w-44">
                     <label for="filter_tanggal" class="block text-sm font-medium text-gray-700">Tanggal</label>
@@ -61,15 +61,43 @@
                         class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-red-500 focus:border-red-500 sm:text-sm">
                 </div>
 
+                <div class="w-full sm:w-32">
+                    <label for="filter_jam" class="block text-sm font-medium text-gray-700">Time</label>
+                    <select id="filter_jam" name="filter_jam"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-red-500 focus:border-red-500 sm:text-sm">
+                        <option value="">Pilih Jam</option>
+                        @for ($i = 0; $i < 24; $i++)
+                            @php $jam = str_pad($i, 2, '0', STR_PAD_LEFT) . ':00'; @endphp
+                            <option value="{{ $jam }}" {{ request('filter_jam') == $jam ? 'selected' : '' }}>
+                                {{ $jam }}
+                            </option>
+                        @endfor
+                    </select>
+                </div>
 
+                 <div class="w-full sm:w-48">
+                    <label for="filter_work_center" class="block text-sm font-medium text-gray-700">Work Center</label>
+                    <select id="filter_work_center" name="filter_work_center"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-red-500 focus:border-red-500 sm:text-sm">
+                        <option value="">Pilih Work Center</option>
+                        @foreach ($workCenters as $wc)
+                            <option value="{{ $wc->work_center }}"
+                                {{ request('filter_work_center') == $wc->work_center ? 'selected' : '' }}>
+                                {{ $wc->work_center }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
                 <div class="flex items-end gap-2">
                     <button type="submit"
                         class="inline-flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-900 text-white text-sm font-semibold rounded-lg shadow transition">Filter</button>
-                    @if (request()->has('filter_tanggal') || request()->has('filter_work_center'))
+                    @if (request()->has('filter_tanggal') || request()->has('filter_jam'))
                         <a href="{{ route('report-monitoring-dry-fractionation.index') }}"
                             class="inline-flex items-center px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 text-sm font-semibold rounded-lg shadow transition">Reset</a>
                     @endif
                 </div>
+
+                
             </form>
         </div>
         {{-- Approval Day --}}
@@ -114,12 +142,10 @@
                     <tr>
                         <th class="px-4 py-2 border-b text-left">No</th>
                         <th class="px-4 py-2 border-b text-left">Report ID</th>
-                        <th class="px-4 py-2 border-b text-left">Plant</th>
                         <th class="px-4 py-2 border-b text-left">Tanggal</th>
-                        <th class="px-4 py-2 border-b text-left">Tank No</th>
-                        <th class="px-4 py-2 border-b text-left">Oil Type</th>
+                        <th class="px-4 py-2 border-b text-left">Crystalizer</th>
                         <th class="px-4 py-2 border-b text-left">Prepared Status</th>
-                        <th class="px-4 py-2 border-b text-left">Approved Status</th>
+                        <th class="px-4 py-2 border-b text-left">Checked Status</th>
                         <th class="px-4 py-2 border-b text-left">Action</th>
                         <th class="px-4 py-2 border-b text-left">Detail</th>
 
@@ -130,10 +156,8 @@
                         <tr class="hover:bg-gray-50">
                             <td>{{ $loop->iteration }}</td>
                             <td>{{ $item->id }}</td>
-                            <td>{{ $item->plant }}</td>
                             <td>{{ $item->transaction_date }}</td>
-                            <td>{{ $item->tank_no }}</td>
-                            <td>{{ $item->oil_type }}</td>
+                            <td>{{ $item->crystalizer }}</td>
 
                             <td class="px-2 py-2 border-b text-center">
                                 @if ($item->prepared_status == 'Approved')
@@ -145,9 +169,9 @@
                                 @endif
                             </td>
                             <td class="px-2 py-2 border-b text-center">
-                                @if ($item->approved_status == 'Approved')
+                                @if ($item->checked_status == 'Approved')
                                     <span class="px-2 py-1 text-xs rounded bg-green-100 text-green-700">Approved</span>
-                                @elseif ($item->approved_status == 'Rejected')
+                                @elseif ($item->checked_status == 'Rejected')
                                     <span class="px-2 py-1 text-xs rounded bg-red-100 text-red-700">Rejected</span>
                                 @else
                                     <span class="px-2 py-1 text-xs rounded bg-gray-100 text-gray-600">Pending</span>
@@ -163,7 +187,7 @@
                                     @endif
                                     @if (
                                         (auth()->user()->roles === 'MGR_QC' || auth()->user()->roles === 'MGR' || auth()->user()->roles === 'ADM') &&
-                                            is_null($item->approved_status) &&
+                                            is_null($item->checked_status) &&
                                             $item->prepared_status === 'Approved' &&
                                             $item->prepared_status != 'Rejected')
                                         <button @click="showApprove = true"
@@ -181,7 +205,7 @@
                                                 <button @click="showApprove = false"
                                                     class="px-4 py-2 bg-gray-300 rounded">Cancel</button>
                                                 <form method="POST"
-                                                    action="{{ route('daily-storage-tank-analytical.approveReport', $item->id) }}">
+                                                    action="{{ route('daily-quality-composite-fractionation.approveReport', $item->id) }}">
                                                     @csrf
                                                     <button type="submit"
                                                         class="px-4 py-2 bg-green-600 text-white rounded">Approve</button>
@@ -195,7 +219,7 @@
                                         <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
                                             <h2 class="text-lg font-bold mb-4">Confirm Rejection</h2>
                                             <form method="POST"
-                                                action="{{ route('daily-storage-tank-analytical.rejectReport', $item->id) }}">
+                                                action="{{ route('daily-quality-composite-fractionation.rejectReport', $item->id) }}">
                                                 @csrf
                                                 <label for="remark-{{ $item->id }}" class="block mb-2">Reason for
                                                     rejection:</label>
@@ -214,7 +238,7 @@
 
 
                             <td class="px-2 py-2 border-b text-center">
-                                <a href="{{ route('daily-storage-tank-analytical.show', $item->id) }}"
+                                <a href="{{ route('daily-quality-composite-fractionation.show', $item->id) }}"
                                     class="text-blue-600 hover:text-blue-800"><svg xmlns="http://www.w3.org/2000/svg"
                                         viewBox="0 0 512 512" class="w-5 h-5 inline-block">
                                         <path fill="currentColor"

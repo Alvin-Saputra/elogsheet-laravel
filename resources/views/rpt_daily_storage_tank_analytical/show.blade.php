@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('page_title', 'Logsheet Dry Fractionation data')
+@section('page_title', 'Detail Daily Storage Tank Analytical data')
 
 @section('content')
     <div class="bg-white p-6 rounded-2xl shadow-md max-w-6xl mx-auto text-sm text-gray-700">

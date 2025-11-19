@@ -27,6 +27,7 @@ use App\Http\Controllers\RptStartupProduksiController;
 */
 
 use App\Http\Controllers\RptDailyStorageTankAnalytical;
+use App\Http\Controllers\RptDailyQualityCompositeFractionation;
 use App\Http\Controllers\RptDailyStorageTankAnalyticalController;
 
 Route::get('/', function () {
@@ -302,5 +303,14 @@ Route::middleware('auth')->group(function () {
         Route::get('/{id}', [RptDailyStorageTankAnalyticalController::class, 'show'])->name('show');
         Route::get('/export/view', [RptDailyStorageTankAnalyticalController::class, 'exportLayoutPreview'])->name('export.view');
         Route::get('/export/pdf', [RptDailyStorageTankAnalyticalController::class, 'exportPdf'])->name('export.pdf');
+    });
+
+    Route::prefix('daily-quality-composite-fractionation')->name('daily-quality-composite-fractionation.')->group(function () {
+        Route::get('/', [RptDailyQualityCompositeFractionation::class, 'index'])->name('index');
+         Route::post('/{id}/approve-report', [RptDailyQualityCompositeFractionation::class, 'approveReport'])->name('approveReport');
+        Route::post('/{id}/reject-report', [RptDailyQualityCompositeFractionation::class, 'rejectReport'])->name('rejectReport');
+        Route::get('/{id}', [RptDailyQualityCompositeFractionation::class, 'show'])->name('show');
+        // Route::get('/export/view', [RptDailyQualityCompositeFractionation::class, 'exportLayoutPreview'])->name('export.view');
+        // Route::get('/export/pdf', [RptDailyQualityCompositeFractionation::class, 'exportPdf'])->name('export.pdf');
     });
 });
