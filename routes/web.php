@@ -1,32 +1,34 @@
 <?php
 
-use App\Http\Controllers\RptChangeProductController;
-use App\Http\Controllers\RptLogsheetDryFraController;
-use App\Http\Controllers\RptLogsheetPBFController;
-use App\Http\Controllers\RptStartupProduksiController;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Auth\LoginController;
-use App\Http\Controllers\MstBusinessUnitController;
-use App\Http\Controllers\MstPlantController;
-use App\Http\Controllers\MstUserController;
-use App\Http\Controllers\MstMastervalueController;
 use App\Http\Controllers\MstRoleController;
-use App\Http\Controllers\RptQualityController;
-use App\Http\Controllers\RptLampGlassController;
+use App\Http\Controllers\MstUserController;
+use App\Http\Controllers\MstPlantController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\LogsheetDryFraController;
-use App\Http\Controllers\RptDeodorizingController;
-use App\Http\Controllers\RptDailyProductionController;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\RptQualityController;
 use App\Http\Controllers\RptDailyPFraController;
 use App\Http\Controllers\RptDailyPRefController;
-
+use App\Http\Controllers\RptLampGlassController;
+use App\Http\Controllers\LogsheetDryFraController;
+use App\Http\Controllers\MstMastervalueController;
+use App\Http\Controllers\RptDeodorizingController;
+use App\Http\Controllers\RptLogsheetPBFController;
+use App\Http\Controllers\MstBusinessUnitController;
+use App\Http\Controllers\RptChangeProductController;
+use App\Http\Controllers\RptLogsheetDryFraController;
+use App\Http\Controllers\RptDailyProductionController;
+use App\Http\Controllers\RptStartupProduksiController;
 /*
 |--------------------------------------------------------------------------
 | Guest Routes (Login)
 |--------------------------------------------------------------------------
 */
 
-use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\RptDailyStorageTankAnalytical;
+use App\Http\Controllers\RptDailyQualityCompositeFractionation;
+use App\Http\Controllers\RptDailyStorageTankAnalyticalController;
 
 Route::get('/', function () {
     return Auth::check()
@@ -286,5 +288,29 @@ Route::middleware('auth')->group(function () {
 
         Route::post('/{id}/check-approve', [RptStartupProduksiController::class, 'checkApproval'])->name('check.approve');
         Route::post('/{id}/check-reject', [RptStartupProduksiController::class, 'checkReject'])->name('check.reject');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Logsheet: F/QCO-001 - Daily Storage Tank Analytical Result
+    |--------------------------------------------------------------------------
+    */
+
+    Route::prefix('daily-storage-tank-analytical')->name('daily-storage-tank-analytical.')->group(function () {
+        Route::get('/', [RptDailyStorageTankAnalyticalController::class, 'index'])->name('index');
+        Route::post('/{id}/approve-report', [RptDailyStorageTankAnalyticalController::class, 'approveReport'])->name('approveReport');
+        Route::post('/{id}/reject-report', [RptDailyStorageTankAnalyticalController::class, 'rejectReport'])->name('rejectReport');
+        Route::get('/{id}', [RptDailyStorageTankAnalyticalController::class, 'show'])->name('show');
+        Route::get('/export/view', [RptDailyStorageTankAnalyticalController::class, 'exportLayoutPreview'])->name('export.view');
+        Route::get('/export/pdf', [RptDailyStorageTankAnalyticalController::class, 'exportPdf'])->name('export.pdf');
+    });
+
+    Route::prefix('daily-quality-composite-fractionation')->name('daily-quality-composite-fractionation.')->group(function () {
+        Route::get('/', [RptDailyQualityCompositeFractionation::class, 'index'])->name('index');
+         Route::post('/{id}/approve-report', [RptDailyQualityCompositeFractionation::class, 'approveReport'])->name('approveReport');
+        Route::post('/{id}/reject-report', [RptDailyQualityCompositeFractionation::class, 'rejectReport'])->name('rejectReport');
+        Route::get('/{id}', [RptDailyQualityCompositeFractionation::class, 'show'])->name('show');
+        Route::get('/export/view', [RptDailyQualityCompositeFractionation::class, 'exportLayoutPreview'])->name('export.view');
+        Route::get('/export/pdf', [RptDailyQualityCompositeFractionation::class, 'exportPdf'])->name('export.pdf');
     });
 });
