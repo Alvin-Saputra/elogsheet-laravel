@@ -28,7 +28,7 @@
                 </div>
             </div>
             <div class="flex flex-wrap gap-2">
-                <a href="{{ route('daily-storage-tank-analytical.export.view', ['filter_tanggal' => $tanggal]) }}"
+                <a href="{{ route('daily-quality-composite-fractionation.export.view', ['filter_tanggal' => $tanggal, 'filter_jam' => $jam, 'filter_work_center' => $workCenter]) }}"
                     class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg shadow transition">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor" stroke-width="2">
@@ -38,7 +38,7 @@
                     </svg>
                     View Layout
                 </a>
-                <a href="{{ route('daily-storage-tank-analytical.export.pdf', ['filter_tanggal' => $tanggal]) }}"
+                <a href="{{ route('daily-quality-composite-fractionation.export.pdf', ['filter_tanggal' => $tanggal, 'filter_jam' => $jam, 'filter_work_center' => $workCenter]) }}"
                     class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg shadow transition">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor" stroke-width="2">
@@ -75,12 +75,12 @@
                     </select>
                 </div>
 
-                 <div class="w-full sm:w-48">
+                <div class="w-full sm:w-48">
                     <label for="filter_work_center" class="block text-sm font-medium text-gray-700">Work Center</label>
                     <select id="filter_work_center" name="filter_work_center"
                         class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-red-500 focus:border-red-500 sm:text-sm">
                         <option value="">Pilih Work Center</option>
-                        @foreach ($workCenters as $wc)
+                        @foreach ($listWorkCenters as $wc)
                             <option value="{{ $wc->work_center }}"
                                 {{ request('filter_work_center') == $wc->work_center ? 'selected' : '' }}>
                                 {{ $wc->work_center }}
@@ -97,7 +97,7 @@
                     @endif
                 </div>
 
-                
+
             </form>
         </div>
         {{-- Approval Day --}}
@@ -143,6 +143,8 @@
                         <th class="px-4 py-2 border-b text-left">No</th>
                         <th class="px-4 py-2 border-b text-left">Report ID</th>
                         <th class="px-4 py-2 border-b text-left">Tanggal</th>
+                        <th class="px-4 py-2 border-b text-left">Jam</th>
+                        <th class="px-4 py-2 border-b text-left">Work Center</th>
                         <th class="px-4 py-2 border-b text-left">Crystalizer</th>
                         <th class="px-4 py-2 border-b text-left">Prepared Status</th>
                         <th class="px-4 py-2 border-b text-left">Checked Status</th>
@@ -155,9 +157,11 @@
                     @forelse ($data as $item)
                         <tr class="hover:bg-gray-50">
                             <td>{{ $loop->iteration }}</td>
-                            <td>{{ $item->id }}</td>
-                            <td>{{ $item->transaction_date }}</td>
-                            <td>{{ $item->crystalizer }}</td>
+                            <td>{{ $item->id}}</td>
+                            <td>{{ $item->transaction_date}}</td>
+                            <td>{{ $item->time}}</td>
+                            <td>{{ $item->work_center}}</td>
+                            <td>{{ $item->crystalizer}}</td>
 
                             <td class="px-2 py-2 border-b text-center">
                                 @if ($item->prepared_status == 'Approved')

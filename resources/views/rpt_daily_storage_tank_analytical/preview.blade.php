@@ -1,11 +1,11 @@
 @extends('layouts.app')
 
-@section('page_title', 'Laporan Daily Storage Tank Analytical')
+@section('page_title', 'Laporan Daily Quality Composite Fractionation')
 
 @section('content')
     <div class="bg-white p-6 rounded shadow-md text-sm relative">
         <div class="absolute top-4 right-6 text-xs leading-tight text-left">
-            <div><strong>Form No.</strong> : {{ $formInfoFirst->form_no ?? 'F/RFA-010' }}</div>
+            <div><strong>Form No.</strong> : {{ $formInfoFirst->form_no ?? 'F/QOC-001' }}</div>
             <div><strong>Date Issued</strong> :
                 {{ $formInfoFirst ? optional($formInfoFirst->date_issued)->format('ymd') : '210101' }}</div>
             <div><strong>Revision</strong> : {{ $formInfoLast ? sprintf('%02d', $formInfoLast->revision_no) : '01' }}</div>

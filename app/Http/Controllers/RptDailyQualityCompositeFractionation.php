@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use App\Models\LSDailyQualityCompositeFractionation;
@@ -27,7 +28,7 @@ class RptDailyQualityCompositeFractionation extends Controller
             $query->whereTime('time', $filterJam . ':00');
         }
 
-         if ($filterWorkCenter) {
+        if ($filterWorkCenter) {
             $query->where('work_center', $filterWorkCenter);
         }
 
@@ -37,7 +38,9 @@ class RptDailyQualityCompositeFractionation extends Controller
         return view('rpt_daily_quality_composite_fractionation.index', [
             'tanggal' => $filterTanggal,
             'data' => $data,
-            'workCenters' =>  $workCenters
+            'jam' => $filterJam,
+            'workCenter' => $filterWorkCenter,
+            'listWorkCenters' =>  $workCenters
         ]);
     }
 
@@ -76,5 +79,95 @@ class RptDailyQualityCompositeFractionation extends Controller
         return view('rpt_daily_quality_composite_fractionation.show', [
             'data' => $data
         ]);
+    }
+
+    public function exportLayoutPreview(Request $request)
+    {
+        // return view('rpt_logsheetDryFra.preview');
+        return $this->renderPreview($request, 'rpt_daily_quality_composite_fractionation.preview');
+    }
+
+    private function renderPreview(Request $request, string $view)
+    {
+        // 1 Ambil tanggal dari request, default hari ini
+        $filterTanggal = $request->input('filter_tanggal', now()->toDateString());
+        $filterJam = $request->input('filter_jam');
+        $filterWorkCenter = $request->input('filter_work_center');
+
+        $query = LSDailyQualityCompositeFractionation::query();
+
+        if ($filterTanggal) {
+            $query->whereDate('transaction_date', $filterTanggal);
+        }
+
+        if ($filterJam) {
+            $query->whereTime('time', $filterJam . ':00');
+        }
+
+        if ($filterWorkCenter) {
+            $query->where('work_center', $filterWorkCenter);
+        }
+
+        $data = $query->get();
+
+        // 3 Ambil form info (first & last revision)
+        [$formInfoFirst, $formInfoLast] = $this->getFormInfo($filterTanggal, null);
+
+        // 4 Ambil signature jika perlu (opsional, bisa dilepas jika tidak ada fungsi getSignatures)
+        // $signatures = $this->getSignatures($tanggal, null);
+
+        // 5 Ambil satu record pertama untuk contoh tanda tangan / info
+        $sign = $data->first();
+
+        $groupedData = empty($filterWorkCenter) ? $data->groupBy('work_center') : collect();
+
+        // 6 Render view dengan semua data
+        return view($view, compact('data', 'filterTanggal', 'filterWorkCenter', 'groupedData', 'sign', 'formInfoFirst', 'formInfoLast'));
+    }
+
+    private function getFormInfo(string $tanggal)
+    {
+        $base = LSDailyQualityCompositeFractionation::whereDate('transaction_date', $tanggal);
+
+        $first = (clone $base)->orderBy('revision_date')->first(['form_no', 'date_issued', 'revision_no', 'revision_date']);
+        $last = (clone $base)->orderByDesc('revision_date')->first(['form_no', 'date_issued', 'revision_no', 'revision_date']);
+        return [$first, $last];
+    }
+
+     public function exportPdf(Request $request)
+    {
+       // 1 Ambil tanggal dari request, default hari ini
+        $filterTanggal = $request->input('filter_tanggal', now()->toDateString());
+        $filterJam = $request->input('filter_jam');
+        $filterWorkCenter = $request->input('filter_work_center');
+
+        $query = LSDailyQualityCompositeFractionation::query();
+
+        if ($filterTanggal) {
+            $query->whereDate('transaction_date', $filterTanggal);
+        }
+
+        if ($filterJam) {
+            $query->whereTime('time', $filterJam . ':00');
+        }
+
+        if ($filterWorkCenter) {
+            $query->where('work_center', $filterWorkCenter);
+        }
+
+        $data = $query->get();
+
+
+        [$formInfoFirst, $formInfoLast] = $this->getFormInfo($filterTanggal, null);
+
+    
+        $sign = $data->first();
+
+        $groupedData = empty($filterWorkCenter) ? $data->groupBy('work_center') : collect();
+
+        $pdf = Pdf::loadView('exports.report_daily_quality_composite_fractionation_pdf', compact('data', 'filterTanggal', 'filterWorkCenter', 'groupedData', 'sign', 'formInfoFirst', 'formInfoLast'))
+            ->setPaper('a3', 'landscape');
+
+        return $pdf->stream("daily_quality_composite_fractionation_report_{$filterTanggal}.pdf");
     }
 }

@@ -310,7 +310,7 @@ Route::middleware('auth')->group(function () {
          Route::post('/{id}/approve-report', [RptDailyQualityCompositeFractionation::class, 'approveReport'])->name('approveReport');
         Route::post('/{id}/reject-report', [RptDailyQualityCompositeFractionation::class, 'rejectReport'])->name('rejectReport');
         Route::get('/{id}', [RptDailyQualityCompositeFractionation::class, 'show'])->name('show');
-        // Route::get('/export/view', [RptDailyQualityCompositeFractionation::class, 'exportLayoutPreview'])->name('export.view');
-        // Route::get('/export/pdf', [RptDailyQualityCompositeFractionation::class, 'exportPdf'])->name('export.pdf');
+        Route::get('/export/view', [RptDailyQualityCompositeFractionation::class, 'exportLayoutPreview'])->name('export.view');
+        Route::get('/export/pdf', [RptDailyQualityCompositeFractionation::class, 'exportPdf'])->name('export.pdf');
     });
 });
