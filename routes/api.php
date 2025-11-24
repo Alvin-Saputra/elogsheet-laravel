@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ARIMByVesselController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
@@ -32,4 +33,11 @@ Route::post('login', [LoginController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function () {
 	Route::post('logout', [LoginController::class, 'logout']);
 	Route::get('me', [LoginController::class, 'me']);
+});
+
+//Analytical Report Incoming Material by Vessel
+
+Route::middleware('auth:sanctum')->group(function () {
+	Route::post('arimvess', [ARIMByVesselController::class, 'create']);
+	// Route::get('arimvess', [ARIMByVesselController::class, 'get']);
 });

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\User;
 
 use App\Models\MBusinessUnit;
 use App\Models\MPlant;
@@ -140,9 +141,9 @@ class LoginController extends Controller
         // If this is an API / JSON request, return JSON (and issue a token)
         if ($request->expectsJson() || $request->wantsJson() || $request->isJson()) {
             // Issue a personal access token for API clients if the user model supports it
-            $user = auth()->user();
+            $user = Auth::user();
             $token = null;
-             $token = $user->createToken('api-token')->plainTextToken;
+             $token = $request->user()->createToken('api-token')->plainTextToken;
 
             $payload = [
                 'success' => true,
