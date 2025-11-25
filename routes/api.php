@@ -39,5 +39,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 Route::middleware('auth:sanctum')->group(function () {
 	Route::post('arimvess', [ARIMByVesselController::class, 'create']);
-	// Route::get('arimvess', [ARIMByVesselController::class, 'get']);
+	Route::put('arimvess', [ARIMByVesselController::class, 'update']);
+	Route::get('arimvess', [ARIMByVesselController::class, 'get']);
+	Route::delete('arimvess/{id}', [ARIMByVesselController::class, 'destroy']);
 });

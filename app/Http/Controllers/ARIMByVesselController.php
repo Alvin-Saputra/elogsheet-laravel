@@ -106,6 +106,7 @@ class ARIMByVesselController extends Controller
             $payload = [
                 ...$data,
                 "id" => $header_id,
+                'flag' => 'T',
                 "transaction_date" => $now->format('Y-m-d h:i:s'),
                 "entry_by" => $user,
                 "entry_date" => $now->format('Y-m-d h:i:s'),
@@ -139,6 +140,7 @@ class ARIMByVesselController extends Controller
                 'id_det' => $id_det_arr
             ], 200);
         } catch (\Throwable $th) {
+            DB::rollBack();
             return response()->json([
                 'success' => false,
                 'data' => $th->getMessage()
@@ -146,34 +148,199 @@ class ARIMByVesselController extends Controller
         }
     }
 
-    // public function get(Request $request)
-    // {
-    //     try {
-    //         //check if id header exist, get by header id
-    //         $id_header = $request->query('id');
-    //         $result = [];
-    //         if ($id_header) {
-    //             $detail = ARIMByVesselHeader::find($id_header)->details()->get()->toArray();
-    //             $header = ARIMByVesselHeader::where('id', $id_header)->first()->toArray();
-    //             $result = [
-    //                 [
-    //                     ...$header,
-    //                     "detail" => $detail
-    //                 ]
-    //             ];
-    //         } else {
-    //             $result = ARIMByVesselHeader::paginate(1);
-    //         }
-    //         return response()->json([
-    //             'success' => true,
-    //             "data" => $result
-    //         ], 200);
-    //     } catch (\Throwable $th) {
-    //         //throw $th;
-    //         return response()->json([
-    //             'success' => false,
-    //             'data' => $th->getMessage()
-    //         ], 500);
-    //     }
-    // }
+    public function get(Request $request)
+    {
+        try {
+            //check if id header exist, get by header id
+            $id_header = $request->query('id');
+            $plant = $request->query('plant');
+            $result = [];
+            if ($id_header) {
+                $header = ARIMByVesselHeader::where('plant', $plant)->where('id', $id_header)->first()->toArray();
+                $detail = ARIMByVesselHeader::find($header['id'])->details()->get()->toArray();
+                $result = [
+                    [
+                        ...$header,
+                        "detail" => $detail
+                    ]
+                ];
+            } else {
+                $header = ARIMByVesselHeader::where('plant', $plant)->get()->toArray();
+                foreach ($header as $hd) {
+                    $detail = ARIMByVesselHeader::find($hd['id'])->details()->get()->toArray();
+                    array_push($result, [...$hd, 'detail' => $detail]);
+                }
+            }
+            return response()->json([
+                'success' => true,
+                "data" => $result
+            ], 200);
+        } catch (\Throwable $th) {
+            //throw $th;
+            return response()->json([
+                'success' => false,
+                'data' => $th->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update header and detail for given header id.
+     * This replaces all detail rows for the header with provided detail array.
+     */
+    public function update(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+            $user = $request->user()->getDisplayNameAttribute();
+            $data = $request->all();
+            $id = $data['id'];
+            $detail = $data['detail'] ?? [];
+
+            $validator = Validator::make($data, [
+                "material" => "required",
+                "quantity" => "required",
+                "supplier" => "required",
+                "ship_name" => "required",
+                "hasil_analisa_ffa" => "decimal:3",
+                "hasil_analisa_iv" => "decimal:3",
+                "hasil_analisa_moisture" => "decimal:3",
+                "hasil_analisa_dobi" => "decimal:3",
+                "hasil_analisa_pv" => "decimal:3",
+                "hasil_analisa_anv" => "decimal:3"
+            ]);
+
+            $validator_det = null;
+            foreach ($detail as $det) {
+                $validator_det = Validator::make(
+                    $det,
+                    [
+                        'palka_s_no' => "decimal:3",
+                        'palka_s_ffa' => "decimal:3",
+                        'palka_s_iv' => "decimal:3",
+                        'palka_s_dobi' => "decimal:3",
+                        'palka_s_mni' => "decimal:3",
+                        'palka_c_no' => "decimal:3",
+                        'palka_c_ffa' => "decimal:3",
+                        'palka_c_iv' => "decimal:3",
+                        'palka_c_dobi' => "decimal:3",
+                        'palka_c_mni' => "decimal:3",
+                        'palka_p_no' => "decimal:3",
+                        'palka_p_ffa' => "decimal:3",
+                        'palka_p_iv' => "decimal:3",
+                        'palka_p_dobi' => "decimal:3",
+                        'palka_p_mni' => "decimal:3",
+                    ]
+                );
+                if ($validator->fails()) {
+                    break;
+                }
+            }
+
+            if ($validator->fails() || ($validator_det && $validator_det->fails())) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'error' => "INVALID_PAYLOAD",
+                    'data' => [
+                        'header' => $validator->errors()->all(),
+                        'detail' => $validator_det ? $validator_det->errors()->all() : []
+                    ]
+                ], 400);
+            }
+
+            // find header
+            $header = ARIMByVesselHeader::where('id', $id)->first();
+            if (!$header) {
+                DB::rollBack();
+                return response()->json(['success' => false, 'error' => 'NOT_FOUND'], 404);
+            }
+
+            // prepare update payload
+            $now = new DateTime();
+            $payload = [
+                ...$data,
+                'updated_by' => $user,
+                'updated_date' => $now->format('Y-m-d h:i:s')
+            ];
+
+            // avoid changing id
+            unset($payload['id']);
+
+            $header->update($payload);
+
+            // Update details by id: update existing, insert new, delete removed
+            $existingIds = ARIMByVesselDetail::where('id_hdr', $id)->pluck('id')->toArray();
+            $processedIds = [];
+
+            foreach ($detail as $key => $det) {
+                $providedId = $det['id'] ?? null;
+
+                if ($providedId && in_array($providedId, $existingIds, true)) {
+                    // update existing detail
+                    $payload_det = $det;
+                    // ensure id_hdr not changed
+                    unset($payload_det['id_hdr']);
+                    ARIMByVesselDetail::where('id_hdr', $id)->where('id', $providedId)->update($payload_det);
+                    $processedIds[] = $providedId;
+                } else {
+                    // create new detail row
+                    $id_det = $providedId ?? ($id . "D" . $key);
+                    $payload_det = [
+                        ...$det,
+                        'id' => $id_det,
+                        'id_hdr' => $id
+                    ];
+                    ARIMByVesselDetail::create($payload_det);
+                    $processedIds[] = $id_det;
+                }
+            }
+
+            // delete any existing detail rows that were not included in the payload
+            $toDelete = array_diff($existingIds, $processedIds);
+            if (!empty($toDelete)) {
+                ARIMByVesselDetail::where('id_hdr', $id)->whereIn('id', $toDelete)->delete();
+            }
+
+            DB::commit();
+            return response()->json([
+                'success' => true,
+                'id_header' => $id,
+                'id_det' => $processedIds
+            ], 200);
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'data' => $th->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete header (details cascade) by id
+     */
+    public function destroy(Request $request, $id)
+    {
+        try {
+            $header = ARIMByVesselHeader::find($id);
+            if (!$header) {
+                return response()->json(['success' => false, 'error' => 'NOT_FOUND'], 404);
+            }
+
+            // Soft-delete by marking flag = 'F' and updating audit fields
+            $now = new DateTime();
+            $header->flag = 'F';
+            $header->updated_by = $request->user() ? $request->user()->getDisplayNameAttribute() : $header->updated_by;
+            $header->updated_date = $now->format('Y-m-d h:i:s');
+            $header->save();
+
+            return response()->json(['success' => true], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'success' => false,
+                'data' => $th->getMessage()
+            ], 500);
+        }
+    }
 }
