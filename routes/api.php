@@ -1,9 +1,9 @@
 <?php
 
-use App\Http\Controllers\ARIMByVesselController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\ARIMByVesselController;
 use App\Http\Controllers\MstBusinessUnitController;
 
 /*
@@ -41,10 +41,10 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
 	// business unit master
 	Route::resource('bunit', MstBusinessUnitController::class);
-
-	// analytical report incoming by vessel
+	//Analytical Report Incoming Material by Vessel
 	Route::post('arimvess', [ARIMByVesselController::class, 'create']);
 	Route::put('arimvess', [ARIMByVesselController::class, 'update']);
 	Route::get('arimvess', [ARIMByVesselController::class, 'get']);
 	Route::delete('arimvess/{id}', [ARIMByVesselController::class, 'destroy']);
+	Route::put('arimvess/approve-reject', [ARIMByVesselController::class, 'updateApprovalReject']);
 });

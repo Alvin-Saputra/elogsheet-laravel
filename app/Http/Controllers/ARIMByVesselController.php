@@ -26,39 +26,40 @@ class ARIMByVesselController extends Controller
                 "menu_id" => "required",
                 "company" => "required",
                 "plant" => "required",
-                "arrival" => ["required", 'date_format:Y-m-d h:i:s'],
+                "arrival" => ["required"],
                 "material" => "required",
                 "quantity" => "required",
                 "supplier" => "required",
                 "ship_name" => "required",
-                "hasil_analisa_ffa" => "decimal:3",
-                "hasil_analisa_iv" => "decimal:3",
-                "hasil_analisa_moisture" => "decimal:3",
-                "hasil_analisa_dobi" => "decimal:3",
-                "hasil_analisa_pv" => "decimal:3",
-                "hasil_analisa_anv" => "decimal:3"
+                // "hasil_analisa_ffa" => "decimal",
+                // "hasil_analisa_iv" => "decimal",
+                // "hasil_analisa_moisture" => "decimal",
+                // "hasil_analisa_dobi" => "decimal",
+                // "hasil_analisa_pv" => "decimal",
+                // "hasil_analisa_anv" => "decimal"
             ]);
             $validator_det = null;
             foreach ($detail as $det) {
                 $validator_det = Validator::make(
                     $det,
-                    [
-                        'palka_s_no' => "decimal:3",
-                        'palka_s_ffa' => "decimal:3",
-                        'palka_s_iv' => "decimal:3",
-                        'palka_s_dobi' => "decimal:3",
-                        'palka_s_mni' => "decimal:3",
-                        'palka_c_no' => "decimal:3",
-                        'palka_c_ffa' => "decimal:3",
-                        'palka_c_iv' => "decimal:3",
-                        'palka_c_dobi' => "decimal:3",
-                        'palka_c_mni' => "decimal:3",
-                        'palka_p_no' => "decimal:3",
-                        'palka_p_ffa' => "decimal:3",
-                        'palka_p_iv' => "decimal:3",
-                        'palka_p_dobi' => "decimal:3",
-                        'palka_p_mni' => "decimal:3",
-                    ]
+                    []
+                    // [
+                    //     'palka_s_no' => "decimal:3",
+                    //     'palka_s_ffa' => "decimal:3",
+                    //     'palka_s_iv' => "decimal:3",
+                    //     'palka_s_dobi' => "decimal:3",
+                    //     'palka_s_mni' => "decimal:3",
+                    //     'palka_c_no' => "decimal:3",
+                    //     'palka_c_ffa' => "decimal:3",
+                    //     'palka_c_iv' => "decimal:3",
+                    //     'palka_c_dobi' => "decimal:3",
+                    //     'palka_c_mni' => "decimal:3",
+                    //     'palka_p_no' => "decimal:3",
+                    //     'palka_p_ffa' => "decimal:3",
+                    //     'palka_p_iv' => "decimal:3",
+                    //     'palka_p_dobi' => "decimal:3",
+                    //     'palka_p_mni' => "decimal:3",
+                    // ]
                 );
                 if ($validator->fails()) {
                     break;
@@ -113,7 +114,7 @@ class ARIMByVesselController extends Controller
                 "form_no" => $data_form['f_code'],
                 "date_issued" => $data_form['f_date_issued'],
                 "revision_no" => $data_form['f_revision_no'],
-                "revision_date" => $data_form['f_revision_date']
+                // "revision_date" => $data_form['f_revision_date']->format('Y-m-d h:i:s')
             ];
 
             //insert header 
@@ -316,6 +317,67 @@ class ARIMByVesselController extends Controller
             ], 500);
         }
     }
+
+    public function updateApprovalReject(Request $request)
+    {
+        $LEAD_QC = ['LEAD', 'LEAD_QC'];
+        $QC_Control_MGR = ["MGR", "MGR_QC", "ADM",];
+
+        try {
+            DB::beginTransaction();
+
+            $data = $request->validate([
+                'id' => 'required|string',
+                'username' => 'required|string',
+                'role' => 'required|string',
+                'approve_status' => 'required|in:Approved,Rejected',
+                'remark' => 'nullable|string|max:255',
+            ]);
+
+            $header = ARIMByVesselHeader::find($data['id']);
+
+            if (!$header) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'error' => 'DATA_NOT_FOUND'
+                ], 404);
+            }
+
+            if (in_array($data['role'], $LEAD_QC, true)) {
+                $header->update([
+                    'prepared_status' => $data['approve_status'],
+                    'prepared_by'     => $data['username'],
+                    'prepared_role'   => $data['role'],
+                    'prepared_date'   => now(),
+                    'prepared_status_remarks' => $data['remark'],
+                ]);
+
+                DB::commit();
+            } else if (in_array($data['role'], $QC_Control_MGR, true)) {
+                $header->update([
+                    'approved_status' => $data['approve_status'],
+                    'approved_by'     => $data['username'],
+                    'approved_role'   => $data['role'],
+                    'approved_date'   => now(),
+                    'approved_status_remarks' => $data['remark'],
+                ]);
+                DB::commit();
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Approval updated successfully'
+            ], 200);
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'data' => $th->getMessage()
+            ], 500);
+        }
+    }
+
 
     /**
      * Delete header (details cascade) by id
