@@ -4,6 +4,7 @@ use App\Http\Controllers\ARIMByVesselController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\MstBusinessUnitController;
 
 /*
 |--------------------------------------------------------------------------
@@ -38,6 +39,10 @@ Route::middleware('auth:sanctum')->group(function () {
 //Analytical Report Incoming Material by Vessel
 
 Route::middleware('auth:sanctum')->group(function () {
+	// business unit master
+	Route::resource('bunit', MstBusinessUnitController::class);
+
+	// analytical report incoming by vessel
 	Route::post('arimvess', [ARIMByVesselController::class, 'create']);
 	Route::put('arimvess', [ARIMByVesselController::class, 'update']);
 	Route::get('arimvess', [ARIMByVesselController::class, 'get']);
