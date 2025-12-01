@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\ARIMByVesselController;
 
 /*
 |--------------------------------------------------------------------------
@@ -32,4 +33,14 @@ Route::post('login', [LoginController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function () {
 	Route::post('logout', [LoginController::class, 'logout']);
 	Route::get('me', [LoginController::class, 'me']);
+});
+
+//Analytical Report Incoming Material by Vessel
+
+Route::middleware('auth:sanctum')->group(function () {
+	Route::post('arimvess', [ARIMByVesselController::class, 'create']);
+	Route::put('arimvess', [ARIMByVesselController::class, 'update']);
+	Route::get('arimvess', [ARIMByVesselController::class, 'get']);
+	Route::delete('arimvess/{id}', [ARIMByVesselController::class, 'destroy']);
+	Route::put('arimvess/approve-reject', [ARIMByVesselController::class, 'updateApprovalReject']);
 });
