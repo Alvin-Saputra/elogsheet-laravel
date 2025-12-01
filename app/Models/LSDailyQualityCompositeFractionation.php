@@ -9,7 +9,7 @@ class LSDailyQualityCompositeFractionation extends Model
 {
     use HasFactory;
 
-    protected $table = 't_daily_quality_composite_fractionation_500_mt';
+    protected $table = 't_daily_quality_composite_fractionation';
     protected $primaryKey = 'id';
 
     public $incrementing = false;
