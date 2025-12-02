@@ -66,7 +66,7 @@ class RptDailyQualityCompositeFractionation extends Controller
         if ($userRole === "LEAD" or $userRole === "LEAD_QC") {
             $report->update(['prepared_status' => 'Rejected', 'prepared_status_remarks' => $request->remark, 'prepared_date' => now(), 'prepared_by' => auth()->user()->username ?? auth()->user()->name]);
         } elseif ($userRole === "MGR" or $userRole === "MGR_PROD" or $userRole === "ADM") {
-            $report->update(['approved_status' => 'Rejected', 'approved_status_remarks' => $request->remark, 'approved_date' => now(), 'approved_by' => auth()->user()->username ?? auth()->user()->name]);
+            $report->update(['checked_status' => 'Rejected', 'checked_status_remarks' => $request->remark, 'checked_date' => now(), 'checked_by' => auth()->user()->username ?? auth()->user()->name]);
         }
         return back()->with('success', "Tiket {$report->id} berhasil di-reject.");
     }

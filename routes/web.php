@@ -8,6 +8,7 @@ use App\Http\Controllers\MstPlantController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\RptQualityController;
+use App\Http\Controllers\ARIMByVesselController;
 use App\Http\Controllers\RptDailyPFraController;
 use App\Http\Controllers\RptDailyPRefController;
 use App\Http\Controllers\RptLampGlassController;
@@ -19,16 +20,17 @@ use App\Http\Controllers\MstBusinessUnitController;
 use App\Http\Controllers\RptChangeProductController;
 use App\Http\Controllers\RptLogsheetDryFraController;
 use App\Http\Controllers\RptDailyProductionController;
-use App\Http\Controllers\RptStartupProduksiController;
 /*
 |--------------------------------------------------------------------------
 | Guest Routes (Login)
 |--------------------------------------------------------------------------
 */
 
+use App\Http\Controllers\RptStartupProduksiController;
 use App\Http\Controllers\RptDailyStorageTankAnalytical;
 use App\Http\Controllers\RptDailyQualityCompositeFractionation;
 use App\Http\Controllers\RptDailyStorageTankAnalyticalController;
+use App\Http\Controllers\RptAnalyticalResultIncomingMaterialByVessel;
 
 Route::get('/', function () {
     return Auth::check()
@@ -312,5 +314,13 @@ Route::middleware('auth')->group(function () {
         Route::get('/{id}', [RptDailyQualityCompositeFractionation::class, 'show'])->name('show');
         Route::get('/export/view', [RptDailyQualityCompositeFractionation::class, 'exportLayoutPreview'])->name('export.view');
         Route::get('/export/pdf', [RptDailyQualityCompositeFractionation::class, 'exportPdf'])->name('export.pdf');
+    });
+
+     Route::prefix('analytical-result-incoming-material-by-vessel')->name('analytical-result-incoming-material-by-vessel.')->group(function () {
+        Route::get('/', [ARIMByVesselController::class, 'get'])->name('index');
+        Route::post('/{id}/approve-report', [ARIMByVesselController::class, 'updateApprovalReject'])->name('approveReject');
+        Route::get('/{id}', [ARIMByVesselController::class, 'show'])->name('show');
+        Route::get('/{id}/export/view', [ARIMByVesselController::class, 'preview'])->name('preview');
+        Route::get('/{id}/export/pdf', [ARIMByVesselController::class, 'export'])->name('export');
     });
 });

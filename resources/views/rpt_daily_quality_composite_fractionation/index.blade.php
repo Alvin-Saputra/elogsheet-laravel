@@ -92,7 +92,7 @@
                     <button type="submit"
                         class="inline-flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-900 text-white text-sm font-semibold rounded-lg shadow transition">Filter</button>
                     @if (request()->has('filter_tanggal') || request()->has('filter_jam'))
-                        <a href="{{ route('report-monitoring-dry-fractionation.index') }}"
+                        <a href="{{ route('daily-quality-composite-fractionation.index') }}"
                             class="inline-flex items-center px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 text-sm font-semibold rounded-lg shadow transition">Reset</a>
                     @endif
                 </div>

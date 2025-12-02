@@ -59,15 +59,15 @@ class ARIMByVesselHeader extends Model
         "revision_date"
     ];
 
-    protected $casts = [
-        'arrival' => "datetime",
-        "entry_date" => "datetime",
-        "prepared_date" => "datetime",
-        "approved_date" => "datetime",
-        "updated_date" => "datetime",
-        "date_issued" => "datetime",
-        "revision_date" => "datetime",
-    ];
+        protected $casts = [
+            'arrival' => "datetime",
+            "entry_date" => "datetime",
+            "prepared_date" => "datetime",
+            "approved_date" => "datetime",
+            "updated_date" => "datetime",
+            "date_issued" => "datetime",
+            "revision_date" => "datetime",
+        ];
 
     /**
      * Detail rows for this header

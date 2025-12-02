@@ -2,15 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use DateTime;
+use App\Models\MDataFormNo;
+use Illuminate\Http\Request;
+use App\Models\MControlnumber;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Validation\Rule;
 use App\Models\ARIMByVesselDetail;
 use App\Models\ARIMByVesselHeader;
-use App\Models\MControlnumber;
-use App\Models\MDataFormNo;
-use DateTime;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
 
 class ARIMByVesselController extends Controller
 {
@@ -151,37 +153,52 @@ class ARIMByVesselController extends Controller
 
     public function get(Request $request)
     {
-        try {
-            //check if id header exist, get by header id
-            $id_header = $request->query('id');
-            $plant = $request->query('plant');
-            $result = [];
-            if ($id_header) {
-                $header = ARIMByVesselHeader::where('plant', $plant)->where('id', $id_header)->first()->toArray();
-                $detail = ARIMByVesselHeader::find($header['id'])->details()->get()->toArray();
-                $result = [
-                    [
-                        ...$header,
-                        "detail" => $detail
-                    ]
-                ];
-            } else {
-                $header = ARIMByVesselHeader::where('plant', $plant)->get()->toArray();
-                foreach ($header as $hd) {
-                    $detail = ARIMByVesselHeader::find($hd['id'])->details()->get()->toArray();
-                    array_push($result, [...$hd, 'detail' => $detail]);
+        if ($request->expectsJson() || $request->wantsJson() || $request->isJson()) {
+            try {
+                //check if id header exist, get by header id
+                $id_header = $request->query('id');
+                $plant = $request->query('plant');
+                $result = [];
+                if ($id_header) {
+                    $header = ARIMByVesselHeader::where('plant', $plant)->where('id', $id_header)->first()->toArray();
+                    $detail = ARIMByVesselHeader::find($header['id'])->details()->get()->toArray();
+                    $result = [
+                        [
+                            ...$header,
+                            "detail" => $detail
+                        ]
+                    ];
+                } else {
+                    $header = ARIMByVesselHeader::where('plant', $plant)->get()->toArray();
+                    foreach ($header as $hd) {
+                        $detail = ARIMByVesselHeader::find($hd['id'])->details()->get()->toArray();
+                        array_push($result, [...$hd, 'detail' => $detail]);
+                    }
                 }
+                return response()->json([
+                    'success' => true,
+                    "data" => $result
+                ], 200);
+            } catch (\Throwable $th) {
+                //throw $th;
+                return response()->json([
+                    'success' => false,
+                    'data' => $th->getMessage()
+                ], 500);
             }
-            return response()->json([
-                'success' => true,
-                "data" => $result
-            ], 200);
-        } catch (\Throwable $th) {
-            //throw $th;
-            return response()->json([
-                'success' => false,
-                'data' => $th->getMessage()
-            ], 500);
+        } else {
+            $tanggal = $request->input('filter_tanggal');
+
+            if (!$tanggal) {
+                $tanggal = now()->toDateString();
+            }
+            $plantCode = session('plant_code');
+            $headers = ARIMByVesselHeader::with('details')
+                ->where('plant', $plantCode)
+                ->whereDate('arrival', $tanggal)
+                ->get();
+
+            return view('rpt_analytical_result_incoming_material_by_vessel.index', compact('headers', 'tanggal'));
         }
     }
 
@@ -318,63 +335,94 @@ class ARIMByVesselController extends Controller
         }
     }
 
-    public function updateApprovalReject(Request $request)
+    public function updateApprovalReject(Request $request, $id = null)
     {
         $LEAD_QC = ['LEAD', 'LEAD_QC'];
         $QC_Control_MGR = ["MGR", "MGR_QC", "ADM",];
+        $role =  auth()->user()->roles;
+        if ($request->expectsJson() || $request->wantsJson() || $request->isJson()) {
+            try {
+                DB::beginTransaction();
 
-        try {
-            DB::beginTransaction();
+                $data = $request->validate([
+                    'id' => 'required|string',
+                    'username' => 'required|string',
+                    'approve_status' => 'required|in:Approved,Rejected',
+                    'remark' => 'nullable|string|max:255',
+                ]);
 
-            $data = $request->validate([
-                'id' => 'required|string',
-                'username' => 'required|string',
-                'role' => 'required|string',
-                'approve_status' => 'required|in:Approved,Rejected',
-                'remark' => 'nullable|string|max:255',
-            ]);
+                $header = ARIMByVesselHeader::find($data['id']);
 
-            $header = ARIMByVesselHeader::find($data['id']);
+                if (!$header) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'error' => 'DATA_NOT_FOUND'
+                    ], 404);
+                }
 
-            if (!$header) {
+                if (in_array($role, $LEAD_QC, true)) {
+                    $header->update([
+                        'prepared_status' => $data['approve_status'],
+                        'prepared_by'     => $data['username'],
+                        'prepared_role'   => $role,
+                        'prepared_date'   => now(),
+                        'prepared_status_remarks' => $data['remark'],
+                    ]);
+
+                    DB::commit();
+                } else if (in_array($role, $QC_Control_MGR, true)) {
+                    $header->update([
+                        'approved_status' => $data['approve_status'],
+                        'approved_by'     => $data['username'],
+                        'approved_role'   => $role,
+                        'approved_date'   => now(),
+                        'approved_status_remarks' => $data['remark'],
+                    ]);
+                    DB::commit();
+                }
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Approval updated successfully'
+                ], 200);
+            } catch (\Throwable $th) {
                 DB::rollBack();
                 return response()->json([
                     'success' => false,
-                    'error' => 'DATA_NOT_FOUND'
-                ], 404);
+                    'data' => $th->getMessage()
+                ], 500);
             }
+        } else {
 
-            if (in_array($data['role'], $LEAD_QC, true)) {
-                $header->update([
-                    'prepared_status' => $data['approve_status'],
-                    'prepared_by'     => $data['username'],
-                    'prepared_role'   => $data['role'],
+            $report = ARIMByVesselHeader::findOrFail($id);
+            $status = $request->query('status');
+            $request->validate(['remark' => 'nullable|string|max:255']);
+            if (in_array($role, $LEAD_QC, true)) {
+                $report->update([
+                    'prepared_status' => $status,
+                    'prepared_by'     => auth()->user()->username,
+                    'prepared_role'   => $role,
                     'prepared_date'   => now(),
-                    'prepared_status_remarks' => $data['remark'],
+                    'prepared_status_remarks' => $request->remark,
                 ]);
 
                 DB::commit();
-            } else if (in_array($data['role'], $QC_Control_MGR, true)) {
-                $header->update([
-                    'approved_status' => $data['approve_status'],
-                    'approved_by'     => $data['username'],
-                    'approved_role'   => $data['role'],
+            } else if (in_array($role, $QC_Control_MGR, true)) {
+                $report->update([
+                    'approved_status' => $status,
+                    'approved_by'     => auth()->user()->username,
+                    'approved_role'   => $role,
                     'approved_date'   => now(),
-                    'approved_status_remarks' => $data['remark'],
+                    'approved_status_remarks' => $request->remark,
                 ]);
                 DB::commit();
             }
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Approval updated successfully'
-            ], 200);
-        } catch (\Throwable $th) {
-            DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'data' => $th->getMessage()
-            ], 500);
+            if ($status == "Approved") {
+                return back()->with('success-approve', "Tiket {$report->id} berhasil di-$status");
+            } else if ($status == "Rejected") {
+                return back()->with('success-reject', "Tiket {$report->id} berhasil di-$status");
+            }
         }
     }
 
@@ -404,5 +452,38 @@ class ARIMByVesselController extends Controller
                 'data' => $th->getMessage()
             ], 500);
         }
+    }
+
+    public function show($id)
+    {
+        $data = ARIMByVesselHeader::with('details')->findOrFail($id);
+        // kalau tidak ada, otomatis throw 404
+
+        return view('rpt_analytical_result_incoming_material_by_vessel.show', [
+            'header' => $data
+        ]);
+    }
+
+    public function preview($id)
+    {
+        $data = ARIMByVesselHeader::with('details')->findOrFail($id);
+        // kalau tidak ada, otomatis throw 404
+
+        return view('rpt_analytical_result_incoming_material_by_vessel.preview_layout', [
+            'header' => $data
+        ]);
+    }
+
+    public function export($id)
+    {
+        $data = ARIMByVesselHeader::with('details')->findOrFail($id);
+
+        $pdf = Pdf::loadView('exports.report_analytical_result_incoming_material_by_vessel_pdf', [
+            'header' => $data,
+        ]);
+
+        $pdf->setPaper('a4', 'portrait');
+        $fileName = 'startup-produksi-checklist-' . $data->id . '.pdf';
+        return $pdf->stream($fileName);
     }
 }
