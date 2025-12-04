@@ -46,5 +46,5 @@ Route::middleware('auth:sanctum')->group(function () {
 	Route::put('arimvess', [ARIMByVesselController::class, 'update']);
 	Route::get('arimvess', [ARIMByVesselController::class, 'get']);
 	Route::delete('arimvess/{id}', [ARIMByVesselController::class, 'destroy']);
-	Route::put('arimvess/approve-reject', [ARIMByVesselController::class, 'updateApprovalReject']);
+	Route::put('arimvess/approve-reject', [ARIMByVesselController::class, 'updateApprovalStatusApi']);
 });

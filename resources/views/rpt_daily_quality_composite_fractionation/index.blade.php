@@ -83,7 +83,7 @@
                         @foreach ($listWorkCenters as $wc)
                             <option value="{{ $wc->work_center }}"
                                 {{ request('filter_work_center') == $wc->work_center ? 'selected' : '' }}>
-                                {{ $wc->work_center }}
+                                {{ $wc->label }}
                             </option>
                         @endforeach
                     </select>
@@ -157,11 +157,11 @@
                     @forelse ($data as $item)
                         <tr class="hover:bg-gray-50">
                             <td>{{ $loop->iteration }}</td>
-                            <td>{{ $item->id}}</td>
-                            <td>{{ $item->transaction_date}}</td>
-                            <td>{{ $item->time}}</td>
-                            <td>{{ $item->work_center}}</td>
-                            <td>{{ $item->crystalizer}}</td>
+                            <td>{{ $item->id }}</td>
+                            <td>{{ $item->transaction_date }}</td>
+                            <td>{{ $item->time }}</td>
+                            <td>{{ $item->work_center }}</td>
+                            <td>{{ $item->crystalizer }}</td>
 
                             <td class="px-2 py-2 border-b text-center">
                                 @if ($item->prepared_status == 'Approved')

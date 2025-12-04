@@ -215,14 +215,14 @@
                             <td class="px-4 py-2 border-b text-center">
                                 <div class="flex justify-center gap-2">
                                     <!-- Preview Button -->
-                                    <a href="{{ route('analytical-result-incoming-material-by-vessel.preview', $doc->id) }}"
+                                    <a href="{{ route('analytical-result-incoming-material-by-vessel.preview', $doc->id) }}?intention=preview"
                                         target="_blank"
                                         class="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-gray-700 shadow"
                                         title="Preview PDF">
                                         Preview
                                     </a>
                                     <!-- Download Button -->
-                                    <a href="{{ route('analytical-result-incoming-material-by-vessel.export', $doc->id) }}"
+                                    <a href="{{ route('analytical-result-incoming-material-by-vessel.export', $doc->id) }}?intention=export"
                                         class="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 shadow"
                                         title="Download PDF">
                                         Download
@@ -232,7 +232,7 @@
 
                             {{-- === "DETAIL" COLUMN (Unchanged) === --}}
                             <td class="px-4 py-2 border-b text-center">
-                                <a href="{{ route('analytical-result-incoming-material-by-vessel.show', $doc->id) }}"
+                                <a href="{{ route('analytical-result-incoming-material-by-vessel.show', $doc->id) }}?intention=show"
                                     class="text-blue-600 hover:text-blue-800 inline-flex items-center justify-center">
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"
                                         class="w-5 h-5 text-blue-600 hover:text-blue-800 transition-colors duration-200">

@@ -317,10 +317,10 @@ Route::middleware('auth')->group(function () {
     });
 
      Route::prefix('analytical-result-incoming-material-by-vessel')->name('analytical-result-incoming-material-by-vessel.')->group(function () {
-        Route::get('/', [ARIMByVesselController::class, 'get'])->name('index');
-        Route::post('/{id}/approve-report', [ARIMByVesselController::class, 'updateApprovalReject'])->name('approveReject');
-        Route::get('/{id}', [ARIMByVesselController::class, 'show'])->name('show');
-        Route::get('/{id}/export/view', [ARIMByVesselController::class, 'preview'])->name('preview');
-        Route::get('/{id}/export/pdf', [ARIMByVesselController::class, 'export'])->name('export');
+        Route::get('/', [ARIMByVesselController::class, 'index'])->name('index');
+        Route::post('/{id}/approve-report', [ARIMByVesselController::class, 'updateApprovalStatusWeb'])->name('approveReject');
+        Route::get('/{id}', [ARIMByVesselController::class, 'getById'])->name('show');
+        Route::get('/{id}/export/view', [ARIMByVesselController::class, 'getById'])->name('preview');
+        Route::get('/{id}/export/pdf', [ARIMByVesselController::class, 'getById'])->name('export');
     });
 });

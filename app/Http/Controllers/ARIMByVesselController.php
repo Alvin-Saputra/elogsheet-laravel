@@ -16,6 +16,46 @@ use Illuminate\Support\Facades\Validator;
 
 class ARIMByVesselController extends Controller
 {
+
+    // ---private function----
+    private function findHeaderWithId($id)
+    {
+        return ARIMByVesselHeader::with('details')->findOrFail($id);
+    }
+
+    private function processApprovalStatus($header, $status, $remark, $user_name, $user_roles)
+    {
+        $LEAD_QC = ['LEAD', 'LEAD_QC'];
+        $QC_Control_MGR = ["MGR", "MGR_QC", "ADM"];
+
+
+        $fieldPrefix = '';
+
+        if (in_array($user_roles, $QC_Control_MGR, true)) { // Gunakan intersect utk keamanan array
+            $fieldPrefix = 'approved';
+        } elseif (in_array($user_roles, $LEAD_QC, true)) {
+
+            $fieldPrefix = 'prepared';
+        } else {
+            // Jika role tidak cocok, return false atau throw error
+            return false;
+        }
+
+        $header->update([
+            "{$fieldPrefix}_status"         => $status,
+            "{$fieldPrefix}_by"             => $user_name,
+            "{$fieldPrefix}_role"           => json_encode($user_roles), // Simpan sebagai string/json jika perlu
+            "{$fieldPrefix}_date"           => now(),
+            "{$fieldPrefix}_status_remarks" => $remark,
+        ]);
+
+        return true;
+    }
+
+
+    // ----public function----
+
+    // ---- API Request Function ----
     public function create(Request $request)
     {
         try {
@@ -33,35 +73,35 @@ class ARIMByVesselController extends Controller
                 "quantity" => "required",
                 "supplier" => "required",
                 "ship_name" => "required",
-                // "hasil_analisa_ffa" => "decimal",
-                // "hasil_analisa_iv" => "decimal",
-                // "hasil_analisa_moisture" => "decimal",
-                // "hasil_analisa_dobi" => "decimal",
-                // "hasil_analisa_pv" => "decimal",
-                // "hasil_analisa_anv" => "decimal"
+                "hasil_analisa_ffa" => "numeric",
+                "hasil_analisa_iv" => "numeric",
+                "hasil_analisa_moisture" => "numeric",
+                "hasil_analisa_dobi" => "numeric",
+                "hasil_analisa_pv" => "numeric",
+                "hasil_analisa_anv" => "numeric"
             ]);
             $validator_det = null;
             foreach ($detail as $det) {
                 $validator_det = Validator::make(
                     $det,
-                    []
-                    // [
-                    //     'palka_s_no' => "decimal:3",
-                    //     'palka_s_ffa' => "decimal:3",
-                    //     'palka_s_iv' => "decimal:3",
-                    //     'palka_s_dobi' => "decimal:3",
-                    //     'palka_s_mni' => "decimal:3",
-                    //     'palka_c_no' => "decimal:3",
-                    //     'palka_c_ffa' => "decimal:3",
-                    //     'palka_c_iv' => "decimal:3",
-                    //     'palka_c_dobi' => "decimal:3",
-                    //     'palka_c_mni' => "decimal:3",
-                    //     'palka_p_no' => "decimal:3",
-                    //     'palka_p_ffa' => "decimal:3",
-                    //     'palka_p_iv' => "decimal:3",
-                    //     'palka_p_dobi' => "decimal:3",
-                    //     'palka_p_mni' => "decimal:3",
-                    // ]
+   
+                    [
+                        'palka_s_no' => "numeric",
+                        'palka_s_ffa' => "numeric",
+                        'palka_s_iv' => "numeric",
+                        'palka_s_dobi' => "numeric",
+                        'palka_s_mni' => "numeric",
+                        'palka_c_no' => "numeric",
+                        'palka_c_ffa' => "numeric",
+                        'palka_c_iv' => "numeric",
+                        'palka_c_dobi' => "numeric",
+                        'palka_c_mni' => "numeric",
+                        'palka_p_no' => "numeric",
+                        'palka_p_ffa' => "numeric",
+                        'palka_p_iv' => "numeric",
+                        'palka_p_dobi' => "numeric",
+                        'palka_p_mni' => "numeric",
+                    ]
                 );
                 if ($validator->fails()) {
                     break;
@@ -153,59 +193,56 @@ class ARIMByVesselController extends Controller
 
     public function get(Request $request)
     {
-        if ($request->expectsJson() || $request->wantsJson() || $request->isJson()) {
-            try {
-                //check if id header exist, get by header id
-                $id_header = $request->query('id');
-                $plant = $request->query('plant');
-                $result = [];
-                if ($id_header) {
-                    $header = ARIMByVesselHeader::where('plant', $plant)->where('id', $id_header)->first()->toArray();
-                    $detail = ARIMByVesselHeader::find($header['id'])->details()->get()->toArray();
-                    $result = [
-                        [
-                            ...$header,
-                            "detail" => $detail
-                        ]
-                    ];
-                } else {
-                    $header = ARIMByVesselHeader::where('plant', $plant)->get()->toArray();
-                    foreach ($header as $hd) {
-                        $detail = ARIMByVesselHeader::find($hd['id'])->details()->get()->toArray();
-                        array_push($result, [...$hd, 'detail' => $detail]);
-                    }
+        try {
+            //check if id header exist, get by header id
+            $id_header = $request->query('id');
+            $plant = $request->query('plant');
+            $date = $request->query('date');
+            $result = [];
+            if ($id_header) {
+                $header = ARIMByVesselHeader::where('plant', $plant)->where('id', $id_header)->first()->toArray();
+                $detail = ARIMByVesselHeader::find($header['id'])->details()->get()->toArray();
+                $result = [
+                    [
+                        ...$header,
+                        "detail" => $detail
+                    ]
+                ];
+            } else if ($plant && $date) {
+                $header = ARIMByVesselHeader::where('plant', $plant)->whereDate('arrival', $date)->get()->toArray();
+
+                foreach ($header as $hd) {
+                    $detail = ARIMByVesselHeader::find($hd['id'])->details()->get()->toArray();
+                    array_push($result, [...$hd, 'detail' => $detail]);
                 }
-                return response()->json([
-                    'success' => true,
-                    "data" => $result
-                ], 200);
-            } catch (\Throwable $th) {
-                //throw $th;
-                return response()->json([
-                    'success' => false,
-                    'data' => $th->getMessage()
-                ], 500);
-            }
-        } else {
-            $tanggal = $request->input('filter_tanggal');
+            } else if (!$plant && $date) {
+                $header = ARIMByVesselHeader::whereDate('arrival', $date)->get()->toArray();
 
-            if (!$tanggal) {
-                $tanggal = now()->toDateString();
+                foreach ($header as $hd) {
+                    $detail = ARIMByVesselHeader::find($hd['id'])->details()->get()->toArray();
+                    array_push($result, [...$hd, 'detail' => $detail]);
+                }
+            } else {
+                $header = ARIMByVesselHeader::where('plant', $plant)->get()->toArray();
+                foreach ($header as $hd) {
+                    $detail = ARIMByVesselHeader::find($hd['id'])->details()->get()->toArray();
+                    array_push($result, [...$hd, 'detail' => $detail]);
+                }
             }
-            $plantCode = session('plant_code');
-            $headers = ARIMByVesselHeader::with('details')
-                ->where('plant', $plantCode)
-                ->whereDate('arrival', $tanggal)
-                ->get();
-
-            return view('rpt_analytical_result_incoming_material_by_vessel.index', compact('headers', 'tanggal'));
+            return response()->json([
+                'success' => true,
+                "data" => $result
+            ], 200);
+        } catch (\Throwable $th) {
+            //throw $th;
+            return response()->json([
+                'success' => false,
+                'data' => $th->getMessage()
+            ], 500);
         }
     }
 
-    /**
-     * Update header and detail for given header id.
-     * This replaces all detail rows for the header with provided detail array.
-     */
+
     public function update(Request $request)
     {
         try {
@@ -220,12 +257,12 @@ class ARIMByVesselController extends Controller
                 "quantity" => "required",
                 "supplier" => "required",
                 "ship_name" => "required",
-                "hasil_analisa_ffa" => "decimal:3",
-                "hasil_analisa_iv" => "decimal:3",
-                "hasil_analisa_moisture" => "decimal:3",
-                "hasil_analisa_dobi" => "decimal:3",
-                "hasil_analisa_pv" => "decimal:3",
-                "hasil_analisa_anv" => "decimal:3"
+                // "hasil_analisa_ffa" => "decimal:3",
+                // "hasil_analisa_iv" => "decimal:3",
+                // "hasil_analisa_moisture" => "decimal:3",
+                // "hasil_analisa_dobi" => "decimal:3",
+                // "hasil_analisa_pv" => "decimal:3",
+                // "hasil_analisa_anv" => "decimal:3"
             ]);
 
             $validator_det = null;
@@ -233,21 +270,21 @@ class ARIMByVesselController extends Controller
                 $validator_det = Validator::make(
                     $det,
                     [
-                        'palka_s_no' => "decimal:3",
-                        'palka_s_ffa' => "decimal:3",
-                        'palka_s_iv' => "decimal:3",
-                        'palka_s_dobi' => "decimal:3",
-                        'palka_s_mni' => "decimal:3",
-                        'palka_c_no' => "decimal:3",
-                        'palka_c_ffa' => "decimal:3",
-                        'palka_c_iv' => "decimal:3",
-                        'palka_c_dobi' => "decimal:3",
-                        'palka_c_mni' => "decimal:3",
-                        'palka_p_no' => "decimal:3",
-                        'palka_p_ffa' => "decimal:3",
-                        'palka_p_iv' => "decimal:3",
-                        'palka_p_dobi' => "decimal:3",
-                        'palka_p_mni' => "decimal:3",
+                        // 'palka_s_no' => "decimal:3",
+                        // 'palka_s_ffa' => "decimal:3",
+                        // 'palka_s_iv' => "decimal:3",
+                        // 'palka_s_dobi' => "decimal:3",
+                        // 'palka_s_mni' => "decimal:3",
+                        // 'palka_c_no' => "decimal:3",
+                        // 'palka_c_ffa' => "decimal:3",
+                        // 'palka_c_iv' => "decimal:3",
+                        // 'palka_c_dobi' => "decimal:3",
+                        // 'palka_c_mni' => "decimal:3",
+                        // 'palka_p_no' => "decimal:3",
+                        // 'palka_p_ffa' => "decimal:3",
+                        // 'palka_p_iv' => "decimal:3",
+                        // 'palka_p_dobi' => "decimal:3",
+                        // 'palka_p_mni' => "decimal:3",
                     ]
                 );
                 if ($validator->fails()) {
@@ -335,101 +372,7 @@ class ARIMByVesselController extends Controller
         }
     }
 
-    public function updateApprovalReject(Request $request, $id = null)
-    {
-        $LEAD_QC = ['LEAD', 'LEAD_QC'];
-        $QC_Control_MGR = ["MGR", "MGR_QC", "ADM",];
-        $role =  auth()->user()->roles;
-        if ($request->expectsJson() || $request->wantsJson() || $request->isJson()) {
-            try {
-                DB::beginTransaction();
 
-                $data = $request->validate([
-                    'id' => 'required|string',
-                    'username' => 'required|string',
-                    'approve_status' => 'required|in:Approved,Rejected',
-                    'remark' => 'nullable|string|max:255',
-                ]);
-
-                $header = ARIMByVesselHeader::find($data['id']);
-
-                if (!$header) {
-                    DB::rollBack();
-                    return response()->json([
-                        'success' => false,
-                        'error' => 'DATA_NOT_FOUND'
-                    ], 404);
-                }
-
-                if (in_array($role, $LEAD_QC, true)) {
-                    $header->update([
-                        'prepared_status' => $data['approve_status'],
-                        'prepared_by'     => $data['username'],
-                        'prepared_role'   => $role,
-                        'prepared_date'   => now(),
-                        'prepared_status_remarks' => $data['remark'],
-                    ]);
-
-                    DB::commit();
-                } else if (in_array($role, $QC_Control_MGR, true)) {
-                    $header->update([
-                        'approved_status' => $data['approve_status'],
-                        'approved_by'     => $data['username'],
-                        'approved_role'   => $role,
-                        'approved_date'   => now(),
-                        'approved_status_remarks' => $data['remark'],
-                    ]);
-                    DB::commit();
-                }
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Approval updated successfully'
-                ], 200);
-            } catch (\Throwable $th) {
-                DB::rollBack();
-                return response()->json([
-                    'success' => false,
-                    'data' => $th->getMessage()
-                ], 500);
-            }
-        } else {
-
-            $report = ARIMByVesselHeader::findOrFail($id);
-            $status = $request->query('status');
-            $request->validate(['remark' => 'nullable|string|max:255']);
-            if (in_array($role, $LEAD_QC, true)) {
-                $report->update([
-                    'prepared_status' => $status,
-                    'prepared_by'     => auth()->user()->username,
-                    'prepared_role'   => $role,
-                    'prepared_date'   => now(),
-                    'prepared_status_remarks' => $request->remark,
-                ]);
-
-                DB::commit();
-            } else if (in_array($role, $QC_Control_MGR, true)) {
-                $report->update([
-                    'approved_status' => $status,
-                    'approved_by'     => auth()->user()->username,
-                    'approved_role'   => $role,
-                    'approved_date'   => now(),
-                    'approved_status_remarks' => $request->remark,
-                ]);
-                DB::commit();
-            }
-            if ($status == "Approved") {
-                return back()->with('success-approve', "Tiket {$report->id} berhasil di-$status");
-            } else if ($status == "Rejected") {
-                return back()->with('success-reject', "Tiket {$report->id} berhasil di-$status");
-            }
-        }
-    }
-
-
-    /**
-     * Delete header (details cascade) by id
-     */
     public function destroy(Request $request, $id)
     {
         try {
@@ -454,9 +397,90 @@ class ARIMByVesselController extends Controller
         }
     }
 
+
+
+    public function index(Request $request)
+    {
+        $tanggal = $request->input('filter_tanggal');
+
+        if (!$tanggal) {
+            $tanggal = now()->toDateString();
+        }
+        $plantCode = session('plant_code');
+        $headers = ARIMByVesselHeader::with('details')
+            ->where('plant', $plantCode)
+            ->whereDate('arrival', $tanggal)
+            ->get();
+
+        return view('rpt_analytical_result_incoming_material_by_vessel.index', compact('headers', 'tanggal'));
+    }
+
+
+    public function updateApprovalStatusApi(Request $request, $id = null)
+    {
+        try {
+            $data = $request->validate([
+                'id' => 'required|string',
+                'approve_status' => 'required|in:Approved,Rejected',
+                'remark' => 'nullable|string|max:255',
+            ]);
+
+            $header = ARIMByVesselHeader::find($data['id']);
+            $role =  auth()->user()->roles;
+            $username = auth()->user()->username;
+            $status = $data['approve_status'];
+            $remark = $data['remark'];
+
+
+            if (!$header) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'error' => 'DATA_NOT_FOUND'
+                ], 404);
+            }
+
+            $isSuccess = $this->processApprovalStatus($header, $status, $remark, $username, $role);
+
+            if ($isSuccess) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Approval updated successfully'
+                ], 200);
+            }
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'data' => $th->getMessage()
+            ], 500);
+        }
+    }
+
+    public function updateApprovalStatusWeb(Request $request, $id)
+    {
+        $report = ARIMByVesselHeader::findOrFail($id);
+        $status = $request->query('status');
+        $remark = $request->remark;
+        $username = auth()->user()->username;
+        $role =  auth()->user()->roles;
+
+        $isSuccess = $this->processApprovalStatus($report, $status, $remark, $username, $role);
+
+        if ($isSuccess) {
+            if ($status == "Approved") {
+                return back()->with('success-approve', "Tiket {$report->id} berhasil di-$status");
+            } else if ($status == "Rejected") {
+
+                return back()->with('success-reject', "Tiket {$report->id} berhasil di-$status");
+            }
+        }
+    }
+
+
     public function show($id)
     {
-        $data = ARIMByVesselHeader::with('details')->findOrFail($id);
+        $data = $this->findHeaderWithId($id);
         // kalau tidak ada, otomatis throw 404
 
         return view('rpt_analytical_result_incoming_material_by_vessel.show', [
@@ -466,8 +490,7 @@ class ARIMByVesselController extends Controller
 
     public function preview($id)
     {
-        $data = ARIMByVesselHeader::with('details')->findOrFail($id);
-        // kalau tidak ada, otomatis throw 404
+        $data = $this->findHeaderWithId($id);
 
         return view('rpt_analytical_result_incoming_material_by_vessel.preview_layout', [
             'header' => $data
@@ -476,7 +499,7 @@ class ARIMByVesselController extends Controller
 
     public function export($id)
     {
-        $data = ARIMByVesselHeader::with('details')->findOrFail($id);
+        $data = $this->findHeaderWithId($id);
 
         $pdf = Pdf::loadView('exports.report_analytical_result_incoming_material_by_vessel_pdf', [
             'header' => $data,
@@ -485,5 +508,29 @@ class ARIMByVesselController extends Controller
         $pdf->setPaper('a4', 'portrait');
         $fileName = 'startup-produksi-checklist-' . $data->id . '.pdf';
         return $pdf->stream($fileName);
+    }
+
+    public function getById(Request $request, $id)
+    {
+        $data = $this->findHeaderWithId($id);
+        $intention = $request->query('intention');
+
+        return match ($intention) {
+            'show' => view('rpt_analytical_result_incoming_material_by_vessel.show', [
+                'header' => $data
+            ]),
+            'preview' => view('rpt_analytical_result_incoming_material_by_vessel.preview_layout', [
+                'header' => $data
+            ]),
+            'export' => (function () use ($data) {
+                $pdf = Pdf::loadView('exports.report_analytical_result_incoming_material_by_vessel_pdf', [
+                    'header' => $data,
+                ]);
+                $pdf->setPaper('a4', 'portrait');
+                $fileName = 'startup-produksi-checklist-' . $data->id . '.pdf';
+                return $pdf->stream($fileName);
+            })(),
+            default => abort(400, 'Invalid intention')
+        };
     }
 }
