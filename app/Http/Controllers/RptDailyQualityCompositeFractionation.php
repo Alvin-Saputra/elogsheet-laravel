@@ -33,8 +33,18 @@ class RptDailyQualityCompositeFractionation extends Controller
         }
 
         $data = $query->get();
-        $workCenters = LSDailyQualityCompositeFractionation::select('work_center')->distinct()->get();
+        $workCenters = LSDailyQualityCompositeFractionation::distinct()
+            ->select('work_center')
+            ->get()
+            ->map(function ($wc) {
+                $kapasitas = [
+                    'FRAC-01' => '500 MT',
+                    'FRAC-02' => '400 MT',
+                ];
 
+                $wc->label = $wc->work_center . ' ' . ($kapasitas[$wc->work_center] ?? '');
+                return $wc;
+            });
         return view('rpt_daily_quality_composite_fractionation.index', [
             'tanggal' => $filterTanggal,
             'data' => $data,
@@ -66,7 +76,7 @@ class RptDailyQualityCompositeFractionation extends Controller
         if ($userRole === "LEAD" or $userRole === "LEAD_QC") {
             $report->update(['prepared_status' => 'Rejected', 'prepared_status_remarks' => $request->remark, 'prepared_date' => now(), 'prepared_by' => auth()->user()->username ?? auth()->user()->name]);
         } elseif ($userRole === "MGR" or $userRole === "MGR_PROD" or $userRole === "ADM") {
-            $report->update(['approved_status' => 'Rejected', 'approved_status_remarks' => $request->remark, 'approved_date' => now(), 'approved_by' => auth()->user()->username ?? auth()->user()->name]);
+            $report->update(['checked_status' => 'Rejected', 'checked_status_remarks' => $request->remark, 'checked_date' => now(), 'checked_by' => auth()->user()->username ?? auth()->user()->name]);
         }
         return back()->with('success', "Tiket {$report->id} berhasil di-reject.");
     }
@@ -134,9 +144,9 @@ class RptDailyQualityCompositeFractionation extends Controller
         return [$first, $last];
     }
 
-     public function exportPdf(Request $request)
+    public function exportPdf(Request $request)
     {
-       // 1 Ambil tanggal dari request, default hari ini
+        // 1 Ambil tanggal dari request, default hari ini
         $filterTanggal = $request->input('filter_tanggal', now()->toDateString());
         $filterJam = $request->input('filter_jam');
         $filterWorkCenter = $request->input('filter_work_center');
@@ -160,7 +170,7 @@ class RptDailyQualityCompositeFractionation extends Controller
 
         [$formInfoFirst, $formInfoLast] = $this->getFormInfo($filterTanggal, null);
 
-    
+
         $sign = $data->first();
 
         $groupedData = empty($filterWorkCenter) ? $data->groupBy('work_center') : collect();

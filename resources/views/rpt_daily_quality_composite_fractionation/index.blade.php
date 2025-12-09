@@ -83,7 +83,7 @@
                         @foreach ($listWorkCenters as $wc)
                             <option value="{{ $wc->work_center }}"
                                 {{ request('filter_work_center') == $wc->work_center ? 'selected' : '' }}>
-                                {{ $wc->work_center }}
+                                {{ $wc->label }}
                             </option>
                         @endforeach
                     </select>
@@ -92,7 +92,7 @@
                     <button type="submit"
                         class="inline-flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-900 text-white text-sm font-semibold rounded-lg shadow transition">Filter</button>
                     @if (request()->has('filter_tanggal') || request()->has('filter_jam'))
-                        <a href="{{ route('report-monitoring-dry-fractionation.index') }}"
+                        <a href="{{ route('daily-quality-composite-fractionation.index') }}"
                             class="inline-flex items-center px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 text-sm font-semibold rounded-lg shadow transition">Reset</a>
                     @endif
                 </div>
@@ -157,11 +157,11 @@
                     @forelse ($data as $item)
                         <tr class="hover:bg-gray-50">
                             <td>{{ $loop->iteration }}</td>
-                            <td>{{ $item->id}}</td>
-                            <td>{{ $item->transaction_date}}</td>
-                            <td>{{ $item->time}}</td>
-                            <td>{{ $item->work_center}}</td>
-                            <td>{{ $item->crystalizer}}</td>
+                            <td>{{ $item->id }}</td>
+                            <td>{{ $item->transaction_date }}</td>
+                            <td>{{ $item->time }}</td>
+                            <td>{{ $item->work_center }}</td>
+                            <td>{{ $item->crystalizer }}</td>
 
                             <td class="px-2 py-2 border-b text-center">
                                 @if ($item->prepared_status == 'Approved')

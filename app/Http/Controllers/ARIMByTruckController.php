@@ -3,24 +3,22 @@
 namespace App\Http\Controllers;
 
 use DateTime;
+
 use App\Models\MDataFormNo;
 use Illuminate\Http\Request;
 use App\Models\MControlnumber;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Validation\Rule;
-use App\Models\ARIMByVesselDetail;
-use App\Models\ARIMByVesselHeader;
+use App\Models\ARIMByTruckDetail;
+use App\Models\ARIMByTruckHeader;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 
-class ARIMByVesselController extends Controller
+class ARIMByTruckController extends Controller
 {
 
-    // ---private function----
     private function findHeaderWithId($id)
     {
-        return ARIMByVesselHeader::with('details')->findOrFail($id);
+        return ARIMByTruckHeader::with('details')->findOrFail($id);
     }
 
     private function processApprovalStatus($header, $status, $remark, $user_name, $user_roles)
@@ -52,10 +50,7 @@ class ARIMByVesselController extends Controller
         return true;
     }
 
-
-    // ----public function----
-
-    // ---- API Request Function ----
+    // ----- API Request Function -------
     public function create(Request $request)
     {
         try {
@@ -68,39 +63,30 @@ class ARIMByVesselController extends Controller
                 "menu_id" => "required",
                 "company" => "required",
                 "plant" => "required",
-                "arrival" => ["required"],
                 "material" => "required",
-                "quantity" => "required",
+                "arrival_date" => ["required"],
                 "supplier" => "required",
-                "ship_name" => "required",
-                "hasil_analisa_ffa" => "numeric",
-                "hasil_analisa_iv" => "numeric",
-                "hasil_analisa_moisture" => "numeric",
-                "hasil_analisa_dobi" => "numeric",
-                "hasil_analisa_pv" => "numeric",
-                "hasil_analisa_anv" => "numeric"
+                "vessel_vehicle" => "required",
+                "ss_ffa" => "numeric",
+                "ss_mni" => "numeric",
+                "detail" => "required"
             ]);
             $validator_det = null;
             foreach ($detail as $det) {
                 $validator_det = Validator::make(
                     $det,
-
                     [
-                        'palka_s_no' => "numeric",
-                        'palka_s_ffa' => "numeric",
-                        'palka_s_iv' => "numeric",
-                        'palka_s_dobi' => "numeric",
-                        'palka_s_mni' => "numeric",
-                        'palka_c_no' => "numeric",
-                        'palka_c_ffa' => "numeric",
-                        'palka_c_iv' => "numeric",
-                        'palka_c_dobi' => "numeric",
-                        'palka_c_mni' => "numeric",
-                        'palka_p_no' => "numeric",
-                        'palka_p_ffa' => "numeric",
-                        'palka_p_iv' => "numeric",
-                        'palka_p_dobi' => "numeric",
-                        'palka_p_mni' => "numeric",
+                        'no' => "required",
+                        'sampling_date' => "required",
+                        'police_no' => "required",
+                        'p_ffa' => "numeric",
+                        'p_moisture' => "numeric",
+                        'p_iv' => "numeric",
+                        'p_dobi' => "numeric",
+                        'p_pv' => "numeric",
+                        'p_color_r' => "numeric",
+                        'p_color_y' => "numeric",
+
                     ]
                 );
                 if ($validator->fails()) {
@@ -138,7 +124,7 @@ class ARIMByVesselController extends Controller
             }
 
             //get m_control_number
-            $control = MControlnumber::where('prefix', 'Q09')->where('plantid', $data['plant'])->first();
+            $control = MControlnumber::where('prefix', 'Q10')->where('plantid', $data['plant'])->first();
             $nextnum = intval($control['autonumber']) + 1;
             $padded_num = str_pad($nextnum, 6, '0', STR_PAD_LEFT);
             $hd_id = $control['prefix'];
@@ -160,7 +146,7 @@ class ARIMByVesselController extends Controller
             ];
 
             //insert header 
-            $header = ARIMByVesselHeader::create($payload);
+            $header = ARIMByTruckHeader::create($payload);
 
             //inser detail 
             foreach ($detail as $key => $det) {
@@ -170,12 +156,12 @@ class ARIMByVesselController extends Controller
                     "id" => $id_det,
                     "id_hdr" => $header_id
                 ];
-                $det_res = ARIMByVesselDetail::create($payload_det);
+                $det_res = ARIMByTruckDetail::create($payload_det);
                 array_push($id_det_arr, $id_det);
             }
 
             //update running number
-            MControlnumber::where('prefix', 'Q09')->where('plantid', $data['plant'])->update(['autonumber' => strval($nextnum)]);
+            MControlnumber::where('prefix', 'Q10')->where('plantid', $data['plant'])->update(['autonumber' => strval($nextnum)]);
             DB::commit();
             return response()->json([
                 'success' => true,
@@ -200,8 +186,8 @@ class ARIMByVesselController extends Controller
             $date = $request->query('date');
             $result = [];
             if ($id_header) {
-                $header = ARIMByVesselHeader::where('plant', $plant)->where('id', $id_header)->first()->toArray();
-                $detail = ARIMByVesselHeader::find($header['id'])->details()->get()->toArray();
+                $header = ARIMByTruckHeader::where('plant', $plant)->where('id', $id_header)->first()->toArray();
+                $detail = ARIMByTruckHeader::find($header['id'])->details()->get()->toArray();
                 $result = [
                     [
                         ...$header,
@@ -209,23 +195,23 @@ class ARIMByVesselController extends Controller
                     ]
                 ];
             } else if ($plant && $date) {
-                $header = ARIMByVesselHeader::where('plant', $plant)->whereDate('arrival', $date)->get()->toArray();
+                $header = ARIMByTruckHeader::where('plant', $plant)->whereDate('arrival_date', $date)->get()->toArray();
 
                 foreach ($header as $hd) {
-                    $detail = ARIMByVesselHeader::find($hd['id'])->details()->get()->toArray();
+                    $detail = ARIMByTruckHeader::find($hd['id'])->details()->get()->toArray();
                     array_push($result, [...$hd, 'detail' => $detail]);
                 }
             } else if (!$plant && $date) {
-                $header = ARIMByVesselHeader::whereDate('arrival', $date)->get()->toArray();
+                $header = ARIMByTruckHeader::whereDate('arrival', $date)->get()->toArray();
 
                 foreach ($header as $hd) {
-                    $detail = ARIMByVesselHeader::find($hd['id'])->details()->get()->toArray();
+                    $detail = ARIMByTruckHeader::find($hd['id'])->details()->get()->toArray();
                     array_push($result, [...$hd, 'detail' => $detail]);
                 }
             } else {
-                $header = ARIMByVesselHeader::where('plant', $plant)->get()->toArray();
+                $header = ARIMByTruckHeader::where('plant', $plant)->get()->toArray();
                 foreach ($header as $hd) {
-                    $detail = ARIMByVesselHeader::find($hd['id'])->details()->get()->toArray();
+                    $detail = ARIMByTruckHeader::find($hd['id'])->details()->get()->toArray();
                     array_push($result, [...$hd, 'detail' => $detail]);
                 }
             }
@@ -242,141 +228,10 @@ class ARIMByVesselController extends Controller
         }
     }
 
-
-    public function update(Request $request)
-    {
-        try {
-            DB::beginTransaction();
-            $user = $request->user()->getDisplayNameAttribute();
-            $data = $request->all();
-            $id = $data['id'];
-            $detail = $data['detail'] ?? [];
-
-            $validator = Validator::make($data, [
-                "material" => "required",
-                "quantity" => "required",
-                "supplier" => "required",
-                "ship_name" => "required",
-                "hasil_analisa_ffa" => "numeric",
-                "hasil_analisa_iv" => "numeric",
-                "hasil_analisa_moisture" => "numeric",
-                "hasil_analisa_dobi" => "numeric",
-                "hasil_analisa_pv" => "numeric",
-                "hasil_analisa_anv" => "numeric"
-            ]);
-
-            $validator_det = null;
-            foreach ($detail as $det) {
-                $validator_det = Validator::make(
-                    $det,
-                    [
-                        'palka_s_no' => "numeric",
-                        'palka_s_ffa' => "numeric",
-                        'palka_s_iv' => "numeric",
-                        'palka_s_dobi' => "numeric",
-                        'palka_s_mni' => "numeric",
-                        'palka_c_no' => "numeric",
-                        'palka_c_ffa' => "numeric",
-                        'palka_c_iv' => "numeric",
-                        'palka_c_dobi' => "numeric",
-                        'palka_c_mni' => "numeric",
-                        'palka_p_no' => "numeric",
-                        'palka_p_ffa' => "numeric",
-                        'palka_p_iv' => "numeric",
-                        'palka_p_dobi' => "numeric",
-                        'palka_p_mni' => "numeric",
-                    ]
-                );
-                if ($validator->fails()) {
-                    break;
-                }
-            }
-
-            if ($validator->fails() || ($validator_det && $validator_det->fails())) {
-                DB::rollBack();
-                return response()->json([
-                    'success' => false,
-                    'error' => "INVALID_PAYLOAD",
-                    'data' => [
-                        'header' => $validator->errors()->all(),
-                        'detail' => $validator_det ? $validator_det->errors()->all() : []
-                    ]
-                ], 400);
-            }
-
-            // find header
-            $header = ARIMByVesselHeader::where('id', $id)->first();
-            if (!$header) {
-                DB::rollBack();
-                return response()->json(['success' => false, 'error' => 'NOT_FOUND'], 404);
-            }
-
-            // prepare update payload
-            $now = new DateTime();
-            $payload = [
-                ...$data,
-                'updated_by' => $user,
-                'updated_date' => $now->format('Y-m-d h:i:s')
-            ];
-
-            // avoid changing id
-            unset($payload['id']);
-
-            $header->update($payload);
-
-            // Update details by id: update existing, insert new, delete removed
-            $existingIds = ARIMByVesselDetail::where('id_hdr', $id)->pluck('id')->toArray();
-            $processedIds = [];
-
-            foreach ($detail as $key => $det) {
-                $providedId = $det['id'] ?? null;
-
-                if ($providedId && in_array($providedId, $existingIds, true)) {
-                    // update existing detail
-                    $payload_det = $det;
-                    // ensure id_hdr not changed
-                    unset($payload_det['id_hdr']);
-                    ARIMByVesselDetail::where('id_hdr', $id)->where('id', $providedId)->update($payload_det);
-                    $processedIds[] = $providedId;
-                } else {
-                    // create new detail row
-                    $id_det = $providedId ?? ($id . "D" . $key);
-                    $payload_det = [
-                        ...$det,
-                        'id' => $id_det,
-                        'id_hdr' => $id
-                    ];
-                    ARIMByVesselDetail::create($payload_det);
-                    $processedIds[] = $id_det;
-                }
-            }
-
-            // delete any existing detail rows that were not included in the payload
-            $toDelete = array_diff($existingIds, $processedIds);
-            if (!empty($toDelete)) {
-                ARIMByVesselDetail::where('id_hdr', $id)->whereIn('id', $toDelete)->delete();
-            }
-
-            DB::commit();
-            return response()->json([
-                'success' => true,
-                'id_header' => $id,
-                'id_det' => $processedIds
-            ], 200);
-        } catch (\Throwable $th) {
-            DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'data' => $th->getMessage()
-            ], 500);
-        }
-    }
-
-
     public function destroy(Request $request, $id)
     {
         try {
-            $header = ARIMByVesselHeader::find($id);
+            $header = ARIMByTruckHeader::find($id);
             if (!$header) {
                 return response()->json(['success' => false, 'error' => 'NOT_FOUND'], 404);
             }
@@ -397,22 +252,126 @@ class ARIMByVesselController extends Controller
         }
     }
 
-
-
-    public function index(Request $request)
+    public function update(Request $request)
     {
-        $tanggal = $request->input('filter_tanggal');
+        try {
+            DB::beginTransaction();
+            $user = $request->user()->getDisplayNameAttribute();
+            $data = $request->all();
+            $id = $data['id'];
+            $detail = $data['detail'] ?? [];
 
-        if (!$tanggal) {
-            $tanggal = now()->toDateString();
+            $validator = Validator::make($data, [
+                "id" => "required",
+                "material" => "required",
+                // "arrival_date" => ["required"],
+                "supplier" => "required",
+                "vessel_vehicle" => "required",
+                "ss_ffa" => "numeric",
+                "ss_mni" => "numeric",
+                "detail" => "required"
+            ]);
+
+            $validator_det = null;
+            foreach ($detail as $det) {
+                $validator_det = Validator::make(
+                    $det,
+                    [
+                        'no' => "required",
+                        // 'sampling_date' => "required",
+                        'police_no' => "required",
+                        'p_ffa' => "numeric",
+                        'p_moisture' => "numeric",
+                        'p_iv' => "numeric",
+                        'p_dobi' => "numeric",
+                        'p_pv' => "numeric",
+                        'p_color_r' => "numeric",
+                        'p_color_y' => "numeric",
+                    ]
+                );
+                if ($validator->fails()) {
+                    break;
+                }
+            }
+
+            if ($validator->fails() || ($validator_det && $validator_det->fails())) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'error' => "INVALID_PAYLOAD",
+                    'data' => [
+                        'header' => $validator->errors()->all(),
+                        'detail' => $validator_det ? $validator_det->errors()->all() : []
+                    ]
+                ], 400);
+            }
+
+            // find header
+            $header = ARIMByTruckHeader::where('id', $id)->first();
+            if (!$header) {
+                DB::rollBack();
+                return response()->json(['success' => false, 'error' => 'NOT_FOUND'], 404);
+            }
+
+            // prepare update payload
+            $now = new DateTime();
+            $payload = [
+                ...$data,
+                'updated_by' => $user,
+                'updated_date' => $now->format('Y-m-d h:i:s')
+            ];
+
+            // avoid changing id
+            unset($payload['id']);
+
+            $header->update($payload);
+
+            // Update details by id: update existing, insert new, delete removed
+            $existingIds = ARIMByTruckDetail::where('id_hdr', $id)->pluck('id')->toArray();
+            $processedIds = [];
+
+            foreach ($detail as $key => $det) {
+                $providedId = $det['id'] ?? null;
+
+                if ($providedId && in_array($providedId, $existingIds, true)) {
+                    // update existing detail
+                    $payload_det = $det;
+                    // ensure id_hdr not changed
+                    unset($payload_det['id_hdr']);
+                    ARIMByTruckDetail::where('id_hdr', $id)->where('id', $providedId)->update($payload_det);
+                    $processedIds[] = $providedId;
+                } else {
+                    // create new detail row
+                    $id_det = $providedId ?? ($id . "D" . $key);
+                    $payload_det = [
+                        ...$det,
+                        'id' => $id_det,
+                        'id_hdr' => $id
+                    ];
+                    ARIMByTruckDetail::create($payload_det);
+                    $processedIds[] = $id_det;
+                }
+            }
+
+            // delete any existing detail rows that were not included in the payload
+            $toDelete = array_diff($existingIds, $processedIds);
+            if (!empty($toDelete)) {
+                ARIMByTruckDetail::where('id_hdr', $id)->whereIn('id', $toDelete)->delete();
+            }
+
+            DB::commit();
+            return response()->json([
+                'success' => true,
+                'id_header' => $id,
+                'id_det' => $processedIds
+            ], 200);
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'data' => $th->getMessage()
+            ], 500);
         }
-        $plantCode = session('plant_code');
-        $headers = ARIMByVesselHeader::with('details')
-            ->where('plant', $plantCode)
-            ->whereDate('arrival', $tanggal)
-            ->get();
-
-        return view('rpt_analytical_result_incoming_material_by_vessel.index', compact('headers', 'tanggal'));
     }
 
 
@@ -425,7 +384,7 @@ class ARIMByVesselController extends Controller
                 'remark' => 'nullable|string|max:255',
             ]);
 
-            $header = ARIMByVesselHeader::find($data['id']);
+            $header = ARIMByTruckHeader::find($data['id']);
             $role =  auth()->user()->roles;
             $username = auth()->user()->username;
             $status = $data['approve_status'];
@@ -457,9 +416,54 @@ class ARIMByVesselController extends Controller
         }
     }
 
-    public function updateApprovalStatusWeb(Request $request, $id)
+
+
+    // ---- Web Request Function ------
+
+    public function index(Request $request)
     {
-        $report = ARIMByVesselHeader::findOrFail($id);
+        $tanggal = $request->input('filter_tanggal');
+
+        if (!$tanggal) {
+            $tanggal = now()->toDateString();
+        }
+        $plantCode = session('plant_code');
+        $headers = ARIMByTruckHeader::with('details')
+            ->where('plant', $plantCode)
+            ->whereDate('arrival_date', $tanggal)
+            ->get();
+
+        return view('rpt_analytical_result_incoming_material_by_truck.index', compact('headers', 'tanggal'));
+    }
+
+    public function getById(Request $request, $id)
+    {
+        $data = $this->findHeaderWithId($id);
+        $intention = $request->query('intention');
+
+        return match ($intention) {
+            'show' => view('rpt_analytical_result_incoming_material_by_truck.show', [
+                'header' => $data
+            ]),
+            'preview' => view('rpt_analytical_result_incoming_material_by_truck.preview_layout', [
+                'header' => $data
+            ]),
+            'export' => (function () use ($data) {
+                $pdf = Pdf::loadView('exports.report_analytical_result_incoming_material_by_truck_pdf', [
+                    'header' => $data,
+                ]);
+                $pdf->setPaper('a4', 'portrait');
+                $fileName = 'startup-produksi-checklist-' . $data->id . '.pdf';
+                return $pdf->stream($fileName);
+            })(),
+            default => abort(400, 'Invalid intention')
+        };
+    }
+
+
+     public function updateApprovalStatusWeb(Request $request, $id)
+    {
+        $report = ARIMByTruckHeader::findOrFail($id);
         $status = $request->query('status');
         $remark = $request->remark;
         $username = auth()->user()->username;
@@ -475,62 +479,5 @@ class ARIMByVesselController extends Controller
                 return back()->with('success-reject', "Tiket {$report->id} berhasil di-$status");
             }
         }
-    }
-
-
-    public function show($id)
-    {
-        $data = $this->findHeaderWithId($id);
-        // kalau tidak ada, otomatis throw 404
-
-        return view('rpt_analytical_result_incoming_material_by_vessel.show', [
-            'header' => $data
-        ]);
-    }
-
-    public function preview($id)
-    {
-        $data = $this->findHeaderWithId($id);
-
-        return view('rpt_analytical_result_incoming_material_by_vessel.preview_layout', [
-            'header' => $data
-        ]);
-    }
-
-    public function export($id)
-    {
-        $data = $this->findHeaderWithId($id);
-
-        $pdf = Pdf::loadView('exports.report_analytical_result_incoming_material_by_vessel_pdf', [
-            'header' => $data,
-        ]);
-
-        $pdf->setPaper('a4', 'portrait');
-        $fileName = 'startup-produksi-checklist-' . $data->id . '.pdf';
-        return $pdf->stream($fileName);
-    }
-
-    public function getById(Request $request, $id)
-    {
-        $data = $this->findHeaderWithId($id);
-        $intention = $request->query('intention');
-
-        return match ($intention) {
-            'show' => view('rpt_analytical_result_incoming_material_by_vessel.show', [
-                'header' => $data
-            ]),
-            'preview' => view('rpt_analytical_result_incoming_material_by_vessel.preview_layout', [
-                'header' => $data
-            ]),
-            'export' => (function () use ($data) {
-                $pdf = Pdf::loadView('exports.report_analytical_result_incoming_material_by_vessel_pdf', [
-                    'header' => $data,
-                ]);
-                $pdf->setPaper('a4', 'portrait');
-                $fileName = 'startup-produksi-checklist-' . $data->id . '.pdf';
-                return $pdf->stream($fileName);
-            })(),
-            default => abort(400, 'Invalid intention')
-        };
     }
 }

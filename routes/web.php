@@ -8,6 +8,8 @@ use App\Http\Controllers\MstPlantController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\RptQualityController;
+use App\Http\Controllers\ARIMByTruckController;
+use App\Http\Controllers\ARIMByVesselController;
 use App\Http\Controllers\RptDailyPFraController;
 use App\Http\Controllers\RptDailyPRefController;
 use App\Http\Controllers\RptLampGlassController;
@@ -18,17 +20,18 @@ use App\Http\Controllers\RptLogsheetPBFController;
 use App\Http\Controllers\MstBusinessUnitController;
 use App\Http\Controllers\RptChangeProductController;
 use App\Http\Controllers\RptLogsheetDryFraController;
-use App\Http\Controllers\RptDailyProductionController;
-use App\Http\Controllers\RptStartupProduksiController;
 /*
 |--------------------------------------------------------------------------
 | Guest Routes (Login)
 |--------------------------------------------------------------------------
 */
 
+use App\Http\Controllers\RptDailyProductionController;
+use App\Http\Controllers\RptStartupProduksiController;
 use App\Http\Controllers\RptDailyStorageTankAnalytical;
 use App\Http\Controllers\RptDailyQualityCompositeFractionation;
 use App\Http\Controllers\RptDailyStorageTankAnalyticalController;
+use App\Http\Controllers\RptAnalyticalResultIncomingMaterialByVessel;
 
 Route::get('/', function () {
     return Auth::check()
@@ -312,5 +315,21 @@ Route::middleware('auth')->group(function () {
         Route::get('/{id}', [RptDailyQualityCompositeFractionation::class, 'show'])->name('show');
         Route::get('/export/view', [RptDailyQualityCompositeFractionation::class, 'exportLayoutPreview'])->name('export.view');
         Route::get('/export/pdf', [RptDailyQualityCompositeFractionation::class, 'exportPdf'])->name('export.pdf');
+    });
+
+     Route::prefix('analytical-result-incoming-material-by-vessel')->name('analytical-result-incoming-material-by-vessel.')->group(function () {
+        Route::get('/', [ARIMByVesselController::class, 'index'])->name('index');
+        Route::post('/{id}/approve-report', [ARIMByVesselController::class, 'updateApprovalStatusWeb'])->name('approveReject');
+        Route::get('/{id}', [ARIMByVesselController::class, 'getById'])->name('show');
+        Route::get('/{id}/export/view', [ARIMByVesselController::class, 'getById'])->name('preview');
+        Route::get('/{id}/export/pdf', [ARIMByVesselController::class, 'getById'])->name('export');
+    });
+
+    Route::prefix('analytical-result-incoming-material-by-truck')->name('analytical-result-incoming-material-by-truck.')->group(function () {
+        Route::get('/', [ARIMByTruckController::class, 'index'])->name('index');
+        Route::post('/{id}/approve-report', [ARIMByTruckController::class, 'updateApprovalStatusWeb'])->name('approveReject');
+        Route::get('/{id}', [ARIMByTruckController::class, 'getById'])->name('show');
+        Route::get('/{id}/export/view', [ARIMByTruckController::class, 'getById'])->name('preview');
+        Route::get('/{id}/export/pdf', [ARIMByTruckController::class, 'getById'])->name('export');
     });
 });
