@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\ARIMByTruckController;
 use App\Http\Controllers\ARIMByVesselController;
 use App\Http\Controllers\MstBusinessUnitController;
 
@@ -47,4 +48,26 @@ Route::middleware('auth:sanctum')->group(function () {
 	Route::get('arimvess', [ARIMByVesselController::class, 'get']);
 	Route::delete('arimvess/{id}', [ARIMByVesselController::class, 'destroy']);
 	Route::put('arimvess/approve-reject', [ARIMByVesselController::class, 'updateApprovalStatusApi']);
+});
+
+Route::middleware('auth:sanctum')->group(function () {
+	// business unit master
+	Route::resource('bunit', MstBusinessUnitController::class);
+	//Analytical Report Incoming Material by Vessel
+	Route::post('arimvess', [ARIMByVesselController::class, 'create']);
+	Route::put('arimvess', [ARIMByVesselController::class, 'update']);
+	Route::get('arimvess', [ARIMByVesselController::class, 'get']);
+	Route::delete('arimvess/{id}', [ARIMByVesselController::class, 'destroy']);
+	Route::put('arimvess/approve-reject', [ARIMByVesselController::class, 'updateApprovalStatusApi']);
+});
+
+Route::middleware('auth:sanctum')->group(function () {
+	// business unit master
+	Route::resource('bunit', MstBusinessUnitController::class);
+	//Analytical Report Incoming Material by Vessel
+	Route::post('arimtruck', [ARIMByTruckController::class, 'create']);
+	Route::get('arimtruck', [ARIMByTruckController::class, 'get']);
+	Route::delete('arimtruck/{id}', [ARIMByTruckController::class, 'destroy']);
+	Route::put('arimtruck', [ARIMByTruckController::class, 'update']);
+	Route::put('arimtruck/approve-reject', [ARIMByTruckController::class, 'updateApprovalStatusApi']);
 });

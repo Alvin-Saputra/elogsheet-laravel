@@ -34,7 +34,7 @@
 
             <div>
                 <strong class="text-gray-600 block text-sm">Ship's Name:</strong>
-                <span class="text-sm">{{ $header->shipName ?? 'N/A' }}</span>
+                <span class="text-sm">{{ $header->ship_name ?? 'N/A' }}</span>
             </div>
 
             <div>
