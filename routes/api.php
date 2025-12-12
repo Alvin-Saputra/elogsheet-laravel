@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\ARIMByTruckController;
 use App\Http\Controllers\ARIMByVesselController;
+use App\Http\Controllers\COAController;
 use App\Http\Controllers\MstBusinessUnitController;
 
 /*
@@ -71,3 +72,11 @@ Route::middleware('auth:sanctum')->group(function () {
 	Route::put('arimtruck', [ARIMByTruckController::class, 'update']);
 	Route::put('arimtruck/approve-reject', [ARIMByTruckController::class, 'updateApprovalStatusApi']);
 });
+
+Route::middleware('auth:sanctum')->group(function () {
+	// business unit master
+	Route::resource('bunit', MstBusinessUnitController::class);
+	//Analytical Report Incoming Plant Chemical / Ingredient
+	Route::post('coa-plant-chemical', [COAController::class, 'create']);
+});
+
