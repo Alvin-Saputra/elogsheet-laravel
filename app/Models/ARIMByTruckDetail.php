@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class ARIMByTruckDetail extends Model
 {
@@ -57,5 +58,12 @@ class ARIMByTruckDetail extends Model
     public function header()
     {
         return $this->belongsTo(ARIMByVesselHeader::class, 'id_hdr', 'id');
+    }
+
+    public function getSamplingDateAttribute($value)
+    {
+        return $value
+            ? Carbon::parse($value)->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')
+            : null;
     }
 }

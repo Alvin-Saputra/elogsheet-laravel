@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class ARIMByTruckHeader extends Model
 {
@@ -65,5 +66,54 @@ class ARIMByTruckHeader extends Model
     public function details()
     {
         return $this->hasMany(ARIMByTruckDetail::class, 'id_hdr', 'id');
+    }
+
+    public function getTransactionDateAttribute($value)
+    {
+        return $value
+            ? Carbon::parse($value)->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')
+            : null;
+    }
+
+    public function getArrivalDateAttribute($value)
+    {
+        return $value
+            ? Carbon::parse($value)->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')
+            : null;
+    }
+
+    public function getEntryDateAttribute($value)
+    {
+        return $value
+            ? Carbon::parse($value)->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')
+            : null;
+    }
+
+    public function getPreparedDateAttribute($value)
+    {
+        return $value
+            ? Carbon::parse($value)->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')
+            : null;
+    }
+
+    public function getApprovedDateAttribute($value)
+    {
+        return $value
+            ? Carbon::parse($value)->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')
+            : null;
+    }
+
+    public function getUpdatedDateAttribute($value)
+    {
+        return $value
+            ? Carbon::parse($value)->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')
+            : null;
+    }
+
+    public function getDateIssuedAttribute($value)
+    {
+        return $value
+            ? Carbon::parse($value)->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')
+            : null;
     }
 }
