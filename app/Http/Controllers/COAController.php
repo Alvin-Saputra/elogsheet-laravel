@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use DateTime;
 use App\Models\COADetail;
 use App\Models\COAHeader;
 use Illuminate\Http\Request;
@@ -49,8 +50,6 @@ class COAController extends Controller
                 'lot_no' => 'required|max:45',
                 'production_date' => 'required|date',
                 'expired_date' => 'required|date',
-                'issue_by' => 'required|max:45',
-                'issue_date' => 'required|date',
                 'detail' => 'required|array|min:1',
                 'detail.*.parameter' => 'required|max:45',
                 'detail.*.actual_min' => 'required|numeric|min:0',
@@ -98,8 +97,8 @@ class COAController extends Controller
                 ['id' => $header_id],
                 $validated,
                 [
-                    'entry_by' => $user,
-                    'entry_date' => now(),
+                    'issue_by' => $user,
+                    'issue_date' => now(),
                 ]
             );
 
@@ -177,12 +176,7 @@ class COAController extends Controller
         //
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
+
     public function destroy($id)
     {
         //
