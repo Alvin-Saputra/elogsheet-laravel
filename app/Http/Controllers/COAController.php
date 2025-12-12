@@ -35,7 +35,7 @@ class COAController extends Controller
             DB::beginTransaction();
 
             // Use accessor as virtual attribute
-            $user = $request->user() ? $request->user()->display_name : 'SYSTEM';
+            $user = $request->user()->getDisplayNameAttribute();
 
             // Validate request (matches your rules)
             $validated = $request->validate([
@@ -115,7 +115,7 @@ class COAController extends Controller
             $detailIds = [];
             foreach ($details as $index => $det) {
                 $detArr = (array) $det; // ensure array
-                $detailId = $header->id . '-D' . ($index + 1);
+                $detailId = $header->id . 'D' . ($index + 1);
 
                 $detailPayload = array_merge($detArr, [
                     'id_hdr' => $header->id,
@@ -136,8 +136,6 @@ class COAController extends Controller
 
         } catch (\Throwable $th) {
             DB::rollBack();
-
-            // Return 500 and error message (helps debug)
             return response()->json([
                 'success' => false,
                 'data' => $th->getMessage()
