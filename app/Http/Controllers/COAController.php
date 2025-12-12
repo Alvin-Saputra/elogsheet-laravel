@@ -30,6 +30,7 @@ class COAController extends Controller
 
     // ----API Request Function----
 
+    // create new COA
     public function create(Request $request)
     {
         try {
@@ -141,16 +142,35 @@ class COAController extends Controller
             ], 500);
         }
     }
-
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show($id)
+    // get all coa data + issue_date filter
+    public function get(Request $request)
     {
-        //
+        try {
+            $query = \App\Models\COAHeader::query();
+            $hasFilter = $request->filled('issue_date');
+
+            $query->when($hasFilter, function ($q) use ($request) {
+                $q->whereDate('issue_date', $request->issue_date);
+            });
+
+            $result = $query->get();
+
+            if ($hasFilter && $result->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No data found for the given filter.'
+                ], 404);
+            }
+            return response()->json([
+                'success' => true,
+                'data' => $result
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'success' => false,
+                'data' => $th->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -177,7 +197,7 @@ class COAController extends Controller
     }
 
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         //
     }
