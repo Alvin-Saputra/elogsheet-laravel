@@ -3,14 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\CreateCoaRequest;
-use DateTime;
 use App\Models\COADetail;
 use App\Models\COAHeader;
 use Illuminate\Http\Request;
 use App\Models\MControlnumber;
 use Illuminate\Support\Facades\DB;
 use App\Http\Requests\UpdateCoaRequest;
-use Illuminate\Support\Facades\Validator;
 
 class COAController extends Controller
 {
@@ -55,37 +53,36 @@ class COAController extends Controller
             $user = $request->user()->getDisplayNameAttribute();
             $validated = $request->validated();
 
-            $details = $validated['detail'];
+            $details = $validated['detail'] ?? [];
             unset($validated['detail']);
-
 
             $prefix = 'Q11';
 
-            $controlRow = DB::table('m_controlnumber')
-                ->where('prefix', $prefix)
+            $control = MControlnumber::where('prefix', $prefix)
                 ->lockForUpdate()
                 ->first();
 
-            if (!$controlRow) {
+            if (!$control) {
                 DB::rollBack();
                 return response()->json([
                     'success' => false,
                     'error' => 'CONTROL_NUMBER_NOT_FOUND',
-                    'message' => "No m_controlnumber row found for prefix {$prefix}",
+                    'message' => "No m_controlnumber row found for prefix {$prefix}"
                 ], 400);
             }
 
-            $autonum = (int) ($controlRow->autonumber ?? 0);
+            $nextNum = intval($control->autonumber ?? 0) + 1;
+            $padLen = $control->lengthpad ?: 6;
+            $padded = str_pad($nextNum, $padLen, '0', STR_PAD_LEFT);
 
-            do {
-                $autonum++;
-                $padded = str_pad($autonum, 6, '0', STR_PAD_LEFT);
-                $header_id = $prefix . now()->format('y') . $padded;
-                $exists = COAHeader::where('id', $header_id)->exists();
-            } while ($exists);
+            $year = (string) $control->accountingyear;
+
+            $suffix = ($control->plantid ?? '') . $year . $padded;
+
+            $headerId = ($control->prefix ?? $prefix) . $suffix;
 
             $headerPayload = array_merge(
-                ['id' => $header_id],
+                ['id' => $headerId],
                 $validated,
                 [
                     'issue_by' => $user,
@@ -97,14 +94,15 @@ class COAController extends Controller
 
             $header = COAHeader::create($headerPayload);
 
-            DB::table('m_controlnumber')
-                ->where('prefix', $prefix)
-                ->update(['autonumber' => $autonum]);
-
             $detailIds = [];
-            foreach ($details as $index => $det) {
+            foreach ($details as $i => $det) {
                 $detArr = (array) $det;
-                $detailId = $header->id . 'D' . ($index + 1);
+
+                $detailId = ($control->prefix ?? $prefix)
+                    . 'D'
+                    . 'COA'
+                    . $suffix
+                    . $i;
 
                 $detailPayload = array_merge($detArr, [
                     'id_hdr' => $header->id,
@@ -115,12 +113,17 @@ class COAController extends Controller
                 $detailIds[] = $detailRecord->id;
             }
 
+            DB::table('m_controlnumber')
+                ->where('prefix', $control->prefix)
+                ->when($control->plantid, fn($q) => $q->where('plantid', $control->plantid))
+                ->update(['autonumber' => $nextNum]);
+
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'header_id' => $header_id,
-                'detail_ids' => $detailIds,
+                'id_header' => $headerId,
+                'id_det' => $detailIds,
             ], 201);
 
         } catch (\Throwable $th) {
@@ -131,6 +134,7 @@ class COAController extends Controller
             ], 500);
         }
     }
+
 
 
     /**
@@ -165,20 +169,19 @@ class COAController extends Controller
      */
     public function update(UpdateCoaRequest $request, $id)
     {
-        $header = COAHeader::find($id);
-
-        if (!$header) {
-            return response()->json([
-                'status' => false,
-                'message' => 'COA not found'
-            ], 404);
-        }
-
-        $data = $request->validated();
-
-        DB::beginTransaction();
-
         try {
+            DB::beginTransaction();
+
+            $header = COAHeader::find($id);
+
+            if (!$header) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'COA not found'
+                ], 404);
+            }
+
+            $data = $request->validated();
             $userDisplayName = $request->user()->getDisplayNameAttribute();
 
 
@@ -245,4 +248,5 @@ class COAController extends Controller
     {
         //
     }
+
 }
