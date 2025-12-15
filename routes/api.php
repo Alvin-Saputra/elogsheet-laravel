@@ -78,5 +78,6 @@ Route::middleware('auth:sanctum')->group(function () {
 	Route::resource('bunit', MstBusinessUnitController::class);
 	//Analytical Report Incoming Plant Chemical / Ingredient
 	Route::post('coa-plant-chemical', [COAController::class, 'create']);
+	Route::get('coa-plant-chemical', [COAController::class, 'get']);
 });
 
