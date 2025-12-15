@@ -111,6 +111,8 @@ class COAController extends Controller
                 [
                     'issue_by' => $user,
                     'issue_date' => now(),
+                    'updated_by' => $user,
+                    'updated_date' => now(),
                 ]
             );
 
