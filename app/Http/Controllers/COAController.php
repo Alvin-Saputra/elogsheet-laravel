@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use DateTime;
+use App\Http\Requests\CreateCoaRequest;
 use App\Models\COADetail;
 use App\Models\COAHeader;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Validator;
 use App\Models\MControlnumber;
+use Illuminate\Support\Facades\DB;
+use App\Http\Requests\UpdateCoaRequest;
 
 class COAController extends Controller
 {
@@ -41,50 +41,28 @@ class COAController extends Controller
 
     // ----API Request Function----
 
-    // create new COA
-    public function create(Request $request)
+    /**
+     * POST /api/coa-plant-chemical
+     * Create new certificate of analysis data
+     */
+    public function create(CreateCoaRequest $request)
     {
         try {
             DB::beginTransaction();
 
-            // Use accessor as virtual attribute
             $user = $request->user()->getDisplayNameAttribute();
+            $validated = $request->validated();
 
-            // Validate request (matches your rules)
-            $validated = $request->validate([
-                'no_doc' => 'required|unique:coa_incoming_plant_chemical_ingredient_header|max:100',
-                'product' => 'required|max:45',
-                'grade' => 'required|max:45',
-                'packing' => 'required',
-                'quantity' => 'required|numeric',
-                'tanggal_pengiriman' => 'required|date',
-                'vehicle' => 'required|max:45',
-                'lot_no' => 'required|max:45',
-                'production_date' => 'required|date',
-                'expired_date' => 'required|date',
-                'detail' => 'required|array|min:1',
-                'detail.*.parameter' => 'required|max:45',
-                'detail.*.actual_min' => 'required|numeric|min:0',
-                'detail.*.actual_max' => 'required|numeric',
-                'detail.*.standard_min' => 'required|numeric|min:0',
-                'detail.*.standard_max' => 'required|numeric',
-                'detail.*.method' => 'required|max:45'
-            ]);
-
-            // pull details out
-            $details = $validated['detail'];
+            $details = $validated['detail'] ?? [];
             unset($validated['detail']);
 
-            // --- SAFE ID GENERATION ---
             $prefix = 'Q11';
 
-            // lock the control row for this prefix so concurrent requests are serialized
-            $controlRow = DB::table('m_controlnumber')
-                ->where('prefix', $prefix)
+            $control = MControlnumber::where('prefix', $prefix)
                 ->lockForUpdate()
                 ->first();
 
-            if (!$controlRow) {
+            if (!$control) {
                 DB::rollBack();
                 return response()->json([
                     'success' => false,
@@ -93,40 +71,37 @@ class COAController extends Controller
                 ], 400);
             }
 
-            // start from current autonumber (may be null or zero)
-            $autonum = intval($controlRow->autonumber ?? 0);
+            $nextNum = intval($control->autonumber ?? 0) + 1;
+            $padLen = $control->lengthpad ?: 6;
+            $padded = str_pad($nextNum, $padLen, '0', STR_PAD_LEFT);
 
-            // loop until we find a header_id that's not used yet (safe in presence of mismatched data)
-            do {
-                $autonum++;
-                $padded = str_pad($autonum, 6, '0', STR_PAD_LEFT);
-                $header_id = $prefix . now()->format('y') . $padded;
-                $exists = COAHeader::where('id', $header_id)->exists();
-            } while ($exists);
+            $year = (string) $control->accountingyear;
 
-            // Build header payload (use validated fields)
+            $suffix = 'COA' . ($control->plantid ?? '') . $year . $padded;
+
+            $headerId = ($control->prefix ?? $prefix) . $suffix;
+
             $headerPayload = array_merge(
-                ['id' => $header_id],
+                ['id' => $headerId],
                 $validated,
                 [
                     'issue_by' => $user,
                     'issue_date' => now(),
+                    'updated_by' => $user,
+                    'updated_date' => now(),
                 ]
             );
 
-            // create header
             $header = COAHeader::create($headerPayload);
 
-            // update control autonumber (raw query avoids model PK issues)
-            DB::table('m_controlnumber')
-                ->where('prefix', $prefix)
-                ->update(['autonumber' => $autonum]);
-
-            // insert details
             $detailIds = [];
-            foreach ($details as $index => $det) {
-                $detArr = (array) $det; // ensure array
-                $detailId = $header->id . 'D' . ($index + 1);
+            foreach ($details as $i => $det) {
+                $detArr = (array) $det;
+
+                $detailId = ($control->prefix ?? $prefix)
+                    . 'D'
+                    . $suffix
+                    . $i;
 
                 $detailPayload = array_merge($detArr, [
                     'id_hdr' => $header->id,
@@ -137,23 +112,34 @@ class COAController extends Controller
                 $detailIds[] = $detailRecord->id;
             }
 
+            DB::table('m_controlnumber')
+                ->where('prefix', $control->prefix)
+                ->when($control->plantid, fn($q) => $q->where('plantid', $control->plantid))
+                ->update(['autonumber' => $nextNum]);
+
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'header_id' => $header_id,
-                'detail_ids' => $detailIds,
+                'id_header' => $headerId,
+                'id_det' => $detailIds,
             ], 201);
 
         } catch (\Throwable $th) {
             DB::rollBack();
             return response()->json([
                 'success' => false,
-                'data' => $th->getMessage()
+                'data' => $th->getMessage(),
             ], 500);
         }
     }
-    // get all coa data + issue_date filter
+
+
+
+    /**
+     * GET /api/coa-plant-chemical
+     * Get all COA data with issue_date filter option
+     */
     public function get(Request $request)
     {
         $query = COAHeader::with('details');
@@ -176,74 +162,90 @@ class COAController extends Controller
         ]);
     }
 
-    // update data by id
-    public function update(Request $request, COAHeader $header)
+    /**
+     * PUT /api/coa-plant-chemical/{id}
+     * Update Header and Sync Details
+     */
+    public function update(UpdateCoaRequest $request, $id)
     {
         try {
-            $user = $request->user()->getDisplayNameAttribute();
-            $validated = $request->validate([
-                'no_doc' => 'required|max:100|unique:coa_incoming_plant_chemical_ingredient_header,no_doc,' . $header->id . ',id',
-                'product' => 'required|max:45',
-                'grade' => 'required|max:45',
-                'packing' => 'required',
-                'quantity' => 'required|numeric',
-                'tanggal_pengiriman' => 'required|date',
-                'vehicle' => 'required|max:45',
-                'lot_no' => 'required|max:45',
-                'production_date' => 'required|date',
-                'expired_date' => 'required|date',
-                'detail' => 'required|array|min:1',
-                'detail.*.parameter' => 'required|max:45',
-                'detail.*.actual_min' => 'required|numeric|min:0',
-                'detail.*.actual_max' => 'required|numeric',
-                'detail.*.standard_min' => 'required|numeric|min:0',
-                'detail.*.standard_max' => 'required|numeric',
-                'detail.*.method' => 'required|max:45'
+            DB::beginTransaction();
+
+            $header = COAHeader::find($id);
+
+            if (!$header) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'COA not found'
+                ], 404);
+            }
+
+            $data = $request->validated();
+            $userDisplayName = $request->user()->getDisplayNameAttribute();
+
+
+            $header->update([
+                'no_doc' => $data['no_doc'],
+                'product' => $data['product'],
+                'grade' => $data['grade'],
+                'packing' => $data['packing'],
+                'quantity' => $data['quantity'],
+                'tanggal_pengiriman' => $data['tanggal_pengiriman'],
+                'vehicle' => $data['vehicle'],
+                'lot_no' => $data['lot_no'],
+                'production_date' => $data['production_date'],
+                'expired_date' => $data['expired_date'],
+                'updated_by' => $userDisplayName,
+                'updated_date' => now(),
             ]);
-            DB::transaction(function () use ($validated, $header, $user) {
-                $details = $validated['detail'];
-                unset($validated['detail']);
 
-                $header->update(array_merge(
-                    $validated,
-                    [
-                        'updated_by' => $user,
-                        'updated_date' => now(),
-                    ]
-                ));
 
-                $existingIds = $header->details()->pluck('id')->toArray();
-                $processedIds = [];
+            COADetail::where('id_hdr', $id)->delete();
 
-                $header->details()->delete();
+            $newDetails = [];
+            $detailIds = [];
 
-                foreach ($details as $index => $det) {
-                    $detailId = $header->id . 'D' . ($index + 1);
+            foreach ($request->detail as $index => $item) {
+                $detailId = $id . 'D' . ($index + 1);
 
-                    $header->details()->create([
-                        'id' => $detailId,
-                        'id_hdr' => $header->id,
-                        'parameter' => $det['parameter'],
-                        'actual_min' => $det['actual_min'],
-                        'actual_max' => $det['actual_max'],
-                        'standard_min' => $det['standard_min'],
-                        'standard_max' => $det['standard_max'],
-                        'method' => $det['method'],
-                    ]);
-                }
+                $newDetails[] = [
+                    'id' => $detailId,
+                    'id_hdr' => $id,
+                    'parameter' => $item['parameter'],
+                    'actual_min' => $item['actual_min'],
+                    'actual_max' => $item['actual_max'] ?? null,
+                    'standard_min' => $item['standard_min'] ?? null,
+                    'standard_max' => $item['standard_max'] ?? null,
+                    'method' => $item['method'] ?? null,
+                ];
 
-            });
-        } catch (\Throwable $e) {
+                $detailIds[] = $detailId;
+            }
+
+            COADetail::insert($newDetails);
+
+            DB::commit();
+
             return response()->json([
-                'success' => false,
-                'data' => $e->getMessage()
+                'success' => true,
+                'id_header' => $header->id,
+                'id_det' => $detailIds,
+            ], 200);
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return response()->json([
+                'status' => false,
+                'message' => 'Update failed',
+                'error' => $e->getMessage()
             ], 500);
         }
     }
 
-
+    // TODO: Implement delete logic for COA after AROIPChemicalController delete flow is finalized.
     public function destroy(Request $request, $id)
     {
         //
     }
+
 }

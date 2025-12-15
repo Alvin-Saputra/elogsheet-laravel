@@ -79,5 +79,6 @@ Route::middleware('auth:sanctum')->group(function () {
 	//Analytical Report Incoming Plant Chemical / Ingredient
 	Route::post('coa-plant-chemical', [COAController::class, 'create']);
 	Route::get('coa-plant-chemical', [COAController::class, 'get']);
+	Route::put('coa-plant-chemical/{id}', [COAController::class, 'update']);
 });
 
