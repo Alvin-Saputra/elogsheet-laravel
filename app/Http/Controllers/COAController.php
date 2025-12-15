@@ -26,6 +26,17 @@ class COAController extends Controller
     }
 
 
+    /**
+     * Show the form for editing the specified resource.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function edit($id)
+    {
+        //
+    }
+
     // ----public function----
 
     // ----API Request Function----
@@ -145,55 +156,89 @@ class COAController extends Controller
     // get all coa data + issue_date filter
     public function get(Request $request)
     {
-        try {
-            $query = \App\Models\COAHeader::query();
-            $hasFilter = $request->filled('issue_date');
+        $query = COAHeader::with('details');
+        if ($request->filled('issue_date')) {
+            $query->whereDate('issue_date', $request->issue_date);
+        }
 
-            $query->when($hasFilter, function ($q) use ($request) {
-                $q->whereDate('issue_date', $request->issue_date);
-            });
+        $result = $query->get();
 
-            $result = $query->get();
-
-            if ($hasFilter && $result->isEmpty()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No data found for the given filter.'
-                ], 404);
-            }
-            return response()->json([
-                'success' => true,
-                'data' => $result
-            ]);
-        } catch (\Throwable $th) {
+        if ($request->filled('issue_date') && $result->isEmpty()) {
             return response()->json([
                 'success' => false,
-                'data' => $th->getMessage()
+                'message' => 'No data found for the given filter.'
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $result
+        ]);
+    }
+
+    // update data by id
+    public function update(Request $request, COAHeader $header)
+    {
+        try {
+            $user = $request->user()->getDisplayNameAttribute();
+            $validated = $request->validate([
+                'no_doc' => 'required|max:100|unique:coa_incoming_plant_chemical_ingredient_header,no_doc,' . $header->id . ',id',
+                'product' => 'required|max:45',
+                'grade' => 'required|max:45',
+                'packing' => 'required',
+                'quantity' => 'required|numeric',
+                'tanggal_pengiriman' => 'required|date',
+                'vehicle' => 'required|max:45',
+                'lot_no' => 'required|max:45',
+                'production_date' => 'required|date',
+                'expired_date' => 'required|date',
+                'detail' => 'required|array|min:1',
+                'detail.*.parameter' => 'required|max:45',
+                'detail.*.actual_min' => 'required|numeric|min:0',
+                'detail.*.actual_max' => 'required|numeric',
+                'detail.*.standard_min' => 'required|numeric|min:0',
+                'detail.*.standard_max' => 'required|numeric',
+                'detail.*.method' => 'required|max:45'
+            ]);
+            DB::transaction(function () use ($validated, $header, $user) {
+                $details = $validated['detail'];
+                unset($validated['detail']);
+
+                $header->update(array_merge(
+                    $validated,
+                    [
+                        'updated_by' => $user,
+                        'updated_date' => now(),
+                    ]
+                ));
+
+                $existingIds = $header->details()->pluck('id')->toArray();
+                $processedIds = [];
+
+                $header->details()->delete();
+
+                foreach ($details as $index => $det) {
+                    $detailId = $header->id . 'D' . ($index + 1);
+
+                    $header->details()->create([
+                        'id' => $detailId,
+                        'id_hdr' => $header->id,
+                        'parameter' => $det['parameter'],
+                        'actual_min' => $det['actual_min'],
+                        'actual_max' => $det['actual_max'],
+                        'standard_min' => $det['standard_min'],
+                        'standard_max' => $det['standard_max'],
+                        'method' => $det['method'],
+                    ]);
+                }
+
+            });
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'data' => $e->getMessage()
             ], 500);
         }
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function edit($id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, $id)
-    {
-        //
     }
 
 
