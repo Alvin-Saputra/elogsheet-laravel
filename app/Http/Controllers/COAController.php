@@ -77,7 +77,7 @@ class COAController extends Controller
 
             $year = (string) $control->accountingyear;
 
-            $suffix = ($control->plantid ?? '') . $year . $padded;
+            $suffix = 'COA' . ($control->plantid ?? '') . $year . $padded;
 
             $headerId = ($control->prefix ?? $prefix) . $suffix;
 
@@ -100,7 +100,6 @@ class COAController extends Controller
 
                 $detailId = ($control->prefix ?? $prefix)
                     . 'D'
-                    . 'COA'
                     . $suffix
                     . $i;
 
