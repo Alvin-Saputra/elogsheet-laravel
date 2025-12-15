@@ -28,6 +28,8 @@ class COAHeader extends Model
         'expired_date',
         'issue_by',
         'issue_date',
+        'updated_by',
+        'updated_date'
     ];
 
     // COA header -> COA details
