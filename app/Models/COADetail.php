@@ -4,12 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class COADetail extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'coa_incoming_plant_chemical_ingredient_detail';
+    
     protected $primaryKey = 'id';
     public $incrementing = false;
     protected $keyType = 'string';

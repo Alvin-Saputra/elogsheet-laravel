@@ -209,8 +209,12 @@ class AROIPChemicalController extends Controller
         try {
             DB::beginTransaction();
             $user = $request->user()->getDisplayNameAttribute();
+
+            // Find the record (excluding soft deleted ones by default)
             $header = AROIPChemicalHeader::findOrFail($id);
+
             $data = $request->validated();
+
             // Update header
             $header->update([
                 'material' => $data['material'] ?? $header->material,
@@ -226,10 +230,12 @@ class AROIPChemicalController extends Controller
                 'updated_by' => $user,
                 'updated_date' => now(),
             ]);
+
             // Update or create details if provided
             if (isset($data['details'])) {
                 $existingDetailIds = $header->details->pluck('id')->toArray();
                 $updatedDetailIds = [];
+
                 foreach ($data['details'] as $detailData) {
                     $detail = AROIPChemicalDetail::updateOrCreate(
                         ['id' => $detailData['id']],
@@ -239,20 +245,23 @@ class AROIPChemicalController extends Controller
                             'specification_min' => $detailData['specification_min'],
                             'specification_max' => $detailData['specification_max'],
                             'result_min' => $detailData['result_min'] ?? null,
-                            'result_max' => $detailData['result_max'] ?? null,
+                            'result_max' => $data['result_max'] ?? null,
                             'status_ok' => strtoupper($detailData['status_ok']),
                             'remark' => $detailData['remark'] ?? null,
                         ]
                     );
                     $updatedDetailIds[] = $detail->id;
                 }
+
                 // Delete details that were not included in the update
                 $detailsToDelete = array_diff($existingDetailIds, $updatedDetailIds);
                 if (! empty($detailsToDelete)) {
                     AROIPChemicalDetail::whereIn('id', $detailsToDelete)->delete();
                 }
             }
+
             DB::commit();
+
             // Reload the model with its relationships
             $header->load(['details', 'coa.details']);
 
@@ -261,6 +270,12 @@ class AROIPChemicalController extends Controller
                 'message' => 'AROIP Chemical record updated successfully',
                 'data' => $header,
             ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'AROIP Chemical record not found',
+                'error' => $e->getMessage(),
+            ], 404);
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -272,8 +287,134 @@ class AROIPChemicalController extends Controller
         }
     }
 
+    /**
+     * Remove the specified AROIP Chemical record.
+     *
+     * @param  string  $id
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function destroy($id)
     {
-    //
+        try {
+            DB::beginTransaction();
+
+            // Find the record (including soft deleted ones)
+            $header = AROIPChemicalHeader::withTrashed()->findOrFail($id);
+
+            // Check if already soft deleted
+            if ($header->trashed()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'AROIP Chemical record is already deleted.',
+                ], 400);
+            }
+
+            // Soft delete the header
+            $header->delete();
+
+            AROIPChemicalDetail::where('id_hdr', $id)->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'AROIP Chemical record has been deleted successfully.',
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'AROIP Chemical record not found.',
+            ], 404);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete AROIP Chemical record',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Restore a soft-deleted AROIP Chemical record.
+     *
+     * @param  string  $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function restore($id)
+    {
+        try {
+            $header = AROIPChemicalHeader::onlyTrashed()->findOrFail($id);
+            $header->restore();
+
+            // Optionally restore related details
+            AROIPChemicalDetail::onlyTrashed()
+                ->where('id_hdr', $id)
+                ->restore();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'AROIP Chemical record has been restored successfully.',
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'AROIP Chemical record not found or not trashed',
+                'error' => $e->getMessage(),
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to restore AROIP Chemical record',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Permanently delete the specified AROIP Chemical record.
+     *
+     * @param  string  $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function forceDelete($id)
+    {
+        try {
+            DB::beginTransaction();
+
+            $header = AROIPChemicalHeader::withTrashed()->findOrFail($id);
+
+            // Permanently delete the details first
+            AROIPChemicalDetail::where('id_hdr', $id)->forceDelete();
+
+            // Then delete the header
+            $header->forceDelete();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'AROIP Chemical record has been permanently deleted.',
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'AROIP Chemical record not found',
+                'error' => $e->getMessage(),
+            ], 404);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to permanently delete AROIP Chemical record',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 }
