@@ -10,8 +10,12 @@ class AROIPChemicalDetail extends Model
     use HasFactory;
 
     protected $table = 't_analytical_result_incoming_plant_chemical_ingredient_detail';
+
     protected $primaryKey = 'id';
+
     public $incrementing = false;
+
+    public $timestamps = false;
 
     protected $fillable = [
         'id',
@@ -22,7 +26,7 @@ class AROIPChemicalDetail extends Model
         'parameter',
         'result_min',
         'result_max',
-        'remark'
+        'remark',
     ];
 
     // detail -> analytical header
