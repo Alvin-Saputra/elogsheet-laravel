@@ -74,7 +74,6 @@ class CreateAroipChemicalRequest extends FormRequest
             'analytical.status' => 'required|string|max:45',
 
             'analytical.form_no' => 'required|string|max:45',
-            'analytical.date_issued' => 'required|date',
             'analytical.revision_no' => 'required|integer',
             'analytical.revision_date' => 'required|date',
 
