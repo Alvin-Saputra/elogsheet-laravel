@@ -8,10 +8,15 @@ use Illuminate\Database\Eloquent\Model;
 class COAHeader extends Model
 {
     use HasFactory;
+
     protected $table = 'coa_incoming_plant_chemical_ingredient_header';
+
     protected $primaryKey = 'id';
+
     public $incrementing = false;
+
     protected $keyType = 'string';
+
     public $timestamps = false;
 
     protected $fillable = [
@@ -29,7 +34,7 @@ class COAHeader extends Model
         'issue_by',
         'issue_date',
         'updated_by',
-        'updated_date'
+        'updated_date',
     ];
 
     // COA header -> COA details
@@ -39,8 +44,23 @@ class COAHeader extends Model
     }
 
     // COA header -> Analytical headers (1 coa could have many analytical results)
-    public function analytical()
+public function analytical()
+{
+    return $this->hasMany(AROIPChemicalHeader::class, 'id_coa', 'no_doc');
+}
+
+    // Model Event Logic for Synchronization
+    protected static function booted()
     {
-        return $this->hasMany(AROIPChemicalHeader::class, 'id_coa', 'id');
+        static::updated(function (COAHeader $coaHeader) {
+            // Check if the 'no_doc' column was one of the fields changed in this update
+            if ($coaHeader->isDirty('no_doc')) {
+                // If it changed, update all related AROIPChemicalHeader records
+                // The relationship is defined as 'analytical()'
+                $coaHeader->analytical()->update([
+                    'no_ref_coa' => $coaHeader->no_doc,
+                ]);
+            }
+        });
     }
 }

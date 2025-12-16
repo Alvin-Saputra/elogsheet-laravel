@@ -10,9 +10,13 @@ class AROIPChemicalHeader extends Model
     use HasFactory;
 
     protected $table = 't_analytical_result_incoming_plant_chemical_ingredient';
+
     protected $primaryKey = 'id';
+
     public $incrementing = false;
+
     protected $keyType = 'string';
+
     public $timestamps = false;
 
     protected $fillable = [
@@ -33,6 +37,8 @@ class AROIPChemicalHeader extends Model
         'date_issued',
         'revision_no',
         'revision_date',
+        'updated_date',
+        'updated_by',
     ];
 
     // Analytical header -> Analytical details
@@ -42,8 +48,8 @@ class AROIPChemicalHeader extends Model
     }
 
     // Analytical header -> COA header
-    public function coa()
-    {
-        return $this->belongsTo(COAHeader::class, 'id_coa', 'id');
-    }
+public function coa()
+{
+    return $this->belongsTo(COAHeader::class, 'id_coa', 'no_doc');
+}
 }
