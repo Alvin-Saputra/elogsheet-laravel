@@ -87,4 +87,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
 	// new single api route
 	Route::post('ariopchemical', [AROIPChemicalController::class, 'create']);
+	Route::get('ariopchemical', [AROIPChemicalController::class, 'get']);
+	Route::put('ariopchemical/{id}', [AROIPChemicalController::class, 'update']);
 });

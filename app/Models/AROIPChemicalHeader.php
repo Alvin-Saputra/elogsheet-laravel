@@ -48,8 +48,8 @@ class AROIPChemicalHeader extends Model
     }
 
     // Analytical header -> COA header
-public function coa()
-{
-    return $this->belongsTo(COAHeader::class, 'id_coa', 'no_doc');
-}
+    public function coa()
+    {
+        return $this->belongsTo(COAHeader::class, 'id_coa', 'no_doc');
+    }
 }
