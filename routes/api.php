@@ -92,4 +92,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('ariopchemical/{id}', [AROIPChemicalController::class, 'destroy']);
     Route::post('ariopchemical/{id}/restore', [AROIPChemicalController::class, 'restore']);
     Route::delete('ariopchemical/{id}/force', [AROIPChemicalController::class, 'forceDelete']);
+    Route::put('ariopchemical/{id}/approve', [AROIPChemicalController::class, 'updateApproval']);
 });

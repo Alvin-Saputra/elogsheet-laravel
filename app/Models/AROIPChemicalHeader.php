@@ -41,15 +41,13 @@ class AROIPChemicalHeader extends Model
         'updated_by',
     ];
 
-    // Analytical header -> Analytical details
+    public function coa()
+    {
+        return $this->belongsTo(COAHeader::class, 'id_coa', 'id');
+    }
+
     public function details()
     {
         return $this->hasMany(AROIPChemicalDetail::class, 'id_hdr', 'id');
-    }
-
-    // Analytical header -> COA header
-    public function coa()
-    {
-        return $this->belongsTo(COAHeader::class, 'id_coa', 'no_doc');
     }
 }

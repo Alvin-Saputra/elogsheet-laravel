@@ -4,12 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CreateAroipChemicalRequest;
+use App\Http\Requests\UpdateAroipApprovalRequest;
 use App\Http\Requests\UpdateAroipChemicalRequest;
 use App\Models\AROIPChemicalDetail;
 use App\Models\AROIPChemicalHeader;
 use App\Models\COADetail;
 use App\Models\COAHeader;
 use App\Models\MControlnumber;
+use App\Models\MDataFormNo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -48,9 +50,28 @@ class AROIPChemicalController extends Controller
             ], 404);
         }
 
+        // Format the response with 'analytical' and 'coa' keys
+        $formattedResult = $result->map(function ($item) {
+            return [
+                'analytical' => array_merge(
+                    $item->only([
+                        'id', 'id_coa', 'no_ref_coa', 'material', 'quantity', 'analyst',
+                        'supplier', 'police_no', 'batch_lot', 'status', 'flag', 'entry_by',
+                        'entry_date', 'prepared_by', 'prepared_date', 'prepared_status',
+                        'prepared_status_remarks', 'approved_by', 'approved_date',
+                        'approved_status', 'approved_status_remarks', 'updated_by',
+                        'updated_date', 'form_no', 'date_issued', 'revision_no',
+                        'revision_date', 'deleted_at',
+                    ]),
+                    ['details' => $item->details]
+                ),
+                'coa' => $item->coa ?: null,
+            ];
+        });
+
         return response()->json([
             'success' => true,
-            'data' => $result,
+            'data' => $formattedResult,
         ]);
     }
 
@@ -62,140 +83,170 @@ class AROIPChemicalController extends Controller
     {
         try {
             DB::beginTransaction();
-
             $user = $request->user()->getDisplayNameAttribute();
             $data = $request->validated();
 
-            $willCreateCoa = ! empty($data['coa']);
-            $willUseExistingCoa = ! empty($data['coa_id']);
-
-            if (! $willCreateCoa && ! $willUseExistingCoa) {
-                throw new \RuntimeException('Either coa or coa_id must be provided.');
+            // Get form data from m_data_form_no where f_id = 17
+            $dataForm = MDataFormNo::find(17);
+            if (! $dataForm) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Form configuration not found (f_id: 17)',
+                ], 400);
             }
 
-            $prefix = 'Q11';
-            $control = MControlnumber::where('prefix', $prefix)
+            // Handle COA creation if coa data is provided
+            $coaNoDoc = null;
+            if (isset($data['coa'])) {
+                // Get control number for COA (using prefix 'Q11' and plantid 'PS21')
+                $coaControl = MControlnumber::where('prefix', 'Q11')
+                    ->where('plantid', 'PS21')
+                    ->lockForUpdate()
+                    ->first();
+
+                if (! $coaControl) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Control number configuration not found for COA',
+                    ], 400);
+                }
+
+                // Generate COA document number
+                $coaNextNum = intval($coaControl->autonumber ?? 0) + 1;
+                $paddedNum = str_pad($coaNextNum, 6, '0', STR_PAD_LEFT);
+                $year = (string) $coaControl->accountingyear;
+                $suffix = 'COA'.($coaControl->plantid ?? '').$year.$paddedNum;
+                $coaId = ($coaControl->prefix ?? 'Q11').$suffix;
+
+                // Create COA header
+                $coaHeader = COAHeader::create([
+                    'id' => $coaId,
+                    'no_doc' => $data['coa']['no_doc'],
+                    'product' => $data['coa']['product'],
+                    'grade' => $data['coa']['grade'],
+                    'packing' => $data['coa']['packing'],
+                    'quantity' => $data['coa']['quantity'],
+                    'tanggal_pengiriman' => $data['coa']['tanggal_pengiriman'],
+                    'vehicle' => $data['coa']['vehicle'],
+                    'lot_no' => $data['coa']['lot_no'],
+                    'production_date' => $data['coa']['production_date'],
+                    'expired_date' => $data['coa']['expired_date'],
+                    'issue_by' => $user,
+                    'issue_date' => now(),
+                    'updated_by' => $user,
+                    'updated_date' => now(),
+                ]);
+
+                // Create COA details
+                if (isset($data['coa']['details']) && is_array($data['coa']['details'])) {
+                    foreach ($data['coa']['details'] as $index => $detail) {
+                        $detailId = $coaId.'D'.str_pad($index + 1, 3, '0', STR_PAD_LEFT);
+
+                        COADetail::create([
+                            'id' => $detailId,
+                            'id_hdr' => $coaId,
+                            'parameter' => $detail['parameter'] ?? null,
+                            'actual_min' => $detail['actual_min'] ?? null,
+                            'actual_max' => $detail['actual_max'] ?? null,
+                            'standard_min' => $detail['standard_min'] ?? null,
+                            'standard_max' => $detail['standard_max'] ?? null,
+                            'method' => $detail['method'] ?? null,
+                        ]);
+                    }
+                }
+
+                // Update COA control number
+                DB::table('m_controlnumber')
+                    ->where('prefix', $coaControl->prefix)
+                    ->where('plantid', $coaControl->plantid)
+                    ->update(['autonumber' => $coaNextNum]);
+
+                $coaNoDoc = $coaHeader->id;
+            }
+
+            // Get control number for AROIP (using prefix 'Q11' and plantid 'PS21')
+            $control = MControlnumber::where('prefix', 'Q11')
+                ->where('plantid', 'PS21')
                 ->lockForUpdate()
                 ->first();
 
             if (! $control) {
-                throw new \RuntimeException("CONTROL_NUMBER_NOT_FOUND for prefix {$prefix}");
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Control number configuration not found',
+                ], 400);
             }
 
-            $nextNum = intval($control->autonumber ?? 0);
-            $padLen = $control->lengthpad ?: 6;
-            $year = (string) $control->accountingyear;
-            $plant = $control->plantid ?? '';
+            // Generate new AROIP document number
+            $nextNum = intval($control->autonumber) + 1;
+            $paddedNum = str_pad($nextNum, 6, '0', STR_PAD_LEFT);
+            $headerId = $control->prefix.$control->plantid.$control->accountingyear.$paddedNum;
 
-            $coa = null;
-            if ($willCreateCoa) {
-                $nextNum += 1;
-                $padded = str_pad($nextNum, $padLen, '0', STR_PAD_LEFT);
-                $suffix = 'COA'.$plant.$year.$padded;
-                $coaId = ($control->prefix ?? $prefix).$suffix;
-
-                $coaPayload = array_merge(
-                    ['id' => $coaId],
-
-                    $data['coa'],
-                    [
-                        'issue_by' => $user,
-                        'issue_date' => now(),
-                        'updated_by' => $user,
-                        'updated_date' => now(),
-                    ]
-                );
-
-                $coa = COAHeader::create($coaPayload);
-
-                $coaDetailIds = [];
-                foreach ($data['coa']['details'] as $i => $det) {
-                    $detailId = ($control->prefix ?? $prefix).'D'.$suffix.$i;
-                    $detArr = (array) $det;
-                    $detailPayload = array_merge($detArr, [
-                        'id_hdr' => $coa->id,
-                        'id' => $detailId,
-                    ]);
-                    $detailRecord = COADetail::create($detailPayload);
-                    $coaDetailIds[] = $detailRecord->id;
-                }
-            } else {
-                $coa = COAHeader::find($data['coa_id']);
-                if (! $coa) {
-                    throw new \RuntimeException('COA_NOT_FOUND');
-                }
-            }
-
-            $nextNum += 1;
-            $paddedAro = str_pad($nextNum, $padLen, '0', STR_PAD_LEFT);
-            $suffixAroip = $plant.$year.$paddedAro;
-            $aroipHeaderId = ($control->prefix ?? $prefix).$suffixAroip;
-
-            $analytical = $data['analytical'];
-            $headerPayload = [
-                'id' => $aroipHeaderId,
-                'id_coa' => $coa->no_doc,
-                'no_ref_coa' => $coa->no_doc,
-                'material' => $analytical['material'],
-                'quantity' => $analytical['received_quantity'],
-                'analyst' => $analytical['analyst'],
-                'supplier' => $analytical['supplier'],
-                'police_no' => $analytical['police_no'],
-                'batch_lot' => $analytical['batch_lot'],
-                'status' => $analytical['status'],
+            // Create AROIP header
+            $header = AROIPChemicalHeader::create([
+                'id' => $headerId,
+                'form_no' => $dataForm->f_code,
+                'date_issued' => $dataForm->f_date_issued,
+                'revision_no' => $dataForm->f_revision_no,
+                'revision_date' => $dataForm->f_revision_date,
                 'entry_by' => $user,
                 'entry_date' => now(),
+                'id_coa' => $coaHeader->id,
+                'no_ref_coa' => $data['analytical']['no_ref_coa'] ?? null,
+                'material' => $data['analytical']['material'] ?? null,
+                'quantity' => $data['analytical']['received_quantity'] ?? null,
+                'analyst' => $data['analytical']['analyst'] ?? null,
+                'supplier' => $data['analytical']['supplier'] ?? null,
+                'police_no' => $data['analytical']['police_no'] ?? null,
+                'batch_lot' => $data['analytical']['batch_lot'] ?? null,
+                'status' => $data['analytical']['status'] ?? null,
                 'updated_by' => $user,
                 'updated_date' => now(),
-                'form_no' => $analytical['form_no'],
-                'date_issued' => now(),
-                'revision_no' => $analytical['revision_no'],
-                'revision_date' => $analytical['revision_date'],
-            ];
+            ]);
 
-            $aroipHeader = AROIPChemicalHeader::create($headerPayload);
-
-            $detailIds = [];
-            foreach ($analytical['details'] as $i => $row) {
-                $detailId = ($control->prefix ?? $prefix).'D'.$suffixAroip.$i;
-
-                $detailPayload = [
-                    'id' => $detailId,
-                    'id_hdr' => $aroipHeader->id,
-                    'parameter' => $row['parameter'],
-                    'specification_min' => $row['specification_min'],
-                    'specification_max' => $row['specification_max'],
-                    'result_min' => $row['result_min'],
-                    'result_max' => $row['result_max'] ?? null,
-                    'status_ok' => strtoupper($row['status_ok']),
-                    'remark' => $row['remark'] ?? null,
-                ];
-
-                $detail = AROIPChemicalDetail::create($detailPayload);
-                $detailIds[] = $detail->id;
+            // Create AROIP details
+            if (isset($data['analytical']['details']) && is_array($data['analytical']['details'])) {
+                foreach ($data['analytical']['details'] as $index => $detail) {
+                    $detailId = $headerId.'D'.str_pad($index + 1, 3, '0', STR_PAD_LEFT);
+                    AROIPChemicalDetail::create([
+                        'id' => $detailId,
+                        'id_hdr' => $headerId,
+                        'parameter' => $detail['parameter'] ?? null,
+                        'specification_min' => $detail['specification_min'] ?? null,
+                        'specification_max' => $detail['specification_max'] ?? null,
+                        'result_min' => $detail['result_min'] ?? null,
+                        'result_max' => $detail['result_max'] ?? null,
+                        'status_ok' => $detail['status_ok'] ?? null,
+                        'remark' => $detail['remark'] ?? null,
+                    ]);
+                }
             }
 
+            // Update AROIP control number
             DB::table('m_controlnumber')
                 ->where('prefix', $control->prefix)
-                ->when($control->plantid, fn ($q) => $q->where('plantid', $control->plantid))
+                ->where('plantid', $control->plantid)
                 ->update(['autonumber' => $nextNum]);
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'coa_id' => $coa->id,
-                'coa_detail_ids' => $coaDetailIds,
-                'aroip_header_id' => $aroipHeader->id,
-                'aroip_detail_ids' => $detailIds,
+                'message' => 'AROIP Chemical created successfully',
+                'data' => [
+                    'aroip_header_id' => $header->id,
+                    'coa_header_id' => $coaHeader->id ?? null,
+                    'aroip_detail_ids' => $header->details->pluck('id'),
+                    'coa_detail_ids' => isset($coaHeader) ? $coaHeader->details->pluck('id') : [],
+                ],
             ], 201);
-        } catch (\Throwable $e) {
+        } catch (\Exception $e) {
             DB::rollBack();
 
             return response()->json([
                 'success' => false,
-                'error' => 'CREATE_FAILED',
-                'message' => $e->getMessage(),
+                'message' => 'Failed to create AROIP Chemical',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -268,7 +319,21 @@ class AROIPChemicalController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'AROIP Chemical record updated successfully',
-                'data' => $header,
+                'data' => [
+                    'analytical' => array_merge(
+                        $header->only([
+                            'id', 'id_coa', 'no_ref_coa', 'material', 'quantity', 'analyst',
+                            'supplier', 'police_no', 'batch_lot', 'status', 'flag', 'entry_by',
+                            'entry_date', 'prepared_by', 'prepared_date', 'prepared_status',
+                            'prepared_status_remarks', 'approved_by', 'approved_date',
+                            'approved_status', 'approved_status_remarks', 'updated_by',
+                            'updated_date', 'form_no', 'date_issued', 'revision_no',
+                            'revision_date', 'deleted_at',
+                        ]),
+                        ['details' => $header->details]
+                    ),
+                    'coa' => $header->coa,
+                ],
             ]);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
@@ -413,6 +478,70 @@ class AROIPChemicalController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to permanently delete AROIP Chemical record',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Update approval status of AROIP Chemical record
+     *
+     * @param  string  $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function updateApproval($id, UpdateAroipApprovalRequest $request)
+    {
+        try {
+            DB::beginTransaction();
+
+            $user = $request->user()->getDisplayNameAttribute();
+            $header = AROIPChemicalHeader::findOrFail($id);
+
+            $status = $request->input('status');
+            $remarks = $request->input('remarks');
+
+            if ($status === 'approved') {
+                $header->update([
+                    'approved_status' => 'Approved',
+                    'approved_by' => $user,
+                    'approved_date' => now(),
+                    'approved_status_remarks' => null,
+                    'updated_by' => $user,
+                    'updated_date' => now(),
+                ]);
+            } else {
+                $header->update([
+                    'approved_status' => 'Rejected',
+                    'approved_status_remarks' => $remarks,
+                    'approved_by' => $user,
+                    'approved_date' => now(),
+                    'updated_by' => $user,
+                    'updated_date' => now(),
+                ]);
+            }
+
+            DB::commit();
+
+            // Reload the model with its relationships
+            $header->load(['details', 'coa.details']);
+
+            return response()->json([
+                'success' => true,
+                'message' => "AROIP Chemical record has been {$status} successfully",
+                'data' => $header,
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'AROIP Chemical record not found',
+                'error' => $e->getMessage(),
+            ], 404);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update approval status',
                 'error' => $e->getMessage(),
             ], 500);
         }
