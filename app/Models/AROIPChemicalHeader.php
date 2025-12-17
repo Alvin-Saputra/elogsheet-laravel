@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class AROIPChemicalHeader extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $table = 't_analytical_result_incoming_plant_chemical_ingredient';
 
@@ -30,7 +31,6 @@ class AROIPChemicalHeader extends Model
         'police_no',
         'batch_lot',
         'status',
-        'flag',
         'entry_by',
         'entry_date',
         'form_no',
@@ -41,15 +41,13 @@ class AROIPChemicalHeader extends Model
         'updated_by',
     ];
 
-    // Analytical header -> Analytical details
+    public function coa()
+    {
+        return $this->belongsTo(COAHeader::class, 'id_coa', 'id');
+    }
+
     public function details()
     {
         return $this->hasMany(AROIPChemicalDetail::class, 'id_hdr', 'id');
-    }
-
-    // Analytical header -> COA header
-    public function coa()
-    {
-        return $this->belongsTo(COAHeader::class, 'id_coa', 'no_doc');
     }
 }

@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class COAHeader extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'coa_incoming_plant_chemical_ingredient_header';
 
@@ -37,27 +38,23 @@ class COAHeader extends Model
         'updated_date',
     ];
 
-    // COA header -> COA details
+    public function aroipChemicalHeaders()
+    {
+        return $this->hasMany(AROIPChemicalHeader::class, 'id_coa', 'id');
+    }
+
     public function details()
     {
         return $this->hasMany(COADetail::class, 'id_hdr', 'id');
     }
 
-    // COA header -> Analytical headers (1 coa could have many analytical results)
-public function analytical()
-{
-    return $this->hasMany(AROIPChemicalHeader::class, 'id_coa', 'no_doc');
-}
-
-    // Model Event Logic for Synchronization
     protected static function booted()
     {
         static::updated(function (COAHeader $coaHeader) {
             // Check if the 'no_doc' column was one of the fields changed in this update
             if ($coaHeader->isDirty('no_doc')) {
-                // If it changed, update all related AROIPChemicalHeader records
-                // The relationship is defined as 'analytical()'
-                $coaHeader->analytical()->update([
+                // Update all related AROIPChemicalHeader records
+                $coaHeader->aroipChemicalHeaders()->update([
                     'no_ref_coa' => $coaHeader->no_doc,
                 ]);
             }
