@@ -37,8 +37,20 @@ class AROIPChemicalHeader extends Model
         'date_issued',
         'revision_no',
         'revision_date',
-        'updated_date',
+        'prepared_by',
+        'prepared_date',
+        'prepared_status',
+        'prepared_status_remarks',
+        'prepared_role',
+        'approved_by',
+        'approved_date',
+        'approved_status',
+        'approved_status_remarks',
+        'approved_role',
         'updated_by',
+        'updated_date',
+        'date',
+        'exp_date',
     ];
 
     public function coa()
