@@ -14,6 +14,7 @@ use App\Models\MControlnumber;
 use App\Models\MDataFormNo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Schema;
 
 class AROIPChemicalController extends Controller
 {
@@ -483,67 +484,91 @@ class AROIPChemicalController extends Controller
         }
     }
 
-    /**
-     * Update approval status of AROIP Chemical record
-     *
-     * @param  string  $id
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function updateApproval($id, UpdateAroipApprovalRequest $request)
-    {
-        try {
-            DB::beginTransaction();
+  /**
+   * Update approval status of AROIP Chemical record
+   *
+   * @param  string  $id
+   * @return \Illuminate\Http\JsonResponse
+   */
+  public function updateApproval($id, UpdateAroipApprovalRequest $request)
+  {
+      try {
+          DB::beginTransaction();
+          $header = AROIPChemicalHeader::findOrFail($id);
+          $user = auth()->user();
+          $status = strtolower($request->input('status')); // Ensure consistent case
+          $remark = $request->input('remarks'); // Changed from 'prepared_status_remarks' to 'remarks'
 
-            $user = $request->user()->getDisplayNameAttribute();
-            $header = AROIPChemicalHeader::findOrFail($id);
+          $userRoles = $user->roles;
+          $isSuccess = $this->processApprovalStatus($header, $status, $remark, $user->username, $userRoles);
 
-            $status = $request->input('status');
-            $remarks = $request->input('remarks');
+          if (! $isSuccess) {
+              return response()->json([
+                  'success' => false,
+                  'message' => 'You do not have permission to update approval status',
+              ], 403);
+          }
 
-            if ($status === 'approved') {
-                $header->update([
-                    'approved_status' => 'Approved',
-                    'approved_by' => $user,
-                    'approved_date' => now(),
-                    'approved_status_remarks' => null,
-                    'updated_by' => $user,
-                    'updated_date' => now(),
-                ]);
-            } else {
-                $header->update([
-                    'approved_status' => 'Rejected',
-                    'approved_status_remarks' => $remarks,
-                    'approved_by' => $user,
-                    'approved_date' => now(),
-                    'updated_by' => $user,
-                    'updated_date' => now(),
-                ]);
-            }
+          DB::commit();
 
-            DB::commit();
+          return response()->json([
+              'success' => true,
+              'message' => 'Approval status updated successfully',
+              'data' => [
+                  'id' => $header->id,
+                  'status' => $status,
+                  'remarks' => $remark,  // Include remarks in response for verification
+                  'updated_by' => $user->username,
+                  'updated_at' => now()->toDateTimeString(),
+              ],
+          ]);
+      } catch (\Exception $e) {
+          DB::rollBack();
 
-            // Reload the model with its relationships
-            $header->load(['details', 'coa.details']);
+          return response()->json([
+              'success' => false,
+              'message' => 'Failed to update approval status',
+              'error' => $e->getMessage(),
+          ], 500);
+      }
+  }
 
-            return response()->json([
-                'success' => true,
-                'message' => "AROIP Chemical record has been {$status} successfully",
-                'data' => $header,
-            ]);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'AROIP Chemical record not found',
-                'error' => $e->getMessage(),
-            ], 404);
-        } catch (\Exception $e) {
-            DB::rollBack();
+  /**
+   * Process approval status update (helper method)
+   */
+  private function processApprovalStatus($header, $status, $remark, $username, $userRoles)
+  {
+      $LEAD_QC = ['LEAD', 'LEAD_QC'];
+      $QC_Control_MGR = ['MGR', 'MGR_QC', 'ADM'];
+      $fieldPrefix = '';
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to update approval status',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
-    }
+      if (in_array($userRoles, $QC_Control_MGR, true)) {
+          $fieldPrefix = 'approved';
+      } elseif (in_array($userRoles, $LEAD_QC, true)) {
+          $fieldPrefix = 'prepared';
+      } else {
+          return false;
+      }
+
+      $updates = [
+          "{$fieldPrefix}_status" => $status,
+          "{$fieldPrefix}_by" => $username, 
+          "{$fieldPrefix}_date" => now(),
+          "{$fieldPrefix}_status_remarks" => $remark,
+          'updated_by' => $username,
+          'updated_date' => now(),
+      ];
+
+      // Only include role if the column exists
+      if (Schema::hasColumn($header->getTable(), "{$fieldPrefix}_role")) {
+          $updates["{$fieldPrefix}_role"] = json_encode($userRoles);
+      }
+
+      // If this is an approval (not preparation), update the main status
+      if ($fieldPrefix === 'approved') {
+          $updates['status'] = $status;
+      }
+
+      return $header->update($updates);
+  }
 }
