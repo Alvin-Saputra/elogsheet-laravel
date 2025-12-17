@@ -49,6 +49,7 @@ class AROIPChemicalHeader extends Model
         'approved_role',
         'updated_by',
         'updated_date',
+        'date',
     ];
 
     public function coa()

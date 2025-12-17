@@ -71,6 +71,7 @@ class CreateAroipChemicalRequest extends FormRequest
            'analytical.police_no' => 'required|string|max:45',
            'analytical.batch_lot' => 'required|string|max:45',
            'analytical.status' => 'required|string|max:45',
+           'analytical.date' => 'required|date',
 
            'analytical.details' => 'required|array|min:1',
            'analytical.details.*.parameter' => 'required|string|max:45',

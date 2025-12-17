@@ -193,6 +193,7 @@ class AROIPChemicalController extends Controller
                 'entry_by' => $user,
                 'entry_date' => now(),
                 'id_coa' => $coaHeader->id,
+                'date' => $data['analytical']['date'] ?? null,
                 'no_ref_coa' => $data['analytical']['no_ref_coa'] ?? null,
                 'material' => $data['analytical']['material'] ?? null,
                 'quantity' => $data['analytical']['received_quantity'] ?? null,
