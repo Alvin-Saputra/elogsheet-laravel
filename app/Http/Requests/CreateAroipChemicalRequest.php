@@ -63,7 +63,7 @@ class CreateAroipChemicalRequest extends FormRequest
            |------------------------------------------------------------------
            */
            'analytical' => 'required|array',
-           'analytical.no_ref_coa' => 'required|string|max:100',  // Moved inside analytical
+           'analytical.no_ref_coa' => 'required|string|max:100',
            'analytical.material' => 'required|string|max:45',
            'analytical.received_quantity' => 'required|numeric',
            'analytical.analyst' => 'required|string|max:45',
@@ -72,6 +72,7 @@ class CreateAroipChemicalRequest extends FormRequest
            'analytical.batch_lot' => 'required|string|max:45',
            'analytical.status' => 'required|string|max:45',
            'analytical.date' => 'required|date',
+           'analytical.exp_date' => 'required|date',
 
            'analytical.details' => 'required|array|min:1',
            'analytical.details.*.parameter' => 'required|string|max:45',
