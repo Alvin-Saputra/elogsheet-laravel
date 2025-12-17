@@ -194,6 +194,7 @@ class AROIPChemicalController extends Controller
                 'entry_date' => now(),
                 'id_coa' => $coaHeader->id,
                 'date' => $data['analytical']['date'] ?? null,
+                'exp_date' => $data['analytical']['exp_date'] ?? null,
                 'no_ref_coa' => $data['analytical']['no_ref_coa'] ?? null,
                 'material' => $data['analytical']['material'] ?? null,
                 'quantity' => $data['analytical']['received_quantity'] ?? null,
@@ -553,7 +554,7 @@ class AROIPChemicalController extends Controller
 
       $updates = [
           "{$fieldPrefix}_status" => $status,
-          "{$fieldPrefix}_by" => $username, 
+          "{$fieldPrefix}_by" => $username,
           "{$fieldPrefix}_date" => now(),
           "{$fieldPrefix}_status_remarks" => $remark,
           'updated_by' => $username,

@@ -50,6 +50,7 @@ class AROIPChemicalHeader extends Model
         'updated_by',
         'updated_date',
         'date',
+        'exp_date',
     ];
 
     public function coa()
