@@ -62,7 +62,7 @@ class AROIPChemicalController extends Controller
                         'prepared_status_remarks', 'approved_by', 'approved_date',
                         'approved_status', 'approved_status_remarks', 'updated_by',
                         'updated_date', 'form_no', 'date_issued', 'revision_no',
-                        'revision_date', 'deleted_at', 'date', 'exp_date'
+                        'revision_date', 'deleted_at', 'date', 'exp_date',
                     ]),
                     ['details' => $item->details]
                 ),
@@ -323,19 +323,14 @@ class AROIPChemicalController extends Controller
                 'success' => true,
                 'message' => 'AROIP Chemical record updated successfully',
                 'data' => [
-                    'analytical' => array_merge(
-                        $header->only([
-                            'id', 'id_coa', 'no_ref_coa', 'material', 'quantity', 'analyst',
-                            'supplier', 'police_no', 'batch_lot', 'status', 'flag', 'entry_by',
-                            'entry_date', 'prepared_by', 'prepared_date', 'prepared_status',
-                            'prepared_status_remarks', 'approved_by', 'approved_date',
-                            'approved_status', 'approved_status_remarks', 'updated_by',
-                            'updated_date', 'form_no', 'date_issued', 'revision_no',
-                            'revision_date', 'deleted_at',
-                        ]),
-                        ['details' => $header->details]
-                    ),
-                    'coa' => $header->coa,
+                    'analytical' => [
+                        'header_id' => $header->id,
+                        'detail_ids' => $header->details->pluck('id')->toArray(),
+                    ],
+                    'coa' => $header->coa ? [
+                        'coa_id' => $header->coa->id,
+                        'detail_ids' => $header->coa->details->pluck('id')->toArray(),
+                    ] : null,
                 ],
             ]);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
