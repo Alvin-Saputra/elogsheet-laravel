@@ -62,7 +62,7 @@ class AROIPChemicalController extends Controller
                         'prepared_status_remarks', 'approved_by', 'approved_date',
                         'approved_status', 'approved_status_remarks', 'updated_by',
                         'updated_date', 'form_no', 'date_issued', 'revision_no',
-                        'revision_date', 'deleted_at',
+                        'revision_date', 'deleted_at', 'date', 'exp_date'
                     ]),
                     ['details' => $item->details]
                 ),
