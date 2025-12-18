@@ -56,13 +56,36 @@ class AROIPChemicalController extends Controller
             return [
                 'analytical' => array_merge(
                     $item->only([
-                        'id', 'id_coa', 'no_ref_coa', 'material', 'quantity', 'analyst',
-                        'supplier', 'police_no', 'batch_lot', 'status', 'flag', 'entry_by',
-                        'entry_date', 'prepared_by', 'prepared_date', 'prepared_status',
-                        'prepared_status_remarks', 'approved_by', 'approved_date',
-                        'approved_status', 'approved_status_remarks', 'updated_by',
-                        'updated_date', 'form_no', 'date_issued', 'revision_no',
-                        'revision_date', 'deleted_at', 'date', 'exp_date'
+                        'id',
+                        'id_coa',
+                        'no_ref_coa',
+                        'material',
+                        'quantity',
+                        'analyst',
+                        'supplier',
+                        'police_no',
+                        'batch_lot',
+                        'status',
+                        'flag',
+                        'entry_by',
+                        'entry_date',
+                        'prepared_by',
+                        'prepared_date',
+                        'prepared_status',
+                        'prepared_status_remarks',
+                        'approved_by',
+                        'approved_date',
+                        'approved_status',
+                        'approved_status_remarks',
+                        'updated_by',
+                        'updated_date',
+                        'form_no',
+                        'date_issued',
+                        'revision_no',
+                        'revision_date',
+                        'deleted_at',
+                        'date',
+                        'exp_date'
                     ]),
                     ['details' => $item->details]
                 ),
@@ -116,8 +139,8 @@ class AROIPChemicalController extends Controller
                 $coaNextNum = intval($coaControl->autonumber ?? 0) + 1;
                 $paddedNum = str_pad($coaNextNum, 6, '0', STR_PAD_LEFT);
                 $year = (string) $coaControl->accountingyear;
-                $suffix = 'COA'.($coaControl->plantid ?? '').$year.$paddedNum;
-                $coaId = ($coaControl->prefix ?? 'Q11').$suffix;
+                $suffix = 'COA' . ($coaControl->plantid ?? '') . $year . $paddedNum;
+                $coaId = ($coaControl->prefix ?? 'Q11') . $suffix;
 
                 // Create COA header
                 $coaHeader = COAHeader::create([
@@ -141,7 +164,7 @@ class AROIPChemicalController extends Controller
                 // Create COA details
                 if (isset($data['coa']['details']) && is_array($data['coa']['details'])) {
                     foreach ($data['coa']['details'] as $index => $detail) {
-                        $detailId = $coaId.'D'.str_pad($index + 1, 3, '0', STR_PAD_LEFT);
+                        $detailId = $coaId . 'D' . str_pad($index + 1, 3, '0', STR_PAD_LEFT);
 
                         COADetail::create([
                             'id' => $detailId,
@@ -181,7 +204,7 @@ class AROIPChemicalController extends Controller
             // Generate new AROIP document number
             $nextNum = intval($control->autonumber) + 1;
             $paddedNum = str_pad($nextNum, 6, '0', STR_PAD_LEFT);
-            $headerId = $control->prefix.$control->plantid.$control->accountingyear.$paddedNum;
+            $headerId = $control->prefix . $control->plantid . $control->accountingyear . $paddedNum;
 
             // Create AROIP header
             $header = AROIPChemicalHeader::create([
@@ -210,7 +233,7 @@ class AROIPChemicalController extends Controller
             // Create AROIP details
             if (isset($data['analytical']['details']) && is_array($data['analytical']['details'])) {
                 foreach ($data['analytical']['details'] as $index => $detail) {
-                    $detailId = $headerId.'D'.str_pad($index + 1, 3, '0', STR_PAD_LEFT);
+                    $detailId = $headerId . 'D' . str_pad($index + 1, 3, '0', STR_PAD_LEFT);
                     AROIPChemicalDetail::create([
                         'id' => $detailId,
                         'id_hdr' => $headerId,
@@ -325,13 +348,34 @@ class AROIPChemicalController extends Controller
                 'data' => [
                     'analytical' => array_merge(
                         $header->only([
-                            'id', 'id_coa', 'no_ref_coa', 'material', 'quantity', 'analyst',
-                            'supplier', 'police_no', 'batch_lot', 'status', 'flag', 'entry_by',
-                            'entry_date', 'prepared_by', 'prepared_date', 'prepared_status',
-                            'prepared_status_remarks', 'approved_by', 'approved_date',
-                            'approved_status', 'approved_status_remarks', 'updated_by',
-                            'updated_date', 'form_no', 'date_issued', 'revision_no',
-                            'revision_date', 'deleted_at',
+                            'id',
+                            'id_coa',
+                            'no_ref_coa',
+                            'material',
+                            'quantity',
+                            'analyst',
+                            'supplier',
+                            'police_no',
+                            'batch_lot',
+                            'status',
+                            'flag',
+                            'entry_by',
+                            'entry_date',
+                            'prepared_by',
+                            'prepared_date',
+                            'prepared_status',
+                            'prepared_status_remarks',
+                            'approved_by',
+                            'approved_date',
+                            'approved_status',
+                            'approved_status_remarks',
+                            'updated_by',
+                            'updated_date',
+                            'form_no',
+                            'date_issued',
+                            'revision_no',
+                            'revision_date',
+                            'deleted_at',
                         ]),
                         ['details' => $header->details]
                     ),
@@ -486,91 +530,91 @@ class AROIPChemicalController extends Controller
         }
     }
 
-  /**
-   * Update approval status of AROIP Chemical record
-   *
-   * @param  string  $id
-   * @return \Illuminate\Http\JsonResponse
-   */
-  public function updateApproval($id, UpdateAroipApprovalRequest $request)
-  {
-      try {
-          DB::beginTransaction();
-          $header = AROIPChemicalHeader::findOrFail($id);
-          $user = auth()->user();
-          $status = strtolower($request->input('status')); // Ensure consistent case
-          $remark = $request->input('remarks'); // Changed from 'prepared_status_remarks' to 'remarks'
+    /**
+     * Update approval status of AROIP Chemical record
+     *
+     * @param  string  $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function updateApproval($id, UpdateAroipApprovalRequest $request)
+    {
+        try {
+            DB::beginTransaction();
+            $header = AROIPChemicalHeader::findOrFail($id);
+            $user = auth()->user();
+            $status = strtolower($request->input('status')); // Ensure consistent case
+            $remark = $request->input('remarks'); // Changed from 'prepared_status_remarks' to 'remarks'
 
-          $userRoles = $user->roles;
-          $isSuccess = $this->processApprovalStatus($header, $status, $remark, $user->username, $userRoles);
+            $userRoles = $user->roles;
+            $isSuccess = $this->processApprovalStatus($header, $status, $remark, $user->username, $userRoles);
 
-          if (! $isSuccess) {
-              return response()->json([
-                  'success' => false,
-                  'message' => 'You do not have permission to update approval status',
-              ], 403);
-          }
+            if (! $isSuccess) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You do not have permission to update approval status',
+                ], 403);
+            }
 
-          DB::commit();
+            DB::commit();
 
-          return response()->json([
-              'success' => true,
-              'message' => 'Approval status updated successfully',
-              'data' => [
-                  'id' => $header->id,
-                  'status' => $status,
-                  'remarks' => $remark,  // Include remarks in response for verification
-                  'updated_by' => $user->username,
-                  'updated_at' => now()->toDateTimeString(),
-              ],
-          ]);
-      } catch (\Exception $e) {
-          DB::rollBack();
+            return response()->json([
+                'success' => true,
+                'message' => 'Approval status updated successfully',
+                'data' => [
+                    'id' => $header->id,
+                    'status' => $status,
+                    'remarks' => $remark,  // Include remarks in response for verification
+                    'updated_by' => $user->username,
+                    'updated_at' => now()->toDateTimeString(),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
 
-          return response()->json([
-              'success' => false,
-              'message' => 'Failed to update approval status',
-              'error' => $e->getMessage(),
-          ], 500);
-      }
-  }
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update approval status',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 
-  /**
-   * Process approval status update (helper method)
-   */
-  private function processApprovalStatus($header, $status, $remark, $username, $userRoles)
-  {
-      $LEAD_QC = ['LEAD', 'LEAD_QC'];
-      $QC_Control_MGR = ['MGR', 'MGR_QC', 'ADM'];
-      $fieldPrefix = '';
+    /**
+     * Process approval status update (helper method)
+     */
+    private function processApprovalStatus($header, $status, $remark, $username, $userRoles)
+    {
+        $LEAD_QC = ['LEAD', 'LEAD_QC'];
+        $QC_Control_MGR = ['MGR', 'MGR_QC', 'ADM'];
+        $fieldPrefix = '';
 
-      if (in_array($userRoles, $QC_Control_MGR, true)) {
-          $fieldPrefix = 'approved';
-      } elseif (in_array($userRoles, $LEAD_QC, true)) {
-          $fieldPrefix = 'prepared';
-      } else {
-          return false;
-      }
+        if (in_array($userRoles, $QC_Control_MGR, true)) {
+            $fieldPrefix = 'approved';
+        } elseif (in_array($userRoles, $LEAD_QC, true)) {
+            $fieldPrefix = 'prepared';
+        } else {
+            return false;
+        }
 
-      $updates = [
-          "{$fieldPrefix}_status" => $status,
-          "{$fieldPrefix}_by" => $username,
-          "{$fieldPrefix}_date" => now(),
-          "{$fieldPrefix}_status_remarks" => $remark,
-          'updated_by' => $username,
-          'updated_date' => now(),
-      ];
+        $updates = [
+            "{$fieldPrefix}_status" => $status,
+            "{$fieldPrefix}_by" => $username,
+            "{$fieldPrefix}_date" => now(),
+            "{$fieldPrefix}_status_remarks" => $remark,
+            'updated_by' => $username,
+            'updated_date' => now(),
+        ];
 
-      // Only include role if the column exists
-      if (Schema::hasColumn($header->getTable(), "{$fieldPrefix}_role")) {
-          $updates["{$fieldPrefix}_role"] = json_encode($userRoles);
-      }
+        // Only include role if the column exists
+        if (Schema::hasColumn($header->getTable(), "{$fieldPrefix}_role")) {
+            $updates["{$fieldPrefix}_role"] = json_encode($userRoles);
+        }
 
-      // If this is an approval (not preparation), update the main status
-      if ($fieldPrefix === 'approved') {
-          $updates['status'] = $status;
-      }
+        // If this is an approval (not preparation), update the main status
+        if ($fieldPrefix === 'approved') {
+            $updates['status'] = $status;
+        }
 
-      return $header->update($updates);
-  }
+        return $header->update($updates);
+    }
 }
