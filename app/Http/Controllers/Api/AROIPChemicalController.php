@@ -27,8 +27,8 @@ class AROIPChemicalController extends Controller
         $query = AROIPChemicalHeader::with(['details', 'coa.details']);
 
         // Filter by date_issued
-        if ($request->filled('date_issued')) {
-            $query->whereDate('date_issued', $request->date_issued);
+        if ($request->filled('entry_date')) {
+            $query->whereDate('entry_date', $request->entry_date);
         }
 
         // Filter by date range
@@ -44,7 +44,7 @@ class AROIPChemicalController extends Controller
 
         $result = $query->get();
 
-        if ($request->anyFilled(['date_issued', 'start_date', 'end_date']) && $result->isEmpty()) {
+        if ($request->anyFilled(['entry_date', 'start_date', 'end_date']) && $result->isEmpty()) {
             return response()->json([
                 'success' => false,
                 'message' => 'No data found for the given filters.',
@@ -62,7 +62,7 @@ class AROIPChemicalController extends Controller
                         'prepared_status_remarks', 'approved_by', 'approved_date',
                         'approved_status', 'approved_status_remarks', 'updated_by',
                         'updated_date', 'form_no', 'date_issued', 'revision_no',
-                        'revision_date', 'deleted_at',
+                        'revision_date', 'deleted_at', 'date', 'exp_date'
                     ]),
                     ['details' => $item->details]
                 ),
