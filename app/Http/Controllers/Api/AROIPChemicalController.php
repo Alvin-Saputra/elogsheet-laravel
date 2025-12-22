@@ -281,94 +281,242 @@ class AROIPChemicalController extends Controller
      * PUT /api/ariopchemical/{id}
      * Update AROIP chemical record
      */
+    // public function 
+    // update(UpdateAroipChemicalRequest $request, $id)
+    // {
+    //     try {
+    //         DB::beginTransaction();
+    //         $user = $request->user()->getDisplayNameAttribute();
+
+    //         // Find the record (excluding soft deleted ones by default)
+    //         $header = AROIPChemicalHeader::findOrFail($id);
+
+    //         $data = $request->validated();
+
+    //         // Update header
+    //         $header->update([
+    //             'material' => $data['material'] ?? $header->material,
+    //             'quantity' => $data['quantity'] ?? $header->quantity,
+    //             'analyst' => $data['analyst'] ?? $header->analyst,
+    //             'supplier' => $data['supplier'] ?? $header->supplier,
+    //             'police_no' => $data['police_no'] ?? $header->police_no,
+    //             'batch_lot' => $data['batch_lot'] ?? $header->batch_lot,
+    //             'status' => $data['status'] ?? $header->status,
+    //             'form_no' => $data['form_no'] ?? $header->form_no,
+    //             'revision_no' => $data['revision_no'] ?? $header->revision_no,
+    //             'revision_date' => $data['revision_date'] ?? $header->revision_date,
+    //             'updated_by' => $user,
+    //             'updated_date' => now(),
+    //         ]);
+
+    //         // Update or create details if provided
+    //         if (isset($data['details'])) {
+    //             $existingDetailIds = $header->details->pluck('id')->toArray();
+    //             $updatedDetailIds = [];
+
+    //             foreach ($data['details'] as $detailData) {
+    //                 $detail = AROIPChemicalDetail::updateOrCreate(
+    //                     ['id' => $detailData['id']],
+    //                     [
+    //                         'id_hdr' => $header->id,
+    //                         'parameter' => $detailData['parameter'],
+    //                         'specification_min' => $detailData['specification_min'],
+    //                         'specification_max' => $detailData['specification_max'],
+    //                         'result_min' => $detailData['result_min'] ?? null,
+    //                         'result_max' => $data['result_max'] ?? null,
+    //                         'status_ok' => strtoupper($detailData['status_ok']),
+    //                         'remark' => $detailData['remark'] ?? null,
+    //                     ]
+    //                 );
+    //                 $updatedDetailIds[] = $detail->id;
+    //             }
+
+    //             // Delete details that were not included in the update
+    //             $detailsToDelete = array_diff($existingDetailIds, $updatedDetailIds);
+    //             if (! empty($detailsToDelete)) {
+    //                 AROIPChemicalDetail::whereIn('id', $detailsToDelete)->delete();
+    //             }
+    //         }
+
+    //         DB::commit();
+
+    //         // Reload the model with its relationships
+    //         $header->load(['details', 'coa.details']);
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'AROIP Chemical record updated successfully',
+    //             'data' => [
+    //                 'analytical' => [
+    //                     'header_id' => $header->id,
+    //                     'detail_ids' => $header->details->pluck('id')->toArray(),
+    //                 ],
+    //                 'coa' => $header->coa ? [
+    //                     'coa_id' => $header->coa->id,
+    //                     'detail_ids' => $header->coa->details->pluck('id')->toArray(),
+    //                 ] : null,
+    //             ],
+    //         ]);
+    //     } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'AROIP Chemical record not found',
+    //             'error' => $e->getMessage(),
+    //         ], 404);
+    //     } catch (\Exception $e) {
+    //         DB::rollBack();
+
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Failed to update AROIP Chemical record',
+    //             'error' => $e->getMessage(),
+    //         ], 500);
+    //     }
+    // }
+
     public function update(UpdateAroipChemicalRequest $request, $id)
     {
         try {
             DB::beginTransaction();
-            $user = $request->user()->getDisplayNameAttribute();
+            $user = $request->user()->getDisplayNameAttribute(); // Atau sesuaikan dengan auth user logic Anda
 
-            // Find the record (excluding soft deleted ones by default)
-            $header = AROIPChemicalHeader::findOrFail($id);
+            // 1. Find the AROIP Header
+            $header = AROIPChemicalHeader::with(['details', 'coa.details'])->findOrFail($id);
 
             $data = $request->validated();
 
-            // Update header
+            // --- A. UPDATE AROIP HEADER ---
             $header->update([
-                'material' => $data['material'] ?? $header->material,
-                'quantity' => $data['quantity'] ?? $header->quantity,
-                'analyst' => $data['analyst'] ?? $header->analyst,
-                'supplier' => $data['supplier'] ?? $header->supplier,
-                'police_no' => $data['police_no'] ?? $header->police_no,
-                'batch_lot' => $data['batch_lot'] ?? $header->batch_lot,
-                'status' => $data['status'] ?? $header->status,
-                'form_no' => $data['form_no'] ?? $header->form_no,
-                'revision_no' => $data['revision_no'] ?? $header->revision_no,
+                'material'      => $data['material'] ?? $header->material,
+                'quantity'      => $data['quantity'] ?? $header->quantity,
+                'analyst'       => $data['analyst'] ?? $header->analyst,
+                'supplier'      => $data['supplier'] ?? $header->supplier,
+                'police_no'     => $data['police_no'] ?? $header->police_no,
+                'batch_lot'     => $data['batch_lot'] ?? $header->batch_lot,
+                'status'        => $data['status'] ?? $header->status,
+                'form_no'       => $data['form_no'] ?? $header->form_no,
+                'revision_no'   => $data['revision_no'] ?? $header->revision_no,
                 'revision_date' => $data['revision_date'] ?? $header->revision_date,
-                'updated_by' => $user,
-                'updated_date' => now(),
+                'updated_by'    => $user,
+                'updated_date'  => now(),
             ]);
 
-            // Update or create details if provided
+            // --- B. UPDATE AROIP DETAILS ---
             if (isset($data['details'])) {
-                $existingDetailIds = $header->details->pluck('id')->toArray();
-                $updatedDetailIds = [];
+                $existingAroipDetailIds = $header->details->pluck('id')->toArray();
+                $updatedAroipDetailIds = [];
 
                 foreach ($data['details'] as $detailData) {
+                    // Pastikan ID ada untuk update, jika tidak handle logic create (opsional)
+                    $detailId = $detailData['id'];
+
                     $detail = AROIPChemicalDetail::updateOrCreate(
-                        ['id' => $detailData['id']],
+                        ['id' => $detailId],
                         [
-                            'id_hdr' => $header->id,
-                            'parameter' => $detailData['parameter'],
+                            'id_hdr'            => $header->id,
+                            'parameter'         => $detailData['parameter'],
                             'specification_min' => $detailData['specification_min'],
                             'specification_max' => $detailData['specification_max'],
-                            'result_min' => $detailData['result_min'] ?? null,
-                            'result_max' => $data['result_max'] ?? null,
-                            'status_ok' => strtoupper($detailData['status_ok']),
-                            'remark' => $detailData['remark'] ?? null,
+                            'result_min'        => $detailData['result_min'] ?? null,
+                            'result_max'        => $detailData['result_max'] ?? null, // FIXED: Typo variable $data -> $detailData
+                            'status_ok'         => strtoupper($detailData['status_ok']),
+                            'remark'            => $detailData['remark'] ?? null,
                         ]
                     );
-                    $updatedDetailIds[] = $detail->id;
+                    $updatedAroipDetailIds[] = $detail->id;
                 }
 
-                // Delete details that were not included in the update
-                $detailsToDelete = array_diff($existingDetailIds, $updatedDetailIds);
-                if (! empty($detailsToDelete)) {
+                // Delete removed AROIP details
+                $detailsToDelete = array_diff($existingAroipDetailIds, $updatedAroipDetailIds);
+                if (!empty($detailsToDelete)) {
                     AROIPChemicalDetail::whereIn('id', $detailsToDelete)->delete();
+                }
+            }
+
+            // --- C. UPDATE COA HEADER & DETAILS ---
+            // Cek apakah user mengirim data 'coa' DAN apakah AROIP ini punya COA terkait
+            if (isset($data['coa']) && $header->coa) {
+                $coaHeader = $header->coa;
+
+                // 1. Update COA Header
+                $coaHeader->update([
+                    'no_doc'             => $data['coa']['no_doc'] ?? $coaHeader->no_doc,
+                    'product'            => $data['coa']['product'] ?? $coaHeader->product,
+                    'grade'              => $data['coa']['grade'] ?? $coaHeader->grade,
+                    'packing'            => $data['coa']['packing'] ?? $coaHeader->packing,
+                    'quantity'           => $data['coa']['quantity'] ?? $coaHeader->quantity,
+                    'tanggal_pengiriman' => $data['coa']['tanggal_pengiriman'] ?? $coaHeader->tanggal_pengiriman,
+                    'vehicle'            => $data['coa']['vehicle'] ?? $coaHeader->vehicle,
+                    'lot_no'             => $data['coa']['lot_no'] ?? $coaHeader->lot_no,
+                    'production_date'    => $data['coa']['production_date'] ?? $coaHeader->production_date,
+                    'expired_date'       => $data['coa']['expired_date'] ?? $coaHeader->expired_date,
+                    'updated_by'         => $user,
+                    'updated_date'       => now(),
+                ]);
+
+                // 2. Update COA Details
+                if (isset($data['coa']['details']) && is_array($data['coa']['details'])) {
+                    $existingCoaDetailIds = $coaHeader->details->pluck('id')->toArray();
+                    $updatedCoaDetailIds = [];
+
+                    foreach ($data['coa']['details'] as $index => $coaDetailData) {
+                        // Logic ID: Gunakan ID dari request, atau generate baru jika kosong (item baru)
+                        $coaDetailId = $coaDetailData['id'] ?? null;
+
+                        if (!$coaDetailId) {
+                            // Generate ID baru: COA_ID + 'D' + Sequence (Sederhana)
+                            // Note: Logic ini asumsi sederhana. Lebih aman jika frontend kirim ID atau backend query max sequence.
+                            // Disini kita coba cari next number berdasarkan count existing + index
+                            $nextIndex = count($existingCoaDetailIds) + $index + 1;
+                            $coaDetailId = $coaHeader->id . 'D' . str_pad($nextIndex, 3, '0', STR_PAD_LEFT);
+                        }
+
+                        $coaDetail = COADetail::updateOrCreate(
+                            ['id' => $coaDetailId],
+                            [
+                                'id_hdr'       => $coaHeader->id,
+                                'parameter'    => $coaDetailData['parameter'] ?? null,
+                                'actual_min'   => $coaDetailData['actual_min'] ?? null,
+                                'actual_max'   => $coaDetailData['actual_max'] ?? null,
+                                'standard_min' => $coaDetailData['standard_min'] ?? null,
+                                'standard_max' => $coaDetailData['standard_max'] ?? null,
+                                'method'       => $coaDetailData['method'] ?? null,
+                            ]
+                        );
+                        $updatedCoaDetailIds[] = $coaDetail->id;
+                    }
+
+                    // Delete removed COA details
+                    $coaDetailsToDelete = array_diff($existingCoaDetailIds, $updatedCoaDetailIds);
+                    if (!empty($coaDetailsToDelete)) {
+                        COADetail::whereIn('id', $coaDetailsToDelete)->delete();
+                    }
                 }
             }
 
             DB::commit();
 
-            // Reload the model with its relationships
+            // Reload data untuk response
+            $header->refresh();
             $header->load(['details', 'coa.details']);
 
             return response()->json([
                 'success' => true,
-                'message' => 'AROIP Chemical record updated successfully',
+                'message' => 'AROIP and COA updated successfully',
                 'data' => [
-                    'analytical' => [
-                        'header_id' => $header->id,
-                        'detail_ids' => $header->details->pluck('id')->toArray(),
-                    ],
-                    'coa' => $header->coa ? [
-                        'coa_id' => $header->coa->id,
-                        'detail_ids' => $header->coa->details->pluck('id')->toArray(),
-                    ] : null,
+                    'analytical' => $header,
+                    'coa' => $header->coa
                 ],
             ]);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'AROIP Chemical record not found',
-                'error' => $e->getMessage(),
-            ], 404);
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'Record not found'], 404);
         } catch (\Exception $e) {
             DB::rollBack();
-
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to update AROIP Chemical record',
-                'error' => $e->getMessage(),
+                'message' => 'Failed to update record',
+                'error' => $e->getMessage()
             ], 500);
         }
     }
