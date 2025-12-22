@@ -15,6 +15,7 @@ use App\Models\MDataFormNo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Schema;
+use Illuminate\Support\Str;
 
 class AROIPChemicalController extends Controller
 {
@@ -664,8 +665,8 @@ class AROIPChemicalController extends Controller
             DB::beginTransaction();
             $header = AROIPChemicalHeader::findOrFail($id);
             $user = auth()->user();
-            $status = strtolower($request->input('status')); // Ensure consistent case
-            $remark = $request->input('remarks'); // Changed from 'prepared_status_remarks' to 'remarks'
+            $status = Str::ucfirst(strtolower($request->input('status')));
+            $remark = $request->input('remarks');
 
             $userRoles = $user->roles;
             $isSuccess = $this->processApprovalStatus($header, $status, $remark, $user->username, $userRoles);
