@@ -14,8 +14,8 @@ use App\Models\MControlnumber;
 use App\Models\MDataFormNo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Schema;
 use Illuminate\Support\Str;
+use Schema;
 
 class AROIPChemicalController extends Controller
 {
@@ -86,7 +86,7 @@ class AROIPChemicalController extends Controller
                         'revision_date',
                         'deleted_at',
                         'date',
-                        'exp_date'
+                        'exp_date',
                     ]),
                     ['details' => $item->details]
                 ),
@@ -113,7 +113,7 @@ class AROIPChemicalController extends Controller
 
             // Get form data from m_data_form_no where f_id = 17
             $dataForm = MDataFormNo::find(17);
-            if (! $dataForm) {
+            if (!$dataForm) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Form configuration not found (f_id: 17)',
@@ -129,7 +129,7 @@ class AROIPChemicalController extends Controller
                     ->lockForUpdate()
                     ->first();
 
-                if (! $coaControl) {
+                if (!$coaControl) {
                     return response()->json([
                         'success' => false,
                         'message' => 'Control number configuration not found for COA',
@@ -195,7 +195,7 @@ class AROIPChemicalController extends Controller
                 ->lockForUpdate()
                 ->first();
 
-            if (! $control) {
+            if (!$control) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Control number configuration not found',
@@ -282,245 +282,273 @@ class AROIPChemicalController extends Controller
      * PUT /api/ariopchemical/{id}
      * Update AROIP chemical record
      */
-    // public function 
-    // update(UpdateAroipChemicalRequest $request, $id)
-    // {
-    //     try {
-    //         DB::beginTransaction();
-    //         $user = $request->user()->getDisplayNameAttribute();
-
-    //         // Find the record (excluding soft deleted ones by default)
-    //         $header = AROIPChemicalHeader::findOrFail($id);
-
-    //         $data = $request->validated();
-
-    //         // Update header
-    //         $header->update([
-    //             'material' => $data['material'] ?? $header->material,
-    //             'quantity' => $data['quantity'] ?? $header->quantity,
-    //             'analyst' => $data['analyst'] ?? $header->analyst,
-    //             'supplier' => $data['supplier'] ?? $header->supplier,
-    //             'police_no' => $data['police_no'] ?? $header->police_no,
-    //             'batch_lot' => $data['batch_lot'] ?? $header->batch_lot,
-    //             'status' => $data['status'] ?? $header->status,
-    //             'form_no' => $data['form_no'] ?? $header->form_no,
-    //             'revision_no' => $data['revision_no'] ?? $header->revision_no,
-    //             'revision_date' => $data['revision_date'] ?? $header->revision_date,
-    //             'updated_by' => $user,
-    //             'updated_date' => now(),
-    //         ]);
-
-    //         // Update or create details if provided
-    //         if (isset($data['details'])) {
-    //             $existingDetailIds = $header->details->pluck('id')->toArray();
-    //             $updatedDetailIds = [];
-
-    //             foreach ($data['details'] as $detailData) {
-    //                 $detail = AROIPChemicalDetail::updateOrCreate(
-    //                     ['id' => $detailData['id']],
-    //                     [
-    //                         'id_hdr' => $header->id,
-    //                         'parameter' => $detailData['parameter'],
-    //                         'specification_min' => $detailData['specification_min'],
-    //                         'specification_max' => $detailData['specification_max'],
-    //                         'result_min' => $detailData['result_min'] ?? null,
-    //                         'result_max' => $data['result_max'] ?? null,
-    //                         'status_ok' => strtoupper($detailData['status_ok']),
-    //                         'remark' => $detailData['remark'] ?? null,
-    //                     ]
-    //                 );
-    //                 $updatedDetailIds[] = $detail->id;
-    //             }
-
-    //             // Delete details that were not included in the update
-    //             $detailsToDelete = array_diff($existingDetailIds, $updatedDetailIds);
-    //             if (! empty($detailsToDelete)) {
-    //                 AROIPChemicalDetail::whereIn('id', $detailsToDelete)->delete();
-    //             }
-    //         }
-
-    //         DB::commit();
-
-    //         // Reload the model with its relationships
-    //         $header->load(['details', 'coa.details']);
-
-    //         return response()->json([
-    //             'success' => true,
-    //             'message' => 'AROIP Chemical record updated successfully',
-    //             'data' => [
-    //                 'analytical' => [
-    //                     'header_id' => $header->id,
-    //                     'detail_ids' => $header->details->pluck('id')->toArray(),
-    //                 ],
-    //                 'coa' => $header->coa ? [
-    //                     'coa_id' => $header->coa->id,
-    //                     'detail_ids' => $header->coa->details->pluck('id')->toArray(),
-    //                 ] : null,
-    //             ],
-    //         ]);
-    //     } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'AROIP Chemical record not found',
-    //             'error' => $e->getMessage(),
-    //         ], 404);
-    //     } catch (\Exception $e) {
-    //         DB::rollBack();
-
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Failed to update AROIP Chemical record',
-    //             'error' => $e->getMessage(),
-    //         ], 500);
-    //     }
-    // }
-
     public function update(UpdateAroipChemicalRequest $request, $id)
     {
+        DB::beginTransaction();
+
         try {
-            DB::beginTransaction();
-            $user = $request->user()->getDisplayNameAttribute(); // Atau sesuaikan dengan auth user logic Anda
-
-            // 1. Find the AROIP Header
-            $header = AROIPChemicalHeader::with(['details', 'coa.details'])->findOrFail($id);
-
+            $user = $request->user()->getDisplayNameAttribute();
             $data = $request->validated();
 
-            // --- A. UPDATE AROIP HEADER ---
+            // Accept both shapes: root-level fields + details OR grouped under 'analytical'
+            $analyticalPayload = $data['analytical'] ?? $data;
+
+            $header = AROIPChemicalHeader::with(['details', 'coa.details'])->findOrFail($id);
+
+            // ---------- A. update header ----------
             $header->update([
-                'material'      => $data['material'] ?? $header->material,
-                'quantity'      => $data['quantity'] ?? $header->quantity,
-                'analyst'       => $data['analyst'] ?? $header->analyst,
-                'supplier'      => $data['supplier'] ?? $header->supplier,
-                'police_no'     => $data['police_no'] ?? $header->police_no,
-                'batch_lot'     => $data['batch_lot'] ?? $header->batch_lot,
-                'status'        => $data['status'] ?? $header->status,
-                'form_no'       => $data['form_no'] ?? $header->form_no,
-                'revision_no'   => $data['revision_no'] ?? $header->revision_no,
-                'revision_date' => $data['revision_date'] ?? $header->revision_date,
-                'updated_by'    => $user,
-                'updated_date'  => now(),
+                'material' => $analyticalPayload['material'] ?? $header->material,
+                'quantity' => $analyticalPayload['received_quantity'] ?? $analyticalPayload['quantity'] ?? $header->quantity,
+                'analyst' => $analyticalPayload['analyst'] ?? $header->analyst,
+                'supplier' => $analyticalPayload['supplier'] ?? $header->supplier,
+                'police_no' => $analyticalPayload['police_no'] ?? $header->police_no,
+                'batch_lot' => $analyticalPayload['batch_lot'] ?? $header->batch_lot,
+                'status' => $analyticalPayload['status'] ?? $header->status,
+                'no_ref_coa' => $analyticalPayload['no_ref_coa'] ?? $header->no_ref_coa,
+                'date' => $analyticalPayload['date'] ?? $header->date,
+                'exp_date' => $analyticalPayload['exp_date'] ?? $header->exp_date,
+                'form_no' => $data['form_no'] ?? $header->form_no,
+                'updated_by' => $user,
+                'updated_date' => now(),
+                'revision_no' => DB::raw('COALESCE(revision_no, 0) + 1'),
+                'revision_date' => now(),
             ]);
 
-            // --- B. UPDATE AROIP DETAILS ---
-            if (isset($data['details'])) {
-                $existingAroipDetailIds = $header->details->pluck('id')->toArray();
-                $updatedAroipDetailIds = [];
+            // Helper to create deterministic increment id for details:
+            $nextDetailIdForHeader = function ($headerId, $detailModel) {
+                // find numeric suffix after last 'D' in existing ids
+                $max = 0;
+                $rows = $detailModel::where('id_hdr', $headerId)->pluck('id')->toArray();
+                foreach ($rows as $rid) {
+                    if (preg_match('/D(\d+)$/', $rid, $m)) {
+                        $num = intval($m[1]);
+                        if ($num > $max)
+                            $max = $num;
+                    }
+                }
+                return $headerId . 'D' . str_pad($max + 1, 3, '0');
+            };
 
-                foreach ($data['details'] as $detailData) {
-                    // Pastikan ID ada untuk update, jika tidak handle logic create (opsional)
-                    $detailId = $detailData['id'];
+            // ---------- B. sync analytical (AROIP) details ----------
+            if (isset($analyticalPayload['details']) && is_array($analyticalPayload['details'])) {
+                $existingIds = $header->details->pluck('id')->toArray();
+                $receivedIds = [];
 
-                    $detail = AROIPChemicalDetail::updateOrCreate(
-                        ['id' => $detailId],
-                        [
-                            'id_hdr'            => $header->id,
-                            'parameter'         => $detailData['parameter'],
-                            'specification_min' => $detailData['specification_min'],
-                            'specification_max' => $detailData['specification_max'],
-                            'result_min'        => $detailData['result_min'] ?? null,
-                            'result_max'        => $detailData['result_max'] ?? null, // FIXED: Typo variable $data -> $detailData
-                            'status_ok'         => strtoupper($detailData['status_ok']),
-                            'remark'            => $detailData['remark'] ?? null,
-                        ]
-                    );
-                    $updatedAroipDetailIds[] = $detail->id;
+                foreach ($analyticalPayload['details'] as $row) {
+                    // if id provided -> update existing
+                    if (!empty($row['id'])) {
+                        $detail = AROIPChemicalDetail::where('id', $row['id'])
+                            ->where('id_hdr', $header->id)
+                            ->first();
+
+                        if (!$detail) {
+                            DB::rollBack();
+                            return response()->json([
+                                'success' => false,
+                                'message' => "Analytical detail id {$row['id']} not found for header {$header->id}."
+                            ], 404);
+                        }
+
+                        $detail->update([
+                            'parameter' => $row['parameter'] ?? $detail->parameter,
+                            'specification_min' => $row['specification_min'] ?? $detail->specification_min,
+                            'specification_max' => $row['specification_max'] ?? $detail->specification_max,
+                            'result_min' => $row['result_min'] ?? $detail->result_min,
+                            'result_max' => $row['result_max'] ?? $detail->result_max,
+                            'status_ok' => isset($row['status_ok']) ? strtoupper($row['status_ok']) : $detail->status_ok,
+                            'remark' => $row['remark'] ?? $detail->remark,
+                        ]);
+
+                        $receivedIds[] = $detail->id;
+                    } else {
+                        // no id -> create new with deterministic incremental id
+                        $newId = $nextDetailIdForHeader($header->id, AROIPChemicalDetail::class);
+
+                        $created = AROIPChemicalDetail::create([
+                            'id' => $newId,
+                            'id_hdr' => $header->id,
+                            'parameter' => $row['parameter'] ?? null,
+                            'specification_min' => $row['specification_min'] ?? null,
+                            'specification_max' => $row['specification_max'] ?? null,
+                            'result_min' => $row['result_min'] ?? null,
+                            'result_max' => $row['result_max'] ?? null,
+                            'status_ok' => isset($row['status_ok']) ? strtoupper($row['status_ok']) : null,
+                            'remark' => $row['remark'] ?? null,
+                        ]);
+
+                        $receivedIds[] = $created->id;
+                    }
                 }
 
-                // Delete removed AROIP details
-                $detailsToDelete = array_diff($existingAroipDetailIds, $updatedAroipDetailIds);
-                if (!empty($detailsToDelete)) {
-                    AROIPChemicalDetail::whereIn('id', $detailsToDelete)->delete();
+                // delete details removed by the client (sync)
+                $toDelete = array_diff($existingIds, $receivedIds);
+                if (!empty($toDelete)) {
+                    AROIPChemicalDetail::whereIn('id', $toDelete)->delete();
                 }
             }
 
-            // --- C. UPDATE COA HEADER & DETAILS ---
-            // Cek apakah user mengirim data 'coa' DAN apakah AROIP ini punya COA terkait
-            if (isset($data['coa']) && $header->coa) {
+            // ---------- C. update/sync COA header & details ----------
+            if (isset($data['coa'])) {
+                // If there is no related COA header on AROIP, either return error or create COA.
+                // Here we require an existing COA header; you can alter to create if you prefer.
                 $coaHeader = $header->coa;
+                if (!$coaHeader) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'No related COA header exists for this AROIP. Create COA first or send id_coa on header.'
+                    ], 422);
+                }
 
-                // 1. Update COA Header
+                $coaPayload = $data['coa'];
                 $coaHeader->update([
-                    'no_doc'             => $data['coa']['no_doc'] ?? $coaHeader->no_doc,
-                    'product'            => $data['coa']['product'] ?? $coaHeader->product,
-                    'grade'              => $data['coa']['grade'] ?? $coaHeader->grade,
-                    'packing'            => $data['coa']['packing'] ?? $coaHeader->packing,
-                    'quantity'           => $data['coa']['quantity'] ?? $coaHeader->quantity,
-                    'tanggal_pengiriman' => $data['coa']['tanggal_pengiriman'] ?? $coaHeader->tanggal_pengiriman,
-                    'vehicle'            => $data['coa']['vehicle'] ?? $coaHeader->vehicle,
-                    'lot_no'             => $data['coa']['lot_no'] ?? $coaHeader->lot_no,
-                    'production_date'    => $data['coa']['production_date'] ?? $coaHeader->production_date,
-                    'expired_date'       => $data['coa']['expired_date'] ?? $coaHeader->expired_date,
-                    'updated_by'         => $user,
-                    'updated_date'       => now(),
+                    'no_doc' => $coaPayload['no_doc'] ?? $coaHeader->no_doc,
+                    'product' => $coaPayload['product'] ?? $coaHeader->product,
+                    'grade' => $coaPayload['grade'] ?? $coaHeader->grade,
+                    'packing' => $coaPayload['packing'] ?? $coaHeader->packing,
+                    'quantity' => $coaPayload['quantity'] ?? $coaHeader->quantity,
+                    'tanggal_pengiriman' => $coaPayload['tanggal_pengiriman'] ?? $coaHeader->tanggal_pengiriman,
+                    'vehicle' => $coaPayload['vehicle'] ?? $coaHeader->vehicle,
+                    'lot_no' => $coaPayload['lot_no'] ?? $coaHeader->lot_no,
+                    'production_date' => $coaPayload['production_date'] ?? $coaHeader->production_date,
+                    'expired_date' => $coaPayload['expired_date'] ?? $coaHeader->expired_date,
+                    'updated_by' => $user,
+                    'updated_date' => now(),
                 ]);
 
-                // 2. Update COA Details
-                if (isset($data['coa']['details']) && is_array($data['coa']['details'])) {
-                    $existingCoaDetailIds = $coaHeader->details->pluck('id')->toArray();
-                    $updatedCoaDetailIds = [];
+                if (isset($coaPayload['details']) && is_array($coaPayload['details'])) {
+                    $existingIds = $coaHeader->details->pluck('id')->toArray();
+                    $receivedIds = [];
 
-                    foreach ($data['coa']['details'] as $index => $coaDetailData) {
-                        // Logic ID: Gunakan ID dari request, atau generate baru jika kosong (item baru)
-                        $coaDetailId = $coaDetailData['id'] ?? null;
+                    foreach ($coaPayload['details'] as $row) {
+                        if (!empty($row['id'])) {
+                            $detail = COADetail::where('id', $row['id'])
+                                ->where('id_hdr', $coaHeader->id)
+                                ->first();
 
-                        if (!$coaDetailId) {
-                            // Generate ID baru: COA_ID + 'D' + Sequence (Sederhana)
-                            // Note: Logic ini asumsi sederhana. Lebih aman jika frontend kirim ID atau backend query max sequence.
-                            // Disini kita coba cari next number berdasarkan count existing + index
-                            $nextIndex = count($existingCoaDetailIds) + $index + 1;
-                            $coaDetailId = $coaHeader->id . 'D' . str_pad($nextIndex, 3, '0', STR_PAD_LEFT);
+                            if (!$detail) {
+                                DB::rollBack();
+                                return response()->json([
+                                    'success' => false,
+                                    'message' => "COA detail id {$row['id']} not found for COA {$coaHeader->id}."
+                                ], 404);
+                            }
+
+                            $detail->update([
+                                'parameter' => $row['parameter'] ?? $detail->parameter,
+                                'actual_min' => $row['actual_min'] ?? $detail->actual_min,
+                                'actual_max' => $row['actual_max'] ?? $detail->actual_max,
+                                'standard_min' => $row['standard_min'] ?? $detail->standard_min,
+                                'standard_max' => $row['standard_max'] ?? $detail->standard_max,
+                                'method' => $row['method'] ?? $detail->method,
+                            ]);
+
+                            $receivedIds[] = $detail->id;
+                        } else {
+                            // create new COA detail with deterministic id
+                            $newId = $nextDetailIdForHeader($coaHeader->id, COADetail::class);
+
+                            $created = COADetail::create([
+                                'id' => $newId,
+                                'id_hdr' => $coaHeader->id,
+                                'parameter' => $row['parameter'] ?? null,
+                                'actual_min' => $row['actual_min'] ?? null,
+                                'actual_max' => $row['actual_max'] ?? null,
+                                'standard_min' => $row['standard_min'] ?? null,
+                                'standard_max' => $row['standard_max'] ?? null,
+                                'method' => $row['method'] ?? null,
+                            ]);
+
+                            $receivedIds[] = $created->id;
                         }
-
-                        $coaDetail = COADetail::updateOrCreate(
-                            ['id' => $coaDetailId],
-                            [
-                                'id_hdr'       => $coaHeader->id,
-                                'parameter'    => $coaDetailData['parameter'] ?? null,
-                                'actual_min'   => $coaDetailData['actual_min'] ?? null,
-                                'actual_max'   => $coaDetailData['actual_max'] ?? null,
-                                'standard_min' => $coaDetailData['standard_min'] ?? null,
-                                'standard_max' => $coaDetailData['standard_max'] ?? null,
-                                'method'       => $coaDetailData['method'] ?? null,
-                            ]
-                        );
-                        $updatedCoaDetailIds[] = $coaDetail->id;
                     }
 
-                    // Delete removed COA details
-                    $coaDetailsToDelete = array_diff($existingCoaDetailIds, $updatedCoaDetailIds);
-                    if (!empty($coaDetailsToDelete)) {
-                        COADetail::whereIn('id', $coaDetailsToDelete)->delete();
+                    // delete removed COA details
+                    $toDelete = array_diff($existingIds, $receivedIds);
+                    if (!empty($toDelete)) {
+                        COADetail::whereIn('id', $toDelete)->delete();
                     }
                 }
             }
 
             DB::commit();
 
-            // Reload data untuk response
+            // return fresh header with relationships
             $header->refresh();
             $header->load(['details', 'coa.details']);
 
             return response()->json([
                 'success' => true,
                 'message' => 'AROIP and COA updated successfully',
-                'data' => [
-                    'analytical' => $header,
-                    'coa' => $header->coa
-                ],
-            ]);
+                'data' => $header,
+            ], 200);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             DB::rollBack();
-            return response()->json(['success' => false, 'message' => 'Record not found'], 404);
+            return response()->json(['success' => false, 'message' => 'Record not found.'], 404);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to update record',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
+
+
+
+    /**
+     * Generate a new COA detail id that is unique and fits the length of existing ids.
+     * If existing COA detail ids show length >= 36 we will use UUIDs.
+     * Otherwise we produce a compact id based on header + random suffix and ensure uniqueness.
+     *
+     * Throws an Exception if it cannot safely generate a unique id (prompt to increase column length).
+     */
+    private function generateCoaDetailId($coaHeader)
+    {
+        // existing ids from the header (in-memory)
+        $existingIds = $coaHeader->details->pluck('id')->toArray();
+
+        // determine current "max" id length observed in DB (if any)
+        $maxExistingLen = 0;
+        if (!empty($existingIds)) {
+            $lengths = array_map('strlen', $existingIds);
+            $maxExistingLen = max($lengths);
+        }
+
+        // If we see existing ids that are long enough, prefer UUIDs
+        if ($maxExistingLen >= 36) {
+            do {
+                $candidate = (string) Str::uuid(); // 36 chars
+            } while (COADetail::where('id', $candidate)->exists());
+            return $candidate;
+        }
+
+        // Otherwise generate a compact id: HEADERPREFIX + 'D' + short hex suffix
+        // choose a fallback max length; if we observed lengths use that, otherwise use 24
+        $targetMaxLen = $maxExistingLen > 0 ? $maxExistingLen : 24;
+
+        $base = (string) $coaHeader->id;
+        $attempt = 0;
+        do {
+            $attempt++;
+            // short random suffix (6 hex chars)
+            $suffix = substr(bin2hex(random_bytes(3)), 0, 6); // 6 chars
+            // compute prefix length allowed
+            $prefixLen = max(0, $targetMaxLen - 1 - strlen($suffix)); // minus 1 for 'D'
+            $prefix = substr($base, 0, $prefixLen);
+            $candidate = $prefix . 'D' . $suffix;
+
+            // safety: if candidate already exists, loop (few attempts)
+            if (!COADetail::where('id', $candidate)->exists()) {
+                return $candidate;
+            }
+        } while ($attempt < 6);
+
+        // If still colliding, suggest schema change (safer to increase column length and use UUIDs)
+        throw new \Exception('Unable to generate unique COA detail id within current id length constraints. Consider increasing id column length to support UUIDs (VARCHAR(36)) or adjust id format.');
+    }
+
 
     /**
      * Remove the specified AROIP Chemical record.
@@ -671,7 +699,7 @@ class AROIPChemicalController extends Controller
             $userRoles = $user->roles;
             $isSuccess = $this->processApprovalStatus($header, $status, $remark, $user->username, $userRoles);
 
-            if (! $isSuccess) {
+            if (!$isSuccess) {
                 return response()->json([
                     'success' => false,
                     'message' => 'You do not have permission to update approval status',
@@ -733,7 +761,6 @@ class AROIPChemicalController extends Controller
             $updates["{$fieldPrefix}_role"] = json_encode($userRoles);
         }
 
-        // If this is an approval (not preparation), update the main status
         if ($fieldPrefix === 'approved') {
             $updates['status'] = $status;
         }
