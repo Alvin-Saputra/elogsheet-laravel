@@ -100,9 +100,9 @@
     <!-- Tabel utama -->
     @if ($groupedData->isNotEmpty())
         @foreach ($groupedData as $wc => $rows)
-            @php
+            {{-- @php
                 $isRef01 = $wc === 'REF-01';
-            @endphp
+            @endphp --}}
             <table style="margin-bottom: 20px;">
                 <thead>
                     <tr>
@@ -111,7 +111,8 @@
                         <th rowspan="2">Flow Rate</th>
                         <th colspan="10">RAW MATERIAL</th>
                         <th colspan="4">BPO</th>
-                        <th colspan="{{ $isRef01 ? 9 : 10 }}">RRPO</th>
+                        {{-- <th colspan="{{ $isRef01 ? 9 : 10 }}">RRPO</th> --}}
+                        <th colspan="10">RRPO</th>
                         <th colspan="3">PFAD</th>
                         <th colspan="2">SPENT EARTH</th>
                         <th rowspan="2">REMARKS</th>
@@ -135,9 +136,9 @@
 
                         <th>FFA</th>
                         <th>Moist</th>
-                        @if (!$isRef01)
+                        {{-- @if (!$isRef01) --}}
                             <th>IMP</th>
-                        @endif
+                        {{-- @endif --}}
                         <th>IV</th>
                         <th>PV</th>
                         <th>Color R</th>
@@ -178,9 +179,9 @@
 
                             <td>{{ $row->fg_ffa }}</td>
                             <td>{{ $row->fg_moist }}</td>
-                            @if (!$isRef01)
+                            {{-- @if (!$isRef01) --}}
                                 <td>{{ $row->fg_impurities }}</td>
-                            @endif
+                            {{-- @endif --}}
                             <td>{{ $row->fg_iv }}</td>
                             <td>{{ $row->fg_pv }}</td>
                             <td>{{ $row->fg_color_r }}</td>
@@ -200,9 +201,9 @@
             </table>
         @endforeach
     @else
-        @php
+        {{-- @php
             $isRef01 = $workCenter === 'REF-01';
-        @endphp
+        @endphp --}}
 
         <table style="margin-bottom: 20px;">
             <thead>
@@ -212,7 +213,8 @@
                     <th rowspan="2">Flow Rate</th>
                     <th colspan="10">RAW MATERIAL</th>
                     <th colspan="4">BPO</th>
-                    <th colspan="{{ $isRef01 ? 9 : 10 }}">RRPO</th>
+                    {{-- <th colspan="{{ $isRef01 ? 9 : 10 }}">RRPO</th> --}}
+                    <th colspan="10">RRPO</th>
                     <th colspan="3">PFAD</th>
                     <th colspan="2">SPENT EARTH</th>
                     <th rowspan="2">REMARKS</th>
@@ -236,9 +238,9 @@
 
                     <th>FFA</th>
                     <th>Moist</th>
-                    @if (!$isRef01)
+                    {{-- @if (!$isRef01) --}}
                         <th>IMP</th>
-                    @endif
+                    {{-- @endif --}}
                     <th>IV</th>
                     <th>PV</th>
                     <th>Color R</th>
@@ -279,9 +281,9 @@
 
                         <td>{{ $row->fg_ffa }}</td>
                         <td>{{ $row->fg_moist }}</td>
-                        @if (!$isRef01)
+                        {{-- @if (!$isRef01) --}}
                             <td>{{ $row->fg_impurities }}</td>
-                        @endif
+                        {{-- @endif --}}
                         <td>{{ $row->fg_iv }}</td>
                         <td>{{ $row->fg_pv }}</td>
                         <td>{{ $row->fg_color_r }}</td>
