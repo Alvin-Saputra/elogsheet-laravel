@@ -23,8 +23,16 @@ class UpdateAroipApprovalRequest extends FormRequest
      */
     public function rules()
     {
-       return [
-            'status' => 'required|string|in:approved,rejected',
+        return [
+            'status' => [
+                'required',
+                'string',
+                function ($attribute, $value, $fail) {
+                    if (! in_array(strtolower($value), ['approved', 'rejected'])) {
+                        $fail('The selected status is invalid.');
+                    }
+                },
+            ],
             'remarks' => 'required_if:status,rejected|string|max:100|nullable',
         ];
     }
