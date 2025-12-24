@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" x-data x-cloak>
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
@@ -35,7 +35,6 @@
             });
         });
     </script>
-
     <style>
         [x-cloak] {
             display: none !important;
@@ -43,8 +42,8 @@
     </style>
 </head>
 
-<body class="bg-gray-100 text-gray-800 h-screen " x-data>
-    <div class="flex h-full">
+<body class="bg-gray-100 text-gray-800 h-screen ">
+    <div class="flex h-full" x-data x-cloak>
         {{-- Sidebar --}}
         @include('layouts.sidebar')
 
@@ -71,6 +70,11 @@
             </footer>
         </div>
     </div>
+    {{-- Page specific scripts --}}
+    @stack('scripts')
+
+    {{-- Global Toast --}}
+    <x-toast />
 </body>
 
 </html>

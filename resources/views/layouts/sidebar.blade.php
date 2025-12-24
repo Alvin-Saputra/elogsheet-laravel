@@ -1,14 +1,8 @@
-<aside
-    class="z-30 w-64 bg-white border-r shadow-md h-screen fixed md:relative transition-transform duration-300 ease-in-out"
-    :class="{ '-translate-x-full': !$store.sidebar.open, 'translate-x-0': $store.sidebar.open }" x-cloak
-    x-data="{
-        openMaster: @json(request()->routeIs('business-unit.*') ||
-                request()->routeIs('master-plant.*') ||
-                request()->routeIs('master-value.*') ||
-                request()->routeIs('master-role.*')),
-        openReport: @json(request()->routeIs('report-quality.*') || request()->routeIs('report-lampnglass.*')),
-        openLogsheet: @json(request()->routeIs('logsheet-dryfractination.*')),
-    }">
+<aside class="z-30 w-64 bg-white border-r shadow-md h-screen fixed transition-transform duration-300 ease-in-out"
+    :class="{
+           '-translate-x-full': !$store.sidebar.open, 
+           'translate-x-0': $store.sidebar.open
+       }" x-cloak>
     <div class="h-full flex flex-col">
         <!-- Header -->
         <div class="p-5 border-b flex justify-between items-center">
@@ -41,11 +35,9 @@
                                 <i class="{{ $menu->icon ?? 'fa fa-folder' }}"></i>
                                 {{ $menu->menu_name }}
                             </div>
-                            <svg :class="{ 'rotate-90': open }"
-                                class="w-4 h-4 text-gray-500 transition-transform duration-200" fill="none"
-                                stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M9 5l7 7-7 7" />
+                            <svg :class="{ 'rotate-90': open }" class="w-4 h-4 text-gray-500 transition-transform duration-200"
+                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                             </svg>
                         </button>
 
