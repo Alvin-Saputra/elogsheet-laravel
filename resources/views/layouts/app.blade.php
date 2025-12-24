@@ -73,8 +73,6 @@
     {{-- Page specific scripts --}}
     @stack('scripts')
 
-    {{-- Global Toast --}}
-    <x-toast />
 </body>
 
 </html>
