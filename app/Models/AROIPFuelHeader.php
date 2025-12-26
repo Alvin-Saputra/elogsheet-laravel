@@ -50,7 +50,7 @@ class AROIPFuelHeader extends Model
 
      public function roa()
     {
-        return $this->belongsTo(ROAHeader::class, 'id_coa', 'id');
+        return $this->belongsTo(ROAHeader::class, 'id_roa', 'id');
     }
 
      public function details()

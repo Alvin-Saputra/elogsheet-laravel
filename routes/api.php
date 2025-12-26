@@ -101,4 +101,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // new single api route
     Route::post('aroipfuel', [AROIPFuelController::class, 'create']);
+    Route::get('aroipfuel', [AROIPFuelController::class, 'get']);
+    Route::delete('aroipfuel/{id}', [AROIPFuelController::class, 'destroy']);
 });

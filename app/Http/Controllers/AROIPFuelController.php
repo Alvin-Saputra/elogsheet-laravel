@@ -177,4 +177,125 @@ class AROIPFuelController extends Controller
             ], 500);
         }
     }
+
+    public function get(Request $request)
+    {
+        $query = AROIPFuelHeader::with(['details', 'roa.details']);
+
+        // Filter by date_issued
+        if ($request->filled('entry_date')) {
+            $query->whereDate('entry_date', $request->entry_date);
+        }
+
+        // Filter by date range
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $query->whereBetween('entry_date', [
+                $request->start_date,
+                $request->end_date,
+            ]);
+        }
+
+        // Order by most recent first
+        $query->orderBy('entry_date', 'desc');
+
+        $result = $query->get();
+
+        if ($request->anyFilled(['entry_date', 'start_date', 'end_date']) && $result->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No data found for the given filters.',
+            ], 404);
+        }
+
+        // Format the response with 'analytical' and 'coa' keys
+        $formattedResult = $result->map(function ($item) {
+            return [
+                'analytical' => array_merge(
+                    $item->only([
+                        'id',
+                        'id_roa',
+                        'material',
+                        'quantity',
+                        'analyst',
+                        'supplier',
+                        'police_no',
+                        'batch_lot',
+                        'status',
+                        'flag',
+                        'entry_by',
+                        'entry_date',
+                        'prepared_by',
+                        'prepared_date',
+                        'prepared_status',
+                        'prepared_status_remarks',
+                        'approved_by',
+                        'approved_date',
+                        'approved_status',
+                        'approved_status_remarks',
+                        'updated_by',
+                        'updated_date',
+                        'form_no',
+                        'date_issued',
+                        'revision_no',
+                        'revision_date',
+                        'deleted_at',
+                        'date',
+                        'exp_date',
+                    ]),
+                    ['details' => $item->details]
+                ),
+                'roa' => $item->roa ?: null,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => $formattedResult,
+        ]);
+    }
+
+    public function destroy($id)
+    {
+        try {
+            DB::beginTransaction();
+
+            // Find the record (including soft deleted ones)
+            $header = AROIPFuelHeader::withTrashed()->findOrFail($id);
+
+            // Check if already soft deleted
+            if ($header->trashed()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'AROIP Fuel record is already deleted.',
+                ], 400);
+            }
+
+            // Soft delete the header
+            $header->delete();
+
+            AROIPFuelDetail::where('id_hdr', $id)->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'AROIP Fuel record has been deleted successfully.',
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'AROIP Fuel record not found.',
+            ], 404);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete AROIP Fuel record',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }

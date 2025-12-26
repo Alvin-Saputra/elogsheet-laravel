@@ -40,7 +40,7 @@ class ROAHeader extends Model
 
     public function aroipFuelHeaders()
     {
-        return $this->hasMany(AROIPFuelHeader::class, 'id_coa', 'id');
+        return $this->hasMany(AROIPFuelHeader::class, 'id_roa', 'id');
     }
 
     public function details()
