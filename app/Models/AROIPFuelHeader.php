@@ -29,7 +29,6 @@ class AROIPFuelHeader extends Model
         'supplier',
         'police_no',
         'analyst',
-        'flag',
         'entry_by',
         'entry_date',
         'prepared_by',
