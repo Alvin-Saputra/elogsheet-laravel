@@ -2,55 +2,56 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ROADetail;
-use App\Models\ROAHeader;
-use App\Models\MDataFormNo;
-use Illuminate\Http\Request;
-use App\Models\MControlnumber;
+use App\Http\Requests\CreateAroipFuelRequest;
+use App\Http\Requests\UpdateAroipFuelRequest;
 use App\Models\AROIPFuelDetail;
 use App\Models\AROIPFuelHeader;
+use App\Models\MControlnumber;
+use App\Models\MDataFormNo;
+use App\Models\ROADetail;
+use App\Models\ROAHeader;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Http\Requests\CreateAroipFuelRequest;
 
 class AROIPFuelController extends Controller
 {
-     public function create(CreateAroipFuelRequest $request)
+    public function create(CreateAroipFuelRequest $request)
     {
         try {
             DB::beginTransaction();
-            
+
             // Asumsi: Method getDisplayNameAttribute() ada di model User
-            $user = $request->user()->getDisplayNameAttribute(); 
+            $user = $request->user()->getDisplayNameAttribute();
             $data = $request->validated();
 
             // ---------------------------------------------------------
             // 1. Validasi Config Form
             // ---------------------------------------------------------
             $dataForm = MDataFormNo::find(18);
-            if (!$dataForm) {
+            if (! $dataForm) {
                 throw new \Exception('Form configuration not found (f_id: 18)');
             }
 
             // ---------------------------------------------------------
             // 2. PROSES CREATE ROA (Selalu dijalankan)
             // ---------------------------------------------------------
-            
+
             // Ambil Control Number untuk ROA
             $roaControl = MControlnumber::where('prefix', 'Q12A')
                 ->where('plantid', 'PS21')
                 ->lockForUpdate()
                 ->first();
 
-            if (!$roaControl) {
+            if (! $roaControl) {
                 throw new \Exception('Control number configuration not found for ROA');
             }
 
             // Generate ID ROA
             $roaNextNum = intval($roaControl->autonumber ?? 0) + 1;
-            $paddedNum  = str_pad($roaNextNum, 6, '0', STR_PAD_LEFT);
-            $year       = (string) $roaControl->accountingyear;
-            $suffix     = 'ROA' . ($roaControl->plantid ?? '') . $year . $paddedNum;
-            $roaId      = ($roaControl->prefix ?? 'Q12A') . $suffix;
+            $paddedNum = str_pad($roaNextNum, 6, '0', STR_PAD_LEFT);
+            $year = (string) $roaControl->accountingyear;
+            $suffix = 'ROA'.($roaControl->plantid ?? '').$year.$paddedNum;
+            $roaId = ($roaControl->prefix ?? 'Q12A').$suffix;
 
             // Simpan Header ROA
             $roaHeader = ROAHeader::create([
@@ -75,7 +76,7 @@ class AROIPFuelController extends Controller
 
             // Simpan Details ROA
             foreach ($data['roa']['details'] as $index => $detail) {
-                $detailId = $roaId . 'D' . str_pad($index + 1, 3, '0', STR_PAD_LEFT);
+                $detailId = $roaId.'D'.str_pad($index + 1, 3, '0', STR_PAD_LEFT);
                 ROADetail::create([
                     'id' => $detailId,
                     'id_hdr' => $roaId,
@@ -92,19 +93,18 @@ class AROIPFuelController extends Controller
                 ->where('plantid', $roaControl->plantid)
                 ->update(['autonumber' => $roaNextNum]);
 
-
             // ---------------------------------------------------------
             // 3. PROSES CREATE AROIP FUEL
             // ---------------------------------------------------------
-            
+
             // Ambil Control Number untuk AROIP
             // PERHATIKAN: Prefix-nya sama 'Q12A'? Jika beda, sesuaikan di sini.
-            $control = MControlnumber::where('prefix', 'Q12A') 
+            $control = MControlnumber::where('prefix', 'Q12A')
                 ->where('plantid', 'PS21')
                 ->lockForUpdate()
                 ->first();
 
-            if (!$control) {
+            if (! $control) {
                 throw new \Exception('Control number configuration not found for AROIP');
             }
 
@@ -112,7 +112,7 @@ class AROIPFuelController extends Controller
             $nextNum = intval($control->autonumber) + 1;
             $paddedNum = str_pad($nextNum, 6, '0', STR_PAD_LEFT);
             // Format ID sesuaikan kebutuhan, ini contoh standar:
-            $headerId = $control->prefix . $control->plantid . $control->accountingyear . $paddedNum;
+            $headerId = $control->prefix.$control->plantid.$control->accountingyear.$paddedNum;
 
             // Simpan Header AROIP Fuel
             $header = AROIPFuelHeader::create([
@@ -136,7 +136,7 @@ class AROIPFuelController extends Controller
 
             // Simpan Details AROIP Fuel
             foreach ($data['analytical']['details'] as $index => $detail) {
-                $detailId = $headerId . 'D' . str_pad($index + 1, 3, '0', STR_PAD_LEFT);
+                $detailId = $headerId.'D'.str_pad($index + 1, 3, '0', STR_PAD_LEFT);
                 AROIPFuelDetail::create([
                     'id' => $detailId,
                     'id_hdr' => $headerId,
@@ -174,6 +174,229 @@ class AROIPFuelController extends Controller
                 'success' => false,
                 'message' => 'Failed to create AROIP Fuel',
                 'error' => $e->getMessage(), // Matikan ini di production agar aman
+            ], 500);
+        }
+    }
+
+    public function update(UpdateAroipFuelRequest $request, $id)
+    {
+        try {
+            DB::beginTransaction();
+
+            $user = $request->user()->getDisplayNameAttribute();
+            $data = $request->validated();
+
+            // Find the header
+            $header = AROIPFuelHeader::with(['details', 'roa.details'])->findOrFail($id);
+
+            // Helper: compute next detail id for a header by scanning existing ids in DB
+            $nextDetailIdForHeader = function ($headerId, $detailModelClass) {
+                // fetch existing ids from DB to be safe across concurrent transactions
+                $rows = $detailModelClass::where('id_hdr', $headerId)->pluck('id')->toArray();
+                $max = 0;
+                foreach ($rows as $rid) {
+                    if (preg_match('/D(\d+)$/', $rid, $m)) {
+                        $num = intval($m[1]);
+                        if ($num > $max) {
+                            $max = $num;
+                        }
+                    }
+                }
+                // next sequence
+                $nextSeq = $max + 1;
+
+                return $headerId.'D'.str_pad($nextSeq, 3, '0', STR_PAD_LEFT);
+            };
+
+            // ----------------------------
+            // A) Update ROA (header + details) if provided
+            // ----------------------------
+            if (isset($data['roa'])) {
+                $roaPayload = $data['roa'];
+
+                // load the related ROA header
+                $roaHeader = ROAHeader::with('details')->findOrFail($header->id_roa);
+
+                // update ROA header fields
+                $roaHeader->update([
+                    'report_no' => $roaPayload['report_no'] ?? $roaHeader->report_no,
+                    'shipper' => $roaPayload['shipper'] ?? $roaHeader->shipper,
+                    'buyer' => $roaPayload['buyer'] ?? $roaHeader->buyer,
+                    'date_received' => $roaPayload['date_received'] ?? $roaHeader->date_received,
+                    'date_analyzed_start' => $roaPayload['date_analyzed_start'] ?? $roaHeader->date_analyzed_start,
+                    'date_analyzed_end' => $roaPayload['date_analyzed_end'] ?? $roaHeader->date_analyzed_end,
+                    'date_reported' => $roaPayload['date_reported'] ?? $roaHeader->date_reported,
+                    'lab_sample_id' => $roaPayload['lab_sample_id'] ?? $roaHeader->lab_sample_id,
+                    'customer_sample_id' => $roaPayload['customer_sample_id'] ?? $roaHeader->customer_sample_id,
+                    'seal_no' => $roaPayload['seal_no'] ?? $roaHeader->seal_no,
+                    'weight_of_received_sample' => $roaPayload['weight_of_received_sample'] ?? $roaHeader->weight_of_received_sample,
+                    'top_size_of_received_sample' => $roaPayload['top_size_of_received_sample'] ?? $roaHeader->top_size_of_received_sample,
+                    'updated_by' => $user,
+                    'updated_date' => now(),
+                ]);
+
+                // sync roa details if provided
+                if (isset($roaPayload['details']) && is_array($roaPayload['details'])) {
+                    $existingIds = $roaHeader->details->pluck('id')->toArray();
+                    $receivedIds = [];
+
+                    foreach ($roaPayload['details'] as $row) {
+                        // if client provided an id, update that detail
+                        if (! empty($row['id'])) {
+                            $detail = ROADetail::where('id', $row['id'])
+                                ->where('id_hdr', $roaHeader->id)
+                                ->first();
+
+                            if (! $detail) {
+                                DB::rollBack();
+
+                                return response()->json([
+                                    'success' => false,
+                                    'message' => "ROA detail id {$row['id']} not found for ROA {$roaHeader->id}.",
+                                ], 404);
+                            }
+
+                            $detail->update([
+                                'parameter' => $row['parameter'] ?? $detail->parameter,
+                                'unit' => $row['unit'] ?? $detail->unit,
+                                'basis' => $row['basis'] ?? $detail->basis,
+                                'result' => $row['result'] ?? $detail->result,
+                            ]);
+
+                            $receivedIds[] = $detail->id;
+                        } else {
+                            // no id -> create new deterministic id
+                            $newId = $nextDetailIdForHeader($roaHeader->id, ROADetail::class);
+
+                            $created = ROADetail::create([
+                                'id' => $newId,
+                                'id_hdr' => $roaHeader->id,
+                                'parameter' => $row['parameter'] ?? null,
+                                'unit' => $row['unit'] ?? null,
+                                'basis' => $row['basis'] ?? null,
+                                'result' => $row['result'] ?? null,
+                            ]);
+
+                            $receivedIds[] = $created->id;
+                        }
+                    }
+
+                    // delete details removed by the client (sync)
+                    $toDelete = array_diff($existingIds, $receivedIds);
+                    if (! empty($toDelete)) {
+                        ROADetail::whereIn('id', $toDelete)->delete();
+                    }
+                }
+            }
+
+            // ----------------------------
+            // B) Update AROIP Fuel header if provided
+            // ----------------------------
+            if (isset($data['analytical'])) {
+                $analPayload = $data['analytical'];
+
+                $header->update([
+                    'date' => $analPayload['date'] ?? $header->date,
+                    'material' => $analPayload['material'] ?? $header->material,
+                    'quantity' => $analPayload['quantity'] ?? $header->quantity,
+                    'supplier' => $analPayload['supplier'] ?? $header->supplier,
+                    'police_no' => $analPayload['police_no'] ?? $header->police_no,
+                    'analyst' => $analPayload['analyst'] ?? $header->analyst,
+                    'updated_by' => $user,
+                    'updated_date' => now(),
+                    'form_no' => $analPayload['form_no'] ?? $header->form_no,
+                    'date_issued' => $analPayload['date_issued'] ?? $header->date_issued,
+                    'revision_no' => $analPayload['revision_no'] ?? $header->revision_no,
+                    'revision_date' => $analPayload['revision_date'] ?? $header->revision_date,
+                ]);
+
+                // sync analytical details if provided
+                if (isset($analPayload['details']) && is_array($analPayload['details'])) {
+                    $existingIds = $header->details->pluck('id')->toArray();
+                    $receivedIds = [];
+
+                    foreach ($analPayload['details'] as $row) {
+                        if (! empty($row['id'])) {
+                            $detail = AROIPFuelDetail::where('id', $row['id'])
+                                ->where('id_hdr', $header->id)
+                                ->first();
+
+                            if (! $detail) {
+                                DB::rollBack();
+
+                                return response()->json([
+                                    'success' => false,
+                                    'message' => "Analytical detail id {$row['id']} not found for header {$header->id}.",
+                                ], 404);
+                            }
+
+                            $detail->update([
+                                'parameter' => $row['parameter'] ?? $detail->parameter,
+                                'result_min' => $row['result_min'] ?? $detail->result_min,
+                                'result_max' => $row['result_max'] ?? $detail->result_max,
+                                'specification_min' => $row['specification_min'] ?? $detail->specification_min,
+                                'specification_max' => $row['specification_max'] ?? $detail->specification_max,
+                                'status_ok' => isset($row['status_ok']) ? strtoupper($row['status_ok']) : $detail->status_ok,
+                                'remark' => $row['remark'] ?? $detail->remark,
+                            ]);
+
+                            $receivedIds[] = $detail->id;
+                        } else {
+                            // no id -> create new deterministic id
+                            $newId = $nextDetailIdForHeader($header->id, AROIPFuelDetail::class);
+
+                            $created = AROIPFuelDetail::create([
+                                'id' => $newId,
+                                'id_hdr' => $header->id,
+                                'parameter' => $row['parameter'] ?? null,
+                                'result_min' => $row['result_min'] ?? null,
+                                'result_max' => $row['result_max'] ?? null,
+                                'specification_min' => $row['specification_min'] ?? null,
+                                'specification_max' => $row['specification_max'] ?? null,
+                                'status_ok' => isset($row['status_ok']) ? strtoupper($row['status_ok']) : null,
+                                'remark' => $row['remark'] ?? null,
+                            ]);
+
+                            $receivedIds[] = $created->id;
+                        }
+                    }
+
+                    // delete details removed by the client (sync)
+                    $toDelete = array_diff($existingIds, $receivedIds);
+                    if (! empty($toDelete)) {
+                        AROIPFuelDetail::whereIn('id', $toDelete)->delete();
+                    }
+                }
+            }
+
+            DB::commit();
+
+            // return fresh header with relations
+            $header->refresh();
+            $header->load(['details', 'roa.details']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'AROIP Fuel record updated successfully',
+                'data' => [
+                    'aroip_header' => $header,
+                ],
+            ], 200);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Record not found: '.$e->getMessage(),
+            ], 404);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update AROIP Fuel record',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

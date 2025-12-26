@@ -40,12 +40,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('me', [LoginController::class, 'me']);
 });
 
-//Analytical Report Incoming Material by Vessel
+// Analytical Report Incoming Material by Vessel
 
 Route::middleware('auth:sanctum')->group(function () {
     // business unit master
     Route::resource('bunit', MstBusinessUnitController::class);
-    //Analytical Report Incoming Material by Vessel
+    // Analytical Report Incoming Material by Vessel
     Route::post('arimvess', [ARIMByVesselController::class, 'create']);
     Route::put('arimvess', [ARIMByVesselController::class, 'update']);
     Route::get('arimvess', [ARIMByVesselController::class, 'get']);
@@ -56,7 +56,7 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     // business unit master
     Route::resource('bunit', MstBusinessUnitController::class);
-    //Analytical Report Incoming Material by Vessel
+    // Analytical Report Incoming Material by Vessel
     Route::post('arimvess', [ARIMByVesselController::class, 'create']);
     Route::put('arimvess', [ARIMByVesselController::class, 'update']);
     Route::get('arimvess', [ARIMByVesselController::class, 'get']);
@@ -67,7 +67,7 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     // business unit master
     Route::resource('bunit', MstBusinessUnitController::class);
-    //Analytical Report Incoming Material by Vessel
+    // Analytical Report Incoming Material by Vessel
     Route::post('arimtruck', [ARIMByTruckController::class, 'create']);
     Route::get('arimtruck', [ARIMByTruckController::class, 'get']);
     Route::delete('arimtruck/{id}', [ARIMByTruckController::class, 'destroy']);
@@ -75,7 +75,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('arimtruck/approve-reject', [ARIMByTruckController::class, 'updateApprovalStatusApi']);
 });
 
-//Analytical Report Incoming Plant Chemical / Ingredient
+// Analytical Report Incoming Plant Chemical / Ingredient
 
 Route::middleware('auth:sanctum')->group(function () {
     // business unit master
@@ -96,11 +96,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('ariopchemical/{id}/approve', [AROIPChemicalController::class, 'updateApproval']);
 });
 
-
 Route::middleware('auth:sanctum')->group(function () {
 
     // new single api route
     Route::post('aroipfuel', [AROIPFuelController::class, 'create']);
     Route::get('aroipfuel', [AROIPFuelController::class, 'get']);
     Route::delete('aroipfuel/{id}', [AROIPFuelController::class, 'destroy']);
+    Route::put('aroipfuel/{id}', [AROIPFuelController::class, 'update']);
 });
