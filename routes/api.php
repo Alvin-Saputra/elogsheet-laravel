@@ -103,4 +103,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('aroipfuel', [AROIPFuelController::class, 'get']);
     Route::delete('aroipfuel/{id}', [AROIPFuelController::class, 'destroy']);
     Route::put('aroipfuel/{id}', [AROIPFuelController::class, 'update']);
+    Route::put('aroipfuel/{id}/approve', [AROIPFuelController::class, 'updateApproval']);
 });
