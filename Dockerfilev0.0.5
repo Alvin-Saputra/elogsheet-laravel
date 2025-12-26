@@ -1,0 +1,48 @@
+# =========================
+# STAGE 1: Build frontend
+# =========================
+FROM node:20-alpine AS node-builder
+
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+
+COPY resources resources
+COPY vite.config.js ./
+RUN npm run build
+
+
+# =========================
+# STAGE 2: Laravel app
+# =========================
+FROM raphtekt28/laravel-base
+
+WORKDIR /var/www/html
+
+# Install Composer
+RUN curl -sS https://getcomposer.org/installer -o composer-setup.php \
+  && php composer-setup.php --install-dir=/usr/local/bin --filename=composer \
+  && rm -f composer-setup.php
+
+# Copy Laravel source
+COPY . .
+
+# Copy built assets from node stage
+COPY --from=node-builder /app/public/build public/build
+
+RUN composer install --no-dev --optimize-autoloader
+
+RUN php artisan key:generate || true
+
+RUN chown -R www-data:www-data storage bootstrap/cache \
+ && chmod -R 775 storage bootstrap/cache
+
+RUN php artisan storage:link \
+ && php artisan config:clear \
+ && php artisan cache:clear \
+ && php artisan route:clear \
+ && php artisan view:clear
+
+EXPOSE 8000
+
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]

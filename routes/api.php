@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AROIPChemicalController;
 use App\Http\Controllers\ARIMByTruckController;
 use App\Http\Controllers\ARIMByVesselController;
+use App\Http\Controllers\AROIPFuelController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\COAController;
 use App\Http\Controllers\MstBusinessUnitController;
@@ -93,4 +94,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('ariopchemical/{id}/restore', [AROIPChemicalController::class, 'restore']);
     Route::delete('ariopchemical/{id}/force', [AROIPChemicalController::class, 'forceDelete']);
     Route::put('ariopchemical/{id}/approve', [AROIPChemicalController::class, 'updateApproval']);
+});
+
+
+Route::middleware('auth:sanctum')->group(function () {
+
+    // new single api route
+    Route::post('aroipfuel', [AROIPFuelController::class, 'create']);
 });
