@@ -210,7 +210,7 @@ class AROIPFuelController extends Controller
                     'id_hdr' => $headerId,
                     'parameter' => $detail['parameter'],
                     'result' => $detail['result'],
-                    'specification' => $detail['specification_max'] ?? null,
+                    'specification' => $detail['specification'] ?? null,
                     'status_ok' => isset($detail['status_ok']) ? strtoupper($detail['status_ok']) : null,
                     'remark' => $detail['remark'] ?? null,
                 ]);
@@ -361,10 +361,8 @@ class AROIPFuelController extends Controller
                             }
                             $detail->update([
                                 'parameter' => $row['parameter'] ?? $detail->parameter,
-                                'result_min' => $row['result_min'] ?? $detail->result_min,
-                                'result_max' => $row['result_max'] ?? $detail->result_max,
-                                'specification_min' => $row['specification_min'] ?? $detail->specification_min,
-                                'specification_max' => $row['specification_max'] ?? $detail->specification_max,
+                                'result' => $row['result'] ?? $detail->result,
+                                'specification' => $row['specification'] ?? $detail->specification,
                                 'status_ok' => isset($row['status_ok']) ? strtoupper($row['status_ok']) : $detail->status_ok,
                                 'remark' => $row['remark'] ?? $detail->remark,
                             ]);
@@ -375,10 +373,8 @@ class AROIPFuelController extends Controller
                                 'id' => $newId,
                                 'id_hdr' => $header->id,
                                 'parameter' => $row['parameter'] ?? null,
-                                'result_min' => $row['result_min'] ?? null,
-                                'result_max' => $row['result_max'] ?? null,
-                                'specification_min' => $row['specification_min'] ?? null,
-                                'specification_max' => $row['specification_max'] ?? null,
+                                'result' => $row['result'] ?? null,
+                                'specification' => $row['specification'] ?? null,
                                 'status_ok' => isset($row['status_ok']) ? strtoupper($row['status_ok']) : null,
                                 'remark' => $row['remark'] ?? null,
                             ]);
