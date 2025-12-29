@@ -38,6 +38,8 @@ class UpdateAroipFuelRequest extends FormRequest
             'roa.seal_no' => 'nullable|string|max:100',
             'roa.weight_of_received_sample' => 'nullable|numeric',
             'roa.top_size_of_received_sample' => 'nullable|numeric',
+            'roa.hardgrove_grindability_index' => 'nullable|numeric',
+
             // ROA Details
             'roa.details' => 'sometimes|array|min:1',
             'roa.details.*.parameter' => 'required_with:roa.details|string|max:45',
@@ -59,10 +61,8 @@ class UpdateAroipFuelRequest extends FormRequest
             // Analytical Details
             'analytical.details' => 'sometimes|array|min:1',
             'analytical.details.*.parameter' => 'required_with:analytical.details|string|max:45',
-            'analytical.details.*.result_min' => 'required_with:analytical.details|numeric',
-            'analytical.details.*.result_max' => 'nullable|numeric',
-            'analytical.details.*.specification_min' => 'nullable|numeric',
-            'analytical.details.*.specification_max' => 'nullable|numeric',
+            'analytical.details.*.result' => 'nullable|numeric',
+            'analytical.details.*.specification' => 'nullable|numeric',
             'analytical.details.*.status_ok' => 'nullable|string|in:Y,N',
             'analytical.details.*.remark' => 'nullable|string|max:100',
         ];

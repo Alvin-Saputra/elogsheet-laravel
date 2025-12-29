@@ -45,9 +45,9 @@ class CreateAroipFuelRequest extends FormRequest
             'roa.lab_sample_id' => 'required_with:roa|string|max:45',
             'roa.customer_sample_id' => 'required_with:roa|string|max:45',
             'roa.seal_no' => 'required_with:roa|string|max:45',
-            'roa.weight_of_received_sample' => 'required_with:roa|string|max:45',
-            'roa.top_size_of_received_sample' => 'required_with:roa|string|max:45',
-
+            'roa.weight_of_received_sample' => 'required_with:roa|numeric',
+            'roa.top_size_of_received_sample' => 'required_with:roa|numeric',
+            'roa.hardgrove_grindability_index' => 'required_with:roa|numeric',
             'roa.details' => 'required_with:roa|array|min:1',
             'roa.details.*.parameter' => 'required_with:roa|string|max:45',
             'roa.details.*.unit' => 'nullable|string|min:1',
@@ -77,11 +77,9 @@ class CreateAroipFuelRequest extends FormRequest
 
 
             'analytical.details' => 'required|array|min:1',
-            'analytical.details.*.result_min' => 'required|numeric',
-            'analytical.details.*.result_max' => 'nullable|numeric',
+            'analytical.details.*.result' => 'required|numeric',
             'analytical.details.*.parameter' => 'required|string|max:45',
-            'analytical.details.*.specification_min' => 'required|numeric',
-            'analytical.details.*.specification_max' => 'required|numeric',
+            'analytical.details.*.specification' => 'required|numeric',
             'analytical.details.*.status_ok' => 'required|in:Y,N',
             'analytical.details.*.remark' => 'nullable|string|max:100',
         ];

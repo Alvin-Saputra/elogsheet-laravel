@@ -34,8 +34,9 @@ class ROAHeader extends Model
         'seal_no',
         'weight_of_received_sample',
         'top_size_of_received_sample',
+        'hardgrove_grindability_index',
         'authorized_by',
-        'authorized_date'
+        'authorized_date',
     ];
 
     public function aroipFuelHeaders()

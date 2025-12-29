@@ -22,10 +22,8 @@ class AROIPFuelDetail extends Model
         'id',
         'id_hdr',
         'parameter',
-        'result_min',
-        'result_max',
-        'specification_min',
-        'specification_max',
+        'result',
+        'specification',
         'status_ok',
         'remark',
     ];
