@@ -3,6 +3,7 @@
 use App\Http\Controllers\ARIMByTruckController;
 use App\Http\Controllers\ARIMByVesselController;
 use App\Http\Controllers\AROIPChemicalController;
+use App\Http\Controllers\AROIPFuelController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LogsheetDryFraController;
@@ -339,4 +340,15 @@ Route::middleware('auth')->group(function () {
             Route::get('/{id}/export/pdf', [AROIPChemicalController::class, 'getById'])
                 ->name('export');
         });
+
+    Route::prefix('analytical-result-incoming-plant-fuel')
+        ->name('analytical-result-incoming-plant-fuel.')
+        ->group(function () {
+            Route::get('/', [AROIPFuelController::class, 'index'])->name('index');
+            Route::post('/{id}/approve-report', [AROIPFuelController::class, 'updateApprovalStatusWeb'])->name('approveReject');
+            Route::get('/{id}', [AROIPFuelController::class, 'getById'])->name('show');
+            Route::get('/{id}/export/view', [AROIPFuelController::class, 'getById'])->name('preview');
+            Route::get('/{id}/export/pdf', [AROIPFuelController::class, 'getById'])->name('export');
+        });
+
 });
