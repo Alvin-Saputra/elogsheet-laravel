@@ -12,9 +12,80 @@ use App\Models\MDataFormNo;
 use DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Schema;
 
 class AROSProductByTruckController extends Controller
 {
+
+    //
+    // -----------------------
+    // Shared helpers / utils
+    // -----------------------
+    //
+
+    /**
+     * Normalize roles value to an array and decide which prefix to use.
+     * Returns ['prefix' => 'prepared'|'approved', 'roles' => array] or false when not allowed.
+     */
+    private function decidePrefixFromRoles($userRoles)
+    {
+        $LEAD_QC = ['LEAD', 'LEAD_QC'];
+        $QC_Control_MGR = ['MGR', 'MGR_QC', 'ADM'];
+
+        if (is_array($userRoles)) {
+            $roles = array_map(fn($r) => strtoupper((string) $r), $userRoles);
+        } else {
+            $roles = array_filter(array_map('trim', preg_split('/[,\|;]+/', (string) $userRoles)));
+            $roles = array_map(fn($r) => strtoupper((string) $r), $roles ?: []);
+        }
+
+        if (count(array_intersect($roles, $QC_Control_MGR)) > 0) {
+            return ['prefix' => 'approved', 'roles' => $roles];
+        }
+
+        if (count(array_intersect($roles, $LEAD_QC)) > 0) {
+            return ['prefix' => 'corrected', 'roles' => $roles];
+        }
+
+        return false;
+    }
+
+    /**
+     * Process approval status. Works for both API and Web callers.
+     */
+    private function processApprovalStatus($header, $status, $remark, $user_name, $user_roles)
+    {
+        $decision = $this->decidePrefixFromRoles($user_roles);
+
+        if ($decision === false) {
+            return false;
+        }
+
+        $fieldPrefix = $decision['prefix'];
+        $rolesArr = $decision['roles'];
+
+        $status = is_string($status) ? ucfirst(strtolower(trim($status))) : $status;
+
+        $updates = [
+            "{$fieldPrefix}_status" => $status,
+            "{$fieldPrefix}_by" => $user_name,
+            "{$fieldPrefix}_date" => now(),
+            "{$fieldPrefix}_status_remarks" => $remark,
+            'updated_by' => $user_name,
+            'updated_date' => now(),
+        ];
+
+        if (Schema::hasColumn($header->getTable(), "{$fieldPrefix}_role")) {
+            $updates["{$fieldPrefix}_role"] = json_encode($rolesArr);
+        }
+
+        if ($fieldPrefix === 'approved' && Schema::hasColumn($header->getTable(), 'status')) {
+            $updates['status'] = $status;
+        }
+
+        return $header->update($updates);
+    }
+
 
     public function get(Request $request)
     {
@@ -179,6 +250,50 @@ class AROSProductByTruckController extends Controller
         }
     }
 
+    public function updateApproval(UpdateArosProductByTruckApprovalRequest $request, $id)
+    {
+        try {
+            DB::beginTransaction();
+            $header = AROSProductByTruckHeader::findOrFail($id);
+            $user = $request->user() ?? auth()->user();
+            $status = Str::ucfirst(strtolower($request->input('status')));
+            $remark = $request->input('remarks');
+
+            $username = $user->username ?? ($user->name ?? (method_exists($user, 'getDisplayNameAttribute') ? $user->getDisplayNameAttribute() : null));
+            $userRoles = $user->roles ?? null;
+
+            $isSuccess = $this->processApprovalStatus($header, $status, $remark, $username, $userRoles);
+
+            if (!$isSuccess) {
+                DB::rollBack();
+                return response()->json(['success' => false, 'message' => 'You do not have permission to update approval status'], 403);
+            }
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Approval status updated successfully',
+                'data' => [
+                    'id' => $header->id,
+                    'status' => $status,
+                    'remarks' => $remark,
+                    'updated_by' => $username,
+                    'updated_at' => now()->toDateTimeString(),
+                ],
+            ], 200);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'Record not found.'], 404);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update AROS Product By Truck Approval',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
     public function destroy($id)
     {
         try {
