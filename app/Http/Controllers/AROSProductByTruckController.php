@@ -2,27 +2,44 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\CreateArosProductByTruck;
+use App\Http\Requests\CreateArosProductByTruckRequest;
+use App\Http\Requests\UpdateArosProductByTruckApprovalRequest;
+use App\Http\Requests\UpdateArosProductByTruckRequest;
 use App\Models\AROSProductByTruckDetail;
 use App\Models\AROSProductByTruckHeader;
 use App\Models\MControlnumber;
 use App\Models\MDataFormNo;
 use DB;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class AROSProductByTruckController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function index()
+
+    public function get(Request $request)
     {
-        //
+        $query = AROSProductByTruckHeader::with(['details']);
+
+        if ($request->filled('loading_date')) {
+            $query->whereDate('loading_date', $request->loading_date);
+        }
+        $query->orderBy('loading_date', 'desc');
+
+        $result = $query->get();
+        if ($request->anyFilled(['loading_date']) && $result->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No data found for the given filters.',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $result,
+        ], 200);
     }
 
-    public function create(CreateArosProductByTruck $request)
+    public function create(CreateArosProductByTruckRequest $request)
     {
         try {
             DB::beginTransaction();
@@ -89,7 +106,7 @@ class AROSProductByTruckController extends Controller
                 'success' => true,
                 'message' => 'Analytical Result of Outgoing Shipment Product By Truck created successfully',
                 'data' => [
-                    'aroip_header_id' => $header->id,
+                    'header_id' => $header->id,
                 ],
             ]);
         } catch (\Exception $e) {
@@ -103,48 +120,102 @@ class AROSProductByTruckController extends Controller
         }
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show($id)
+
+    public function update(UpdateArosProductByTruckRequest $request, $id)
     {
-        //
+        try {
+            DB::beginTransaction();
+            $data = $request->validated();
+            $user = $request->user()->getDisplayNameAttribute();
+
+            $header = AROSProductByTruckHeader::with('details')->find($id);
+            if (!$header) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Header not found',
+                ], 404);
+            }
+
+            $header->update([
+                ...$data,
+                'updated_by' => $user,
+                'updated_date' => now(),
+                'revision_no' => DB::raw('COALESCE(revision_no, 0) + 1'),
+                'revision_date' => now(),
+            ]);
+
+            if (!empty($data['details'])) {
+                foreach ($data['details'] as $row) {
+
+                    if (!empty($row['id'])) {
+                        $detail = AROSProductByTruckDetail::where('id', $row['id'])
+                            ->where('id_hdr', $header->id)
+                            ->first();
+
+                        if ($detail) {
+                            $detail->update(
+                                collect($row)->except('id')->toArray()
+                            );
+                        }
+                    }
+                }
+            }
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'AROS Product By Truck updated successfully',
+                'data' => $header->fresh('details'),
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update AROS Product By Truck',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function edit($id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
     public function destroy($id)
     {
-        //
+        try {
+
+            DB::beginTransaction();
+
+            $header = AROSProductByTruckHeader::withTrashed()->findOrFail($id);
+
+            if ($header->trashed()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'AROS Product By Truck record is already deleted.',
+                ], 400);
+            }
+
+            $header->delete();
+            AROSProductByTruckDetail::where('id_hdr', $id)->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'AROS Product By Truck record has been deleted successfully.',
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'AROS Product By Truck record not found.',
+            ], 404);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete AROS Product By Truck record.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 }
