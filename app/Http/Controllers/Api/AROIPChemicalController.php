@@ -60,6 +60,8 @@ class AROIPChemicalController extends Controller
                         'id',
                         'id_coa',
                         'no_ref_coa',
+                        'company',
+                        'plant',
                         'material',
                         'quantity',
                         'analyst',
@@ -125,7 +127,7 @@ class AROIPChemicalController extends Controller
             if (isset($data['coa'])) {
                 // Get control number for COA (using prefix 'Q11' and plantid 'PS21')
                 $coaControl = MControlnumber::where('prefix', 'Q11')
-                    ->where('plantid', 'PS21')
+                    ->where('plantid', $data['analytical']['plant'])
                     ->lockForUpdate()
                     ->first();
 
@@ -145,17 +147,8 @@ class AROIPChemicalController extends Controller
 
                 // Create COA header
                 $coaHeader = COAHeader::create([
+                    ...$data['coa'],
                     'id' => $coaId,
-                    'no_doc' => $data['coa']['no_doc'],
-                    'product' => $data['coa']['product'],
-                    'grade' => $data['coa']['grade'],
-                    'packing' => $data['coa']['packing'],
-                    'quantity' => $data['coa']['quantity'],
-                    'tanggal_pengiriman' => $data['coa']['tanggal_pengiriman'],
-                    'vehicle' => $data['coa']['vehicle'],
-                    'lot_no' => $data['coa']['lot_no'],
-                    'production_date' => $data['coa']['production_date'],
-                    'expired_date' => $data['coa']['expired_date'],
                     'issue_by' => $user,
                     'issue_date' => now(),
                     'updated_by' => $user,
@@ -168,14 +161,9 @@ class AROIPChemicalController extends Controller
                         $detailId = $coaId . 'D' . str_pad($index + 1, 3, '0', STR_PAD_LEFT);
 
                         COADetail::create([
+                            ...$detail,
                             'id' => $detailId,
                             'id_hdr' => $coaId,
-                            'parameter' => $detail['parameter'] ?? null,
-                            'actual_min' => $detail['actual_min'] ?? null,
-                            'actual_max' => $detail['actual_max'] ?? null,
-                            'standard_min' => $detail['standard_min'] ?? null,
-                            'standard_max' => $detail['standard_max'] ?? null,
-                            'method' => $detail['method'] ?? null,
                         ]);
                     }
                 }
@@ -191,7 +179,7 @@ class AROIPChemicalController extends Controller
 
             // Get control number for AROIP (using prefix 'Q11' and plantid 'PS21')
             $control = MControlnumber::where('prefix', 'Q11')
-                ->where('plantid', 'PS21')
+                ->where('plantid', $data['analytical']['plant'])
                 ->lockForUpdate()
                 ->first();
 
@@ -209,6 +197,7 @@ class AROIPChemicalController extends Controller
 
             // Create AROIP header
             $header = AROIPChemicalHeader::create([
+                ...($data['analytical'] ?? $data),
                 'id' => $headerId,
                 'form_no' => $dataForm->f_code,
                 'date_issued' => $dataForm->f_date_issued,
@@ -217,16 +206,6 @@ class AROIPChemicalController extends Controller
                 'entry_by' => $user,
                 'entry_date' => now(),
                 'id_coa' => $coaHeader->id,
-                'date' => $data['analytical']['date'] ?? null,
-                'exp_date' => $data['analytical']['exp_date'] ?? null,
-                'no_ref_coa' => $data['analytical']['no_ref_coa'] ?? null,
-                'material' => $data['analytical']['material'] ?? null,
-                'quantity' => $data['analytical']['received_quantity'] ?? null,
-                'analyst' => $data['analytical']['analyst'] ?? null,
-                'supplier' => $data['analytical']['supplier'] ?? null,
-                'police_no' => $data['analytical']['police_no'] ?? null,
-                'batch_lot' => $data['analytical']['batch_lot'] ?? null,
-                'status' => $data['analytical']['status'] ?? null,
                 'updated_by' => $user,
                 'updated_date' => now(),
             ]);
@@ -236,15 +215,9 @@ class AROIPChemicalController extends Controller
                 foreach ($data['analytical']['details'] as $index => $detail) {
                     $detailId = $headerId . 'D' . str_pad($index + 1, 3, '0', STR_PAD_LEFT);
                     AROIPChemicalDetail::create([
+                        ...$detail,
                         'id' => $detailId,
                         'id_hdr' => $headerId,
-                        'parameter' => $detail['parameter'] ?? null,
-                        'specification_min' => $detail['specification_min'] ?? null,
-                        'specification_max' => $detail['specification_max'] ?? null,
-                        'result_min' => $detail['result_min'] ?? null,
-                        'result_max' => $detail['result_max'] ?? null,
-                        'status_ok' => $detail['status_ok'] ?? null,
-                        'remark' => $detail['remark'] ?? null,
                     ]);
                 }
             }
@@ -298,7 +271,7 @@ class AROIPChemicalController extends Controller
             // ---------- A. update header ----------
             $header->update([
                 'material' => $analyticalPayload['material'] ?? $header->material,
-                'quantity' => $analyticalPayload['received_quantity'] ?? $analyticalPayload['quantity'] ?? $header->quantity,
+                'quantity' => $analyticalPayload['quantity'] ?? $header->quantity,
                 'analyst' => $analyticalPayload['analyst'] ?? $header->analyst,
                 'supplier' => $analyticalPayload['supplier'] ?? $header->supplier,
                 'police_no' => $analyticalPayload['police_no'] ?? $header->police_no,

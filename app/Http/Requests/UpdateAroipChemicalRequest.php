@@ -51,7 +51,7 @@ class UpdateAroipChemicalRequest extends FormRequest
             'analytical.exp_date' => 'sometimes|date',
             'analytical.no_ref_coa' => 'sometimes|string|max:100',
             'analytical.material' => 'sometimes|string|max:100',
-            'analytical.received_quantity' => 'sometimes|numeric',
+            'analytical.quantity' => 'sometimes|numeric',
             'analytical.analyst' => 'sometimes|string|max:100',
             'analytical.supplier' => 'sometimes|string|max:100',
             'analytical.police_no' => 'sometimes|string|max:20|nullable',
