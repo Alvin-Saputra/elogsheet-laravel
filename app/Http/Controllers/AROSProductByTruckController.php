@@ -9,23 +9,30 @@ use App\Models\AROSProductByTruckDetail;
 use App\Models\AROSProductByTruckHeader;
 use App\Models\MControlnumber;
 use App\Models\MDataFormNo;
-use DB;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Schema;
 
 class AROSProductByTruckController extends Controller
 {
-
     //
     // -----------------------
     // Shared helpers / utils
     // -----------------------
     //
 
+    private function findHeaderWithId($id)
+    {
+        return AROSProductByTruckHeader::with(['details'])->findOrFail($id);
+    }
+
     /**
      * Normalize roles value to an array and decide which prefix to use.
      * Returns ['prefix' => 'prepared'|'approved', 'roles' => array] or false when not allowed.
+     *
+     * NOTE: This mirrors AROIPFuelController decision logic (prepared = LEAD, approved = MGR/ADM)
      */
     private function decidePrefixFromRoles($userRoles)
     {
@@ -86,6 +93,11 @@ class AROSProductByTruckController extends Controller
         return $header->update($updates);
     }
 
+    //
+    // -----------------------
+    // API: RESTful endpoints (kept your original behaviors)
+    // -----------------------
+    //
 
     public function get(Request $request)
     {
@@ -125,7 +137,6 @@ class AROSProductByTruckController extends Controller
                 ], 400);
             }
 
-
             // Get control number for AROSProductByTruck (using prefix 'Q13' and plantid 'PS21')
             $control = MControlnumber::where('prefix', 'Q13')
                 ->where('plantid', 'PS21')
@@ -139,12 +150,10 @@ class AROSProductByTruckController extends Controller
                 ], 400);
             }
 
-
             // Generate new AROSProductByTruck document number
             $nextNum = intval($control->autonumber) + 1;
             $paddedNum = str_pad($nextNum, 6, '0', STR_PAD_LEFT);
             $headerId = $control->prefix . $control->plantid . $control->accountingyear . $paddedNum;
-
 
             $header = AROSProductByTruckHeader::create([
                 ...$data,
@@ -191,7 +200,6 @@ class AROSProductByTruckController extends Controller
         }
     }
 
-
     public function update(UpdateArosProductByTruckRequest $request, $id)
     {
         try {
@@ -217,7 +225,6 @@ class AROSProductByTruckController extends Controller
 
             if (!empty($data['details'])) {
                 foreach ($data['details'] as $row) {
-
                     if (!empty($row['id'])) {
                         $detail = AROSProductByTruckDetail::where('id', $row['id'])
                             ->where('id_hdr', $header->id)
@@ -250,54 +257,9 @@ class AROSProductByTruckController extends Controller
         }
     }
 
-    public function updateApproval(UpdateArosProductByTruckApprovalRequest $request, $id)
-    {
-        try {
-            DB::beginTransaction();
-            $header = AROSProductByTruckHeader::findOrFail($id);
-            $user = $request->user() ?? auth()->user();
-            $status = Str::ucfirst(strtolower($request->input('status')));
-            $remark = $request->input('remarks');
-
-            $username = $user->username ?? ($user->name ?? (method_exists($user, 'getDisplayNameAttribute') ? $user->getDisplayNameAttribute() : null));
-            $userRoles = $user->roles ?? null;
-
-            $isSuccess = $this->processApprovalStatus($header, $status, $remark, $username, $userRoles);
-
-            if (!$isSuccess) {
-                DB::rollBack();
-                return response()->json(['success' => false, 'message' => 'You do not have permission to update approval status'], 403);
-            }
-            DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Approval status updated successfully',
-                'data' => [
-                    'id' => $header->id,
-                    'status' => $status,
-                    'remarks' => $remark,
-                    'updated_by' => $username,
-                    'updated_at' => now()->toDateTimeString(),
-                ],
-            ], 200);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            DB::rollBack();
-            return response()->json(['success' => false, 'message' => 'Record not found.'], 404);
-        } catch (\Exception $e) {
-            DB::rollBack();
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to update AROS Product By Truck Approval',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
-    }
     public function destroy($id)
     {
         try {
-
             DB::beginTransaction();
 
             $header = AROSProductByTruckHeader::withTrashed()->findOrFail($id);
@@ -332,5 +294,186 @@ class AROSProductByTruckController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    //
+    // -----------------------
+    // Approval endpoints (API + Web)
+    // -----------------------
+    //
+
+    /**
+     * API: Update approval (uses UpdateArosProductByTruckApprovalRequest)
+     */
+    public function updateApproval($id, UpdateArosProductByTruckApprovalRequest $request)
+    {
+        try {
+            DB::beginTransaction();
+
+            $header = AROSProductByTruckHeader::findOrFail($id);
+
+            $user = $request->user() ?? auth()->user();
+            $status = Str::ucfirst(strtolower($request->input('status')));
+            $remark = $request->input('remarks');
+
+            $username = $user->username ?? ($user->name ?? (method_exists($user, 'getDisplayNameAttribute') ? $user->getDisplayNameAttribute() : null));
+            $userRoles = $user->roles ?? null;
+
+            $isSuccess = $this->processApprovalStatus($header, $status, $remark, $username, $userRoles);
+
+            if (!$isSuccess) {
+                DB::rollBack();
+                return response()->json(['success' => false, 'message' => 'You do not have permission to update approval status'], 403);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Approval status updated successfully',
+                'data' => [
+                    'id' => $header->id,
+                    'status' => $status,
+                    'remarks' => $remark,
+                    'updated_by' => $username,
+                    'updated_at' => now()->toDateTimeString(),
+                ],
+            ], 200);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'Record not found.'], 404);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update AROS Product By Truck Approval',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Web approval action (POST) — similar semantics to API approval but returns redirect with flash.
+     * Accepts ?status=Approved|Rejected and optional remark in request body.
+     */
+    public function updateApprovalStatusWeb(Request $request, $id)
+    {
+        DB::beginTransaction();
+        try {
+            $report = AROSProductByTruckHeader::findOrFail($id);
+
+            $status = $request->query('status') ?? $request->input('status');
+            $remark = $request->input('remark');
+            $username = auth()->user()?->username ?? auth()->user()?->getDisplayNameAttribute();
+            $role = auth()->user()?->roles ?? null;
+
+            $isSuccess = $this->processApprovalStatus($report, $status, $remark, $username, $role);
+
+            if (!$isSuccess) {
+                DB::rollBack();
+                return back()->with('error', 'You do not have permission to update approval status');
+            }
+
+            DB::commit();
+
+            if ($status === 'Approved') {
+                return back()->with('success-approve', "Tiket {$report->id} berhasil di-{$status}");
+            } elseif ($status === 'Rejected') {
+                return back()->with('success-reject', "Tiket {$report->id} berhasil di-{$status}");
+            }
+
+            return back()->with('success', 'Approval status updated');
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            return back()->with('error', $th->getMessage());
+        }
+    }
+
+    //
+    // -----------------------
+    // WEB: admin dashboard endpoints (render views / export PDF)
+    // -----------------------
+    //
+
+    /**
+     * Web index (admin) — list by date.
+     */
+    public function index(Request $request)
+    {
+        $filterDate = $request->input('filter_tanggal', now()->toDateString());
+
+        $headers = AROSProductByTruckHeader::query()
+            ->whereDate('loading_date', $filterDate)
+            ->orderBy('loading_date', 'desc')
+            ->get([
+                'id',
+                'product_name',
+                'quantity',
+                'ships_name',
+                'destination',
+                'load_port',
+                'corrected_status',
+                'approved_status',
+                'loading_date'
+            ]);
+
+        return view('rpt_analytical_result_of_out_going_shipment_product_by_truck.index', compact('headers'));
+    }
+
+    /**
+     * Web show view.
+     */
+    public function show($id)
+    {
+        $data = $this->findHeaderWithId($id);
+        return view('rpt_analytical_result_of_out_going_shipment_product_by_truck.show', ['header' => $data]);
+    }
+
+    /**
+     * Web preview layout.
+     */
+    public function preview($id)
+    {
+        $data = $this->findHeaderWithId($id);
+        return view('rpt_analytical_result_of_out_going_shipment_product_by_truck.preview_layout', ['header' => $data]);
+    }
+
+    /**
+     * Web export to PDF.
+     */
+    public function export($id)
+    {
+        $data = $this->findHeaderWithId($id);
+
+        $pdf = Pdf::loadView('exports.report_rpt_analytical_result_of_out_going_shipment_product_by_truck_pdf', [
+            'header' => $data,
+        ]);
+
+        $pdf->setPaper('a4', 'landscape');
+        $fileName = 'aros-product-by-truck-' . $data->id . '.pdf';
+
+        return $pdf->stream($fileName);
+    }
+
+    /**
+     * Web get by id with intention param (show|preview|export).
+     */
+    public function getById(Request $request, $id)
+    {
+        $data = $this->findHeaderWithId($id);
+        $intention = $request->query('intention');
+
+        return match ($intention) {
+            'show' => view('rpt_analytical_result_of_out_going_shipment_product_by_truck.show', ['header' => $data]),
+            'preview' => view('rpt_analytical_result_of_out_going_shipment_product_by_truck.preview_layout', ['header' => $data]),
+            'export' => (function () use ($data) {
+                    $pdf = Pdf::loadView('exports.report_rpt_analytical_result_of_out_going_shipment_product_by_truck_pdf', ['header' => $data]);
+                    $pdf->setPaper('a4', 'landscape');
+                    $fileName = 'aros-product-by-truck-' . $data->id . '.pdf';
+                    return $pdf->stream($fileName);
+                })(),
+            default => abort(400, 'Invalid intention'),
+        };
     }
 }
