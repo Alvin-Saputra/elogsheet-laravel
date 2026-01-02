@@ -127,7 +127,7 @@ class AROIPChemicalController extends Controller
             if (isset($data['coa'])) {
                 // Get control number for COA (using prefix 'Q11' and plantid 'PS21')
                 $coaControl = MControlnumber::where('prefix', 'Q11')
-                    ->where('plantid', 'PS21')
+                    ->where('plantid', $data['analytical']['plant'])
                     ->lockForUpdate()
                     ->first();
 
@@ -179,7 +179,7 @@ class AROIPChemicalController extends Controller
 
             // Get control number for AROIP (using prefix 'Q11' and plantid 'PS21')
             $control = MControlnumber::where('prefix', 'Q11')
-                ->where('plantid', 'PS21')
+                ->where('plantid', $data['analytical']['plant'])
                 ->lockForUpdate()
                 ->first();
 
