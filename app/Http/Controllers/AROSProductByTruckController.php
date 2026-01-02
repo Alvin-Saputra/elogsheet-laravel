@@ -139,7 +139,7 @@ class AROSProductByTruckController extends Controller
 
             // Get control number for AROSProductByTruck (using prefix 'Q13' and plantid 'PS21')
             $control = MControlnumber::where('prefix', 'Q13')
-                ->where('plantid', 'PS21')
+                ->where('plantid', $data['plant'])
                 ->lockForUpdate()
                 ->first();
 

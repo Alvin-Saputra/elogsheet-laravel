@@ -30,6 +30,8 @@ class CreateArosProductByTruckRequest extends FormRequest
             'ships_name' => 'nullable|string|max:45',
             'destination' => 'nullable|string|max:45',
             'load_port' => 'nullable|string|max:45',
+            'company' => 'required|string|max:45',
+            'plant' => 'required|string|max:45',
 
             'details' => 'required|array|min:1',
 

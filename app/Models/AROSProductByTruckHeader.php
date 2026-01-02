@@ -18,6 +18,8 @@ class AROSProductByTruckHeader extends Model
 
     protected $fillable = [
         'id',
+        'company',
+        'plant',
         'loading_date',
         'product_name',
         'quantity',
