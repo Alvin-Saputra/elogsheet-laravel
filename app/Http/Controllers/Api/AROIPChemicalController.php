@@ -60,6 +60,8 @@ class AROIPChemicalController extends Controller
                         'id',
                         'id_coa',
                         'no_ref_coa',
+                        'company',
+                        'plant',
                         'material',
                         'quantity',
                         'analyst',
