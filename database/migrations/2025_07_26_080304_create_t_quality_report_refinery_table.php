@@ -13,6 +13,9 @@ return new class extends Migration
      */
     public function up()
     {
+        if(Schema::hasTable('t_quality_report_refinery')) {
+            return ;
+        }
         Schema::create('t_quality_report_refinery', function (Blueprint $table) {
             $table->string('id')->primary();
             $table->date('report_date')->nullable();

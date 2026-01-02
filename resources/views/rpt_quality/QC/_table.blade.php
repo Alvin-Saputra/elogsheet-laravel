@@ -1,4 +1,8 @@
 {{-- Tabel --}}
+{{-- @php
+    $isRef01 = $workCenter === 'REF-01';
+@endphp --}}
+
 <div class="overflow-x-auto">
     <table class="min-w-full border border-gray-400 text-center text-xs">
         <thead class="bg-gray-100">
@@ -9,7 +13,11 @@
 
                 <th colspan="10" class="border px-2 py-1 bg-green-100">CPO</th>
                 <th colspan="4" class="border px-2 py-1 bg-teal-100">BPO</th>
-                <th colspan="10" class="border px-2 py-1 bg-purple-100">RBDPO</th>
+                {{-- @if ($isRef01) --}}
+                    {{-- <th colspan="9" class="border px-2 py-1 bg-purple-100">RBDPO</th> --}}
+                {{-- @else --}}
+                    <th colspan="10" class="border px-2 py-1 bg-purple-100">RBDPO</th>
+                {{-- @endif --}}
                 <th colspan="3" class="border px-2 py-1 bg-yellow-100">PFAD</th>
                 <th colspan="2" class="border px-2 py-1 bg-orange-100">Spent Earth</th>
                 <th rowspan="2" class="border px-2 py-1">Remarks</th>
@@ -36,7 +44,11 @@
                 {{-- RBDPO --}}
                 <th class="border px-1 py-1">FFA</th>
                 <th class="border px-1 py-1">Moist</th>
-                <th class="border px-1 py-1">IMP</th>
+                {{-- @if ($isRef01) --}}
+                    {{-- <th class="border px-1 py-1 bg-gray-50 text-gray-400"></th> --}}
+                {{-- @else --}}
+                    <th class="border px-1 py-1">IMP</th>
+                {{-- @endif --}}
                 <th class="border px-1 py-1">IV</th>
                 <th class="border px-1 py-1">PV</th>
                 <th class="border px-1 py-1">R</th>
@@ -84,7 +96,11 @@
                     <td class="border px-1 py-1">{{ $row->fg_ffa }}</td>
                     {{-- ini --}}
                     <td class="border px-1 py-1">{{ $row->fg_moisture }}</td>
-                    <td class="border px-1 py-1">{{ $row->fg_impurities }}</td>
+                    {{-- @if ($isRef01) --}}
+                        {{-- <td class="border px-1 py-1 bg-gray-50 text-gray-400"></td> --}}
+                    {{-- @else --}}
+                        <td class="border px-1 py-1">{{ $row->fg_impurities }}</td>
+                    {{-- @endif --}}
                     <td class="border px-1 py-1">{{ $row->fg_iv }}</td>
                     <td class="border px-1 py-1">{{ $row->fg_pv }}</td>
                     <td class="border px-1 py-1">{{ $row->fg_color_r }}</td>

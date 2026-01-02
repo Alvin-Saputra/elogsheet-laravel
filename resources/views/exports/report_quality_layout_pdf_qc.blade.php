@@ -69,6 +69,7 @@
             DAILY QUALITY REFINERY PRODUCTION REPORT
         </h3>
 
+
         {{-- Jika filter work center --}}
         @if (!empty($workCenter) && isset($refinery))
             <p>{{ $refinery->name ?? '-' }} {{ $refinery->capacity ?? '' }}</p>
@@ -97,99 +98,64 @@
     </div>
 
     <!-- Tabel utama -->
-    <table>
-        <thead>
-            <tr>
-                <th rowspan="2">Time</th>
-                <th rowspan="2">From Tank No.</th>
-                <th rowspan="2">Flow Rate</th>
-                <th colspan="10">RAW MATERIAL</th>
-                <th colspan="4">BPO</th>
-                <th colspan="10">RRPO</th>
-                <th colspan="3">PFAD</th>
-                <th colspan="2">SPENT EARTH</th>
-                <th rowspan="2">REMARKS</th>
-            </tr>
-            <tr>
-                <th>FFA (%)</th>
-                <th>M&I (%)</th>
-                <th>Dobi</th>
-                <th>IV</th>
-                <th>PV</th>
-                <th>AV</th>
-                <th>Totox</th>
-                <th>Color R</th>
-                <th>Color Y</th>
-                <th>Color B</th>
-                <th>Color R</th>
-                <th>Color Y</th>
-                <th>Color W/B</th>
-                <th>Break Test</th>
-                <th>FFA</th>
-                <th>Moist</th>
-                <th>IMP</th>
-                <th>IV</th>
-                <th>PV</th>
-                <th>Color R</th>
-                <th>Color Y</th>
-                <th>Color W/B</th>
-                <th>To Tank</th>
-                <th>Remarks</th>
-                <th>FFA (%)</th>
-                <th>M&I (%)</th>
-                <th>To Tank</th>
-                <th>M&I (%)</th>
-                <th>OC (%)</th>
-            </tr>
-        </thead>
-        <tbody>
-            @if (!empty($workCenter))
-                {{-- Jika filter 1 work center --}}
-                @foreach ($data as $row)
+    @if ($groupedData->isNotEmpty())
+        @foreach ($groupedData as $wc => $rows)
+            {{-- @php
+                $isRef01 = $wc === 'REF-01';
+            @endphp --}}
+            <table style="margin-bottom: 20px;">
+                <thead>
                     <tr>
-                        <td>{{ optional($row->time)->format('H:i') }}</td>
-                        <td>{{ $row->rm_tank_source }}</td>
-                        <td>{{ $row->rm_flowrate }}</td>
-                        <td>{{ $row->rm_ffa }}</td>
-                        <td>{{ $row->{'rm_m&i'} }}</td>
-                        <td>{{ $row->rm_dobi }}</td>
-                        <td>{{ $row->rm_iv }}</td>
-                        <td>{{ $row->rm_pv }}</td>
-                        <td>{{ $row->rm_av }}</td>
-                        <td>{{ $row->rm_totox }}</td>
-                        <td>{{ $row->rm_color_r }}</td>
-                        <td>{{ $row->rm_color_y }}</td>
-                        <td>{{ $row->rm_color_b }}</td>
-                        <td>{{ $row->bo_color_r }}</td>
-                        <td>{{ $row->bo_color_y }}</td>
-                        <td>{{ $row->bo_color_b }}</td>
-                        <td>{{ $row->bo_break_test }}</td>
-                        <td>{{ $row->fg_ffa }}</td>
-                        <td>{{ $row->fg_moist }}</td>
-                        <td>{{ $row->fg_impurities }}</td>
-                        <td>{{ $row->fg_iv }}</td>
-                        <td>{{ $row->fg_pv }}</td>
-                        <td>{{ $row->fg_color_r }}</td>
-                        <td>{{ $row->fg_color_y }}</td>
-                        <td>{{ $row->fg_color_b }}</td>
-                        <td>{{ $row->fg_tank_to }}</td>
-                        <td>{{ $row->fg_tank_to_others_remarks }}</td>
-                        <td>{{ $row->bp_ffa }}</td>
-                        <td>{{ $row->{'bp_m&i'} }}</td>
-                        <td>{{ $row->bp_to_tank }}</td>
-                        <td>{{ $row->{'w_sbe_m&i'} }}</td>
-                        <td>{{ $row->w_sbe_qc }}</td>
-                        <td>{{ $row->remarks }}</td>
+                        <th rowspan="2">Time</th>
+                        <th rowspan="2">From Tank No.</th>
+                        <th rowspan="2">Flow Rate</th>
+                        <th colspan="10">RAW MATERIAL</th>
+                        <th colspan="4">BPO</th>
+                        {{-- <th colspan="{{ $isRef01 ? 9 : 10 }}">RRPO</th> --}}
+                        <th colspan="10">RRPO</th>
+                        <th colspan="3">PFAD</th>
+                        <th colspan="2">SPENT EARTH</th>
+                        <th rowspan="2">REMARKS</th>
                     </tr>
-                @endforeach
-            @else
-                {{-- Jika ALL, group per work center --}}
-                @foreach ($groupedData as $wc => $rows)
                     <tr>
-                        <td colspan="33" style="text-align:left; font-weight:bold; background:#f3f3f3;">
-                            {{ $rows->first()->refinery_name ?? $wc }}
-                        </td>
+                        <th>FFA (%)</th>
+                        <th>M&I (%)</th>
+                        <th>Dobi</th>
+                        <th>IV</th>
+                        <th>PV</th>
+                        <th>AV</th>
+                        <th>Totox</th>
+                        <th>Color R</th>
+                        <th>Color Y</th>
+                        <th>Color B</th>
+
+                        <th>Color R</th>
+                        <th>Color Y</th>
+                        <th>Color W/B</th>
+                        <th>Break Test</th>
+
+                        <th>FFA</th>
+                        <th>Moist</th>
+                        {{-- @if (!$isRef01) --}}
+                            <th>IMP</th>
+                        {{-- @endif --}}
+                        <th>IV</th>
+                        <th>PV</th>
+                        <th>Color R</th>
+                        <th>Color Y</th>
+                        <th>Color W/B</th>
+                        <th>To Tank</th>
+                        <th>Remarks</th>
+
+                        <th>FFA (%)</th>
+                        <th>M&I (%)</th>
+                        <th>To Tank</th>
+                        <th>M&I (%)</th>
+                        <th>OC (%)</th>
                     </tr>
+                </thead>
+
+                <tbody>
                     @foreach ($rows as $row)
                         <tr>
                             <td>{{ optional($row->time)->format('H:i') }}</td>
@@ -205,13 +171,17 @@
                             <td>{{ $row->rm_color_r }}</td>
                             <td>{{ $row->rm_color_y }}</td>
                             <td>{{ $row->rm_color_b }}</td>
+
                             <td>{{ $row->bo_color_r }}</td>
                             <td>{{ $row->bo_color_y }}</td>
                             <td>{{ $row->bo_color_b }}</td>
                             <td>{{ $row->bo_break_test }}</td>
+
                             <td>{{ $row->fg_ffa }}</td>
                             <td>{{ $row->fg_moist }}</td>
-                            <td>{{ $row->fg_impurities }}</td>
+                            {{-- @if (!$isRef01) --}}
+                                <td>{{ $row->fg_impurities }}</td>
+                            {{-- @endif --}}
                             <td>{{ $row->fg_iv }}</td>
                             <td>{{ $row->fg_pv }}</td>
                             <td>{{ $row->fg_color_r }}</td>
@@ -227,16 +197,112 @@
                             <td>{{ $row->remarks }}</td>
                         </tr>
                     @endforeach
+                </tbody>
+            </table>
+        @endforeach
+    @else
+        {{-- @php
+            $isRef01 = $workCenter === 'REF-01';
+        @endphp --}}
+
+        <table style="margin-bottom: 20px;">
+            <thead>
+                <tr>
+                    <th rowspan="2">Time</th>
+                    <th rowspan="2">From Tank No.</th>
+                    <th rowspan="2">Flow Rate</th>
+                    <th colspan="10">RAW MATERIAL</th>
+                    <th colspan="4">BPO</th>
+                    {{-- <th colspan="{{ $isRef01 ? 9 : 10 }}">RRPO</th> --}}
+                    <th colspan="10">RRPO</th>
+                    <th colspan="3">PFAD</th>
+                    <th colspan="2">SPENT EARTH</th>
+                    <th rowspan="2">REMARKS</th>
+                </tr>
+                <tr>
+                    <th>FFA (%)</th>
+                    <th>M&I (%)</th>
+                    <th>Dobi</th>
+                    <th>IV</th>
+                    <th>PV</th>
+                    <th>AV</th>
+                    <th>Totox</th>
+                    <th>Color R</th>
+                    <th>Color Y</th>
+                    <th>Color B</th>
+
+                    <th>Color R</th>
+                    <th>Color Y</th>
+                    <th>Color W/B</th>
+                    <th>Break Test</th>
+
+                    <th>FFA</th>
+                    <th>Moist</th>
+                    {{-- @if (!$isRef01) --}}
+                        <th>IMP</th>
+                    {{-- @endif --}}
+                    <th>IV</th>
+                    <th>PV</th>
+                    <th>Color R</th>
+                    <th>Color Y</th>
+                    <th>Color W/B</th>
+                    <th>To Tank</th>
+                    <th>Remarks</th>
+
+                    <th>FFA (%)</th>
+                    <th>M&I (%)</th>
+                    <th>To Tank</th>
+                    <th>M&I (%)</th>
+                    <th>OC (%)</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @foreach ($data as $row)
+                    <tr>
+                        <td>{{ optional($row->time)->format('H:i') }}</td>
+                        <td>{{ $row->rm_tank_source }}</td>
+                        <td>{{ $row->rm_flowrate }}</td>
+                        <td>{{ $row->rm_ffa }}</td>
+                        <td>{{ $row->{'rm_m&i'} }}</td>
+                        <td>{{ $row->rm_dobi }}</td>
+                        <td>{{ $row->rm_iv }}</td>
+                        <td>{{ $row->rm_pv }}</td>
+                        <td>{{ $row->rm_av }}</td>
+                        <td>{{ $row->rm_totox }}</td>
+                        <td>{{ $row->rm_color_r }}</td>
+                        <td>{{ $row->rm_color_y }}</td>
+                        <td>{{ $row->rm_color_b }}</td>
+
+                        <td>{{ $row->bo_color_r }}</td>
+                        <td>{{ $row->bo_color_y }}</td>
+                        <td>{{ $row->bo_color_b }}</td>
+                        <td>{{ $row->bo_break_test }}</td>
+
+                        <td>{{ $row->fg_ffa }}</td>
+                        <td>{{ $row->fg_moist }}</td>
+                        {{-- @if (!$isRef01) --}}
+                            <td>{{ $row->fg_impurities }}</td>
+                        {{-- @endif --}}
+                        <td>{{ $row->fg_iv }}</td>
+                        <td>{{ $row->fg_pv }}</td>
+                        <td>{{ $row->fg_color_r }}</td>
+                        <td>{{ $row->fg_color_y }}</td>
+                        <td>{{ $row->fg_color_b }}</td>
+                        <td>{{ $row->fg_tank_to }}</td>
+                        <td>{{ $row->fg_tank_to_others_remarks }}</td>
+                        <td>{{ $row->bp_ffa }}</td>
+                        <td>{{ $row->{'bp_m&i'} }}</td>
+                        <td>{{ $row->bp_to_tank }}</td>
+                        <td>{{ $row->{'w_sbe_m&i'} }}</td>
+                        <td>{{ $row->w_sbe_qc }}</td>
+                        <td>{{ $row->remarks }}</td>
+                    </tr>
                 @endforeach
-            @endif
+            </tbody>
+        </table>
 
-            <tr>
-                <td colspan="33"></td>
-            </tr>
-        </tbody>
-
-    </table>
-
+    @endif
     <!-- Bagian bawah -->
     {{-- <div style="margin-top:20px; display:flex; justify-content:space-between;">
         <!-- Daily Chemical Usage -->

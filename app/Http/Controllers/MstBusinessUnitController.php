@@ -21,6 +21,13 @@ class MstBusinessUnitController extends Controller
         }
 
         $businessUnits = $query->paginate(10);
+        if ($request->expectsJson()) {
+            $businessUnits = $query->get()->toArray();
+            return response()->json([
+                'success' => true,
+                'data' => $businessUnits
+            ]);
+        }
 
         return view('mst_business_unit.index', compact('businessUnits'));
     }
@@ -51,6 +58,15 @@ class MstBusinessUnitController extends Controller
         ]);
 
         MBusinessUnit::create($request->only(['bu_code', 'bu_name', 'isactive']));
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'bu_code' => $request['bu_code']
+                ]
+            ]);
+        }
 
         return redirect()->route('business-unit.index')->with('success', 'Business Unit berhasil ditambahkan.');
     }
@@ -99,7 +115,11 @@ class MstBusinessUnitController extends Controller
             'bu_name' => $request->bu_name,
             'isactive' => $request->isactive,
         ]);
-
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+            ]);
+        }
         return redirect()->route('business-unit.index')->with('success', 'Business Unit berhasil diupdate');
     }
     /**
@@ -108,10 +128,16 @@ class MstBusinessUnitController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($bu_code)
+    public function destroy(Request $request, $bu_code)
     {
         $unit = MBusinessUnit::findOrFail($bu_code);
         $unit->delete();
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+            ]);
+        }
 
         return redirect()->route('business-unit.index')->with('success', 'Data berhasil dihapus');
     }

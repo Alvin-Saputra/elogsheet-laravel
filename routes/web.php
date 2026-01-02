@@ -1,39 +1,44 @@
 <?php
 
-use App\Http\Controllers\RptChangeProductController;
-use App\Http\Controllers\RptLogsheetDryFraController;
-use App\Http\Controllers\RptLogsheetPBFController;
-use App\Http\Controllers\RptStartupProduksiController;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ARIMByTruckController;
+use App\Http\Controllers\ARIMByVesselController;
+use App\Http\Controllers\AROIPChemicalController;
+use App\Http\Controllers\AROIPFuelController;
+use App\Http\Controllers\AROSProductByTruckController;
 use App\Http\Controllers\Auth\LoginController;
-use App\Http\Controllers\MstBusinessUnitController;
-use App\Http\Controllers\MstPlantController;
-use App\Http\Controllers\MstUserController;
-use App\Http\Controllers\MstMastervalueController;
-use App\Http\Controllers\MstRoleController;
-use App\Http\Controllers\RptQualityController;
-use App\Http\Controllers\RptLampGlassController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LogsheetDryFraController;
-use App\Http\Controllers\RptDeodorizingController;
-use App\Http\Controllers\RptDailyProductionController;
+use App\Http\Controllers\MstBusinessUnitController;
+use App\Http\Controllers\MstMastervalueController;
+use App\Http\Controllers\MstPlantController;
+use App\Http\Controllers\MstRoleController;
+use App\Http\Controllers\MstUserController;
+use App\Http\Controllers\RptChangeProductController;
 use App\Http\Controllers\RptDailyPFraController;
 use App\Http\Controllers\RptDailyPRefController;
-
+use App\Http\Controllers\RptDailyProductionController;
+use App\Http\Controllers\RptDailyQualityCompositeFractionation;
+use App\Http\Controllers\RptDailyStorageTankAnalyticalController;
+use App\Http\Controllers\RptDeodorizingController;
+use App\Http\Controllers\RptLampGlassController;
+use App\Http\Controllers\RptLogsheetDryFraController;
+use App\Http\Controllers\RptLogsheetPBFController;
 /*
 |--------------------------------------------------------------------------
 | Guest Routes (Login)
 |--------------------------------------------------------------------------
 */
 
+use App\Http\Controllers\RptQualityController;
+use App\Http\Controllers\RptStartupProduksiController;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return Auth::check()
         ? redirect()->route('dashboard')
         : redirect()->route('login');
 })->name('root');
-
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
@@ -63,7 +68,6 @@ Route::middleware('auth')->group(function () {
     Route::resource('master-plant', MstPlantController::class);
     Route::resource('user', MstUserController::class)->only(['index']);
     Route::resource('master-value', MstMastervalueController::class);
-
 
     /*
 |--------------------------------------------------------------------------
@@ -113,7 +117,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/export/view', [RptQualityController::class, 'exportLayoutPreviewQc'])->name('export.view');
         Route::get('/export/pdf', [RptQualityController::class, 'exportPdfQc'])->name('export.pdf');
     });
-
 
     /*
     |--------------------------------------------------------------------------
@@ -174,16 +177,13 @@ Route::middleware('auth')->group(function () {
         Route::get('/export/pdf', [RptDeodorizingController::class, 'exportPdf'])->name('export.pdf');
     });
 
-
     /*
     |--------------------------------------------------------------------------
     | Report: F/RFA-004 - Daily Production
     |--------------------------------------------------------------------------
     */
 
-
     Route::prefix('report-daily-production')->name('report-daily-production.')->group(function () {
-
         // General Daily Production (menu utama)
         Route::get('/', [RptDailyProductionController::class, 'index'])->name('index');
 
@@ -226,7 +226,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/report-lampnglass-excel', [RptLampGlassController::class, 'exportExcel'])->name('report-lampnglass.export');
     Route::get('/report-lampnglass-pdf', [RptLampGlassController::class, 'exportPdf'])->name('report-lampnglass.export.pdf');
 
-
     /*
     |--------------------------------------------------------------------------
     | Logsheet: F/RFA-010 - Monitoring Dry Fractionation Plant Logsheet
@@ -236,7 +235,6 @@ Route::middleware('auth')->group(function () {
     // Route::resource('logsheet-dryfractination', LogsheetDryFraController::class)->only(['index', 'show']);
     // Route::post('/logsheet-dryfractination/store', [LogsheetDryFraController::class, 'store'])
     //     ->name('dryfrac.store');
-
 
     Route::prefix('report-monitoring-dry-fractionation')->name('report-monitoring-dry-fractionation.')->group(function () {
         Route::get('/', [RptLogsheetDryFraController::class, 'index'])->name('index');
@@ -287,4 +285,80 @@ Route::middleware('auth')->group(function () {
         Route::post('/{id}/check-approve', [RptStartupProduksiController::class, 'checkApproval'])->name('check.approve');
         Route::post('/{id}/check-reject', [RptStartupProduksiController::class, 'checkReject'])->name('check.reject');
     });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Logsheet: F/QCO-001 - Daily Storage Tank Analytical Result
+    |--------------------------------------------------------------------------
+    */
+
+    Route::prefix('daily-storage-tank-analytical')->name('daily-storage-tank-analytical.')->group(function () {
+        Route::get('/', [RptDailyStorageTankAnalyticalController::class, 'index'])->name('index');
+        Route::post('/{id}/approve-report', [RptDailyStorageTankAnalyticalController::class, 'approveReport'])->name('approveReport');
+        Route::post('/{id}/reject-report', [RptDailyStorageTankAnalyticalController::class, 'rejectReport'])->name('rejectReport');
+        Route::get('/{id}', [RptDailyStorageTankAnalyticalController::class, 'show'])->name('show');
+        Route::get('/export/view', [RptDailyStorageTankAnalyticalController::class, 'exportLayoutPreview'])->name('export.view');
+        Route::get('/export/pdf', [RptDailyStorageTankAnalyticalController::class, 'exportPdf'])->name('export.pdf');
+    });
+
+    Route::prefix('daily-quality-composite-fractionation')->name('daily-quality-composite-fractionation.')->group(function () {
+        Route::get('/', [RptDailyQualityCompositeFractionation::class, 'index'])->name('index');
+        Route::post('/{id}/approve-report', [RptDailyQualityCompositeFractionation::class, 'approveReport'])->name('approveReport');
+        Route::post('/{id}/reject-report', [RptDailyQualityCompositeFractionation::class, 'rejectReport'])->name('rejectReport');
+        Route::get('/{id}', [RptDailyQualityCompositeFractionation::class, 'show'])->name('show');
+        Route::get('/export/view', [RptDailyQualityCompositeFractionation::class, 'exportLayoutPreview'])->name('export.view');
+        Route::get('/export/pdf', [RptDailyQualityCompositeFractionation::class, 'exportPdf'])->name('export.pdf');
+    });
+
+    Route::prefix('analytical-result-incoming-material-by-vessel')->name('analytical-result-incoming-material-by-vessel.')->group(function () {
+        Route::get('/', [ARIMByVesselController::class, 'index'])->name('index');
+        Route::post('/{id}/approve-report', [ARIMByVesselController::class, 'updateApprovalStatusWeb'])->name('approveReject');
+        Route::get('/{id}', [ARIMByVesselController::class, 'getById'])->name('show');
+        Route::get('/{id}/export/view', [ARIMByVesselController::class, 'getById'])->name('preview');
+        Route::get('/{id}/export/pdf', [ARIMByVesselController::class, 'getById'])->name('export');
+    });
+
+    Route::prefix('analytical-result-incoming-material-by-truck')->name('analytical-result-incoming-material-by-truck.')->group(function () {
+        Route::get('/', [ARIMByTruckController::class, 'index'])->name('index');
+        Route::post('/{id}/approve-report', [ARIMByTruckController::class, 'updateApprovalStatusWeb'])->name('approveReject');
+        Route::get('/{id}', [ARIMByTruckController::class, 'getById'])->name('show');
+        Route::get('/{id}/export/view', [ARIMByTruckController::class, 'getById'])->name('preview');
+        Route::get('/{id}/export/pdf', [ARIMByTruckController::class, 'getById'])->name('export');
+    });
+
+
+    Route::prefix('analytical-result-incoming-plant-chemical-ingredient')
+        ->name('analytical-result-incoming-plant-chemical-ingredient.')
+        ->group(function () {
+            Route::get('/', [AROIPChemicalController::class, 'index'])
+                ->name('index');
+            Route::post('/{id}/approve-report', [AROIPChemicalController::class, 'updateApprovalStatusWeb'])
+                ->name('approveReject');
+            Route::get('/{id}', [AROIPChemicalController::class, 'getById'])
+                ->name('show');
+            Route::get('/{id}/export/view', [AROIPChemicalController::class, 'getById'])
+                ->name('preview');
+            Route::get('/{id}/export/pdf', [AROIPChemicalController::class, 'getById'])
+                ->name('export');
+        });
+
+    Route::prefix('analytical-result-incoming-plant-fuel')
+        ->name('analytical-result-incoming-plant-fuel.')
+        ->group(function () {
+            Route::get('/', [AROIPFuelController::class, 'index'])->name('index');
+            Route::post('/{id}/approve-report', [AROIPFuelController::class, 'updateApprovalStatusWeb'])->name('approveReject');
+            Route::get('/{id}', [AROIPFuelController::class, 'getById'])->name('show');
+            Route::get('/{id}/export/view', [AROIPFuelController::class, 'getById'])->name('preview');
+            Route::get('/{id}/export/pdf', [AROIPFuelController::class, 'getById'])->name('export');
+        });
+    Route::prefix('analytical-result-outgoing-shipment-product-by-truck')
+    ->name('analytical-result-outgoing-shipment-product-by-truck.')
+        ->group(function () {
+            Route::get('/', [AROSProductByTruckController::class, 'index'])->name('index');
+            Route::post('/{id}/approve-report', [AROSProductByTruckController::class, 'updateApprovalStatusWeb'])->name('approveReject');
+            Route::get('/{id}', [AROSProductByTruckController::class, 'getById'])->name('show');
+            Route::get('/{id}/export/view', [AROSProductByTruckController::class, 'getById'])->name('preview');
+            Route::get('/{id}/export/pdf', [AROSProductByTruckController::class, 'getById'])->name('export');
+        });
+
 });

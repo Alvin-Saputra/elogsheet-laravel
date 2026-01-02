@@ -1,0 +1,34 @@
+FROM raphtekt28/laravel-base AS base
+
+# Install Composer (official installer) into /usr/local/bin/composer
+RUN curl -sS https://getcomposer.org/installer -o composer-setup.php \
+  && php composer-setup.php --install-dir=/usr/local/bin --filename=composer \
+  && rm -f composer-setup.php
+
+# Copy rest of application (dockerignore should exclude vendor/node_modules)
+COPY . .
+
+RUN composer clear-cache 
+
+RUN composer install --no-dev --optimize-autoloader
+
+# If your project requires running scripts that produce files in vendor,
+# they will be present in /var/www/html/vendor
+
+WORKDIR /var/www/html
+
+# Set permissions only where needed (avoid chown -R on entire app)
+RUN chown -R www-data:www-data storage bootstrap/cache \
+ && chmod -R 775 storage bootstrap/cache
+
+
+EXPOSE 80 443 8000
+
+RUN  php artisan storage:link \
+  && php artisan package:discover --ansi \
+  && php artisan config:clear \
+  && php artisan cache:clear \
+  && php artisan route:clear \  
+  && php artisan view:clear
+
+CMD ["php", "artisan", "serve" ,"--host=0.0.0.0","--port=8000"]
