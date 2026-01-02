@@ -449,6 +449,8 @@ class AROIPFuelController extends Controller
                     $item->only([
                         'id',
                         'id_roa',
+                        'company',
+                        'plant',
                         'date',
                         'material',
                         'quantity',
