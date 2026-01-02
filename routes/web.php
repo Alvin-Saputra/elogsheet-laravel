@@ -4,6 +4,7 @@ use App\Http\Controllers\ARIMByTruckController;
 use App\Http\Controllers\ARIMByVesselController;
 use App\Http\Controllers\AROIPChemicalController;
 use App\Http\Controllers\AROIPFuelController;
+use App\Http\Controllers\AROSProductByTruckController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LogsheetDryFraController;
@@ -349,6 +350,15 @@ Route::middleware('auth')->group(function () {
             Route::get('/{id}', [AROIPFuelController::class, 'getById'])->name('show');
             Route::get('/{id}/export/view', [AROIPFuelController::class, 'getById'])->name('preview');
             Route::get('/{id}/export/pdf', [AROIPFuelController::class, 'getById'])->name('export');
+        });
+    Route::prefix('analytical-result-outgoing-shipment-product-by-truck')
+    ->name('analytical-result-outgoing-shipment-product-by-truck.')
+        ->group(function () {
+            Route::get('/', [AROSProductByTruckController::class, 'index'])->name('index');
+            Route::post('/{id}/approve-report', [AROSProductByTruckController::class, 'updateApprovalStatusWeb'])->name('approveReject');
+            Route::get('/{id}', [AROSProductByTruckController::class, 'getById'])->name('show');
+            Route::get('/{id}/export/view', [AROSProductByTruckController::class, 'getById'])->name('preview');
+            Route::get('/{id}/export/pdf', [AROSProductByTruckController::class, 'getById'])->name('export');
         });
 
 });
