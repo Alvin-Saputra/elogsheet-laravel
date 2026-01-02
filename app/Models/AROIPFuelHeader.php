@@ -23,6 +23,8 @@ class AROIPFuelHeader extends Model
     protected $fillable = [
         'id',
         'id_roa',
+        'company',
+        'plant',
         'date',
         'material',
         'quantity',

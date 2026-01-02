@@ -111,88 +111,95 @@ class AROIPFuelController extends Controller
             $user = $request->user()->getDisplayNameAttribute();
             $data = $request->validated();
 
+            // NOTE: request validation should already ensure these keys exist and are valid
+            $plantId = $data['analytical']['plant'] ?? null;
+            $company = $data['analytical']['company'] ?? null;
+
+            if (!$plantId) {
+                throw new \Exception('Plant not provided in analytical payload.');
+            }
+
             $dataForm = MDataFormNo::find(18);
             if (!$dataForm) {
                 throw new \Exception('Form configuration not found (f_id: 18)');
             }
 
-            // === ROA creation (controlnumber locked)
-            $roaControl = MControlnumber::where('prefix', 'Q12A')
-                ->where('plantid', 'PS21')
-                ->lockForUpdate()
-                ->first();
+            // ---------------------------
+            // Create ROA (if provided)
+            // ---------------------------
+            $roaHeader = null;
+            $roaHeaderId = null;
 
-            if (!$roaControl) {
-                throw new \Exception('Control number configuration not found for ROA');
-            }
+            if (!empty($data['roa'])) {
+                // control for ROA (plant-aware)
+                $roaControl = MControlnumber::where('prefix', 'Q12A')
+                    ->where('plantid', $plantId)
+                    ->lockForUpdate()
+                    ->first();
 
-            $roaNextNum = intval($roaControl->autonumber ?? 0) + 1;
-            $paddedNum = str_pad($roaNextNum, 6, '0', STR_PAD_LEFT);
-            $year = (string) $roaControl->accountingyear;
-            $suffix = 'ROA' . ($roaControl->plantid ?? '') . $year . $paddedNum;
-            $roaId = ($roaControl->prefix ?? 'Q12A') . $suffix;
+                if (!$roaControl) {
+                    throw new \Exception('Control number configuration not found for ROA (prefix Q12A)');
+                }
 
-            $roaHeader = ROAHeader::create([
-                'id' => $roaId,
-                'report_no' => $data['roa']['report_no'],
-                'shipper' => $data['roa']['shipper'] ?? null,
-                'buyer' => $data['roa']['buyer'] ?? null,
-                'date_received' => $data['roa']['date_received'] ?? null,
-                'date_analyzed_start' => $data['roa']['date_analyzed_start'] ?? null,
-                'date_analyzed_end' => $data['roa']['date_analyzed_end'] ?? null,
-                'date_reported' => $data['roa']['date_reported'] ?? null,
-                'lab_sample_id' => $data['roa']['lab_sample_id'] ?? null,
-                'customer_sample_id' => $data['roa']['customer_sample_id'] ?? null,
-                'seal_no' => $data['roa']['seal_no'] ?? null,
-                'weight_of_received_sample' => $data['roa']['weight_of_received_sample'] ?? null,
-                'top_size_of_received_sample' => $data['roa']['top_size_of_received_sample'] ?? null,
-                'hardgrove_grindability_index' => $data['roa']['hardgrove_grindability_index'] ?? null,
-                'authorized_by' => $user,
-                'authorized_date' => now(),
-                'updated_by' => $user,
-                'updated_date' => now(),
-            ]);
+                $roaNextNum = intval($roaControl->autonumber ?? 0) + 1;
+                $paddedNum = str_pad($roaNextNum, 6, '0', STR_PAD_LEFT);
+                $year = (string) $roaControl->accountingyear;
+                $suffix = 'ROA' . ($roaControl->plantid ?? '') . $year . $paddedNum;
+                $roaHeaderId = ($roaControl->prefix ?? 'Q12A') . $suffix;
 
-            foreach ($data['roa']['details'] as $index => $detail) {
-                $detailId = $roaId . 'D' . str_pad($index + 1, 3, '0', STR_PAD_LEFT);
-                ROADetail::create([
-                    'id' => $detailId,
-                    'id_hdr' => $roaId,
-                    'parameter' => $detail['parameter'],
-                    'unit' => $detail['unit'] ?? null,
-                    'basis' => $detail['basis'] ?? null,
-                    'result' => $detail['result'] ?? null,
+                // create roa header — spread first so user payload cannot overwrite our generated fields
+                $roaHeader = ROAHeader::create([
+                    ...$data['roa'],
+                    'id' => $roaHeaderId,
+                    'authorized_by' => $user,
+                    'authorized_date' => now(),
+                    'updated_by' => $user,
+                    'updated_date' => now(),
                 ]);
+
+                // create roa details
+                if (!empty($data['roa']['details']) && is_array($data['roa']['details'])) {
+                    foreach ($data['roa']['details'] as $index => $detail) {
+                        $detailId = $roaHeaderId . 'D' . str_pad($index + 1, 3, '0', STR_PAD_LEFT);
+                        ROADetail::create([
+                            ...$detail,
+                            'id' => $detailId,
+                            'id_hdr' => $roaHeaderId,
+                        ]);
+                    }
+                }
+
+                // persist autonumber for ROA control
+                DB::table('m_controlnumber')
+                    ->where('prefix', $roaControl->prefix)
+                    ->where('plantid', $roaControl->plantid)
+                    ->update(['autonumber' => $roaNextNum]);
             }
 
-            DB::table('m_controlnumber')
-                ->where('prefix', $roaControl->prefix)
-                ->where('plantid', $roaControl->plantid)
-                ->update(['autonumber' => $roaNextNum]);
-
-            // === AROIP Fuel creation (controlnumber locked)
+            // ---------------------------
+            // Create AROIP Fuel header
+            // ---------------------------
             $control = MControlnumber::where('prefix', 'Q12A')
-                ->where('plantid', 'PS21')
+                ->where('plantid', $plantId)
                 ->lockForUpdate()
                 ->first();
 
             if (!$control) {
-                throw new \Exception('Control number configuration not found for AROIP');
+                throw new \Exception('Control number configuration not found for AROIP (prefix Q12A)');
             }
 
             $nextNum = intval($control->autonumber ?? 0) + 1;
             $paddedNum2 = str_pad($nextNum, 6, '0', STR_PAD_LEFT);
             $headerId = $control->prefix . $control->plantid . $control->accountingyear . $paddedNum2;
 
+            // create aroip header — spread analytical first then override
             $header = AROIPFuelHeader::create([
+                ...$data['analytical'],
+                // explicit fields that must not be overridden by client payload
                 'id' => $headerId,
-                'id_roa' => $roaId,
-                'date' => $data['analytical']['date'] ?? null,
-                'material' => $data['analytical']['material'] ?? null,
-                'quantity' => $data['analytical']['quantity'] ?? null,
-                'supplier' => $data['analytical']['supplier'] ?? null,
-                'police_no' => $data['analytical']['police_no'] ?? null,
-                'analyst' => $data['analytical']['analyst'] ?? null,
+                'id_roa' => $roaHeaderId,
+                'company' => $company,
+                'plant' => $plantId,
                 'updated_by' => $user,
                 'updated_date' => now(),
                 'form_no' => $dataForm->f_code,
@@ -203,19 +210,23 @@ class AROIPFuelController extends Controller
                 'entry_date' => now(),
             ]);
 
-            foreach ($data['analytical']['details'] as $index => $detail) {
-                $detailId = $headerId . 'D' . str_pad($index + 1, 3, '0', STR_PAD_LEFT);
-                AROIPFuelDetail::create([
-                    'id' => $detailId,
-                    'id_hdr' => $headerId,
-                    'parameter' => $detail['parameter'],
-                    'result' => $detail['result'],
-                    'specification' => $detail['specification'] ?? null,
-                    'status_ok' => isset($detail['status_ok']) ? strtoupper($detail['status_ok']) : null,
-                    'remark' => $detail['remark'] ?? null,
-                ]);
+            // create aroip details
+            if (!empty($data['analytical']['details']) && is_array($data['analytical']['details'])) {
+                foreach ($data['analytical']['details'] as $index => $detail) {
+                    $detailId = $headerId . 'D' . str_pad($index + 1, 3, '0', STR_PAD_LEFT);
+                    AROIPFuelDetail::create([
+                        'id' => $detailId,
+                        'id_hdr' => $headerId,
+                        'parameter' => $detail['parameter'] ?? null,
+                        'result' => $detail['result'] ?? null,
+                        'specification' => $detail['specification'] ?? null,
+                        'status_ok' => isset($detail['status_ok']) ? strtoupper($detail['status_ok']) : null,
+                        'remark' => $detail['remark'] ?? null,
+                    ]);
+                }
             }
 
+            // persist autonumber for AROIP control
             DB::table('m_controlnumber')
                 ->where('prefix', $control->prefix)
                 ->where('plantid', $control->plantid)
@@ -228,7 +239,7 @@ class AROIPFuelController extends Controller
                 'message' => 'AROIP Fuel created successfully',
                 'data' => [
                     'aroip_header_id' => $header->id,
-                    'roa_header_id' => $roaHeader->id,
+                    'roa_header_id' => $roaHeader?->id,
                 ],
             ], 201);
         } catch (\Exception $e) {
@@ -240,6 +251,7 @@ class AROIPFuelController extends Controller
             ], 500);
         }
     }
+
 
     /**
      * Update AROIP Fuel (API) — supports sync semantics for roa and analytical details.
@@ -435,11 +447,30 @@ class AROIPFuelController extends Controller
             return [
                 'analytical' => array_merge(
                     $item->only([
-                        'id','id_roa','date','material','quantity','analyst','supplier','police_no',
-                        'entry_by','entry_date','prepared_by','prepared_date','prepared_status',
-                        'prepared_status_remarks','approved_by','approved_date','approved_status',
-                        'approved_status_remarks','updated_by','updated_date','form_no','date_issued',
-                        'revision_no','revision_date',
+                        'id',
+                        'id_roa',
+                        'date',
+                        'material',
+                        'quantity',
+                        'analyst',
+                        'supplier',
+                        'police_no',
+                        'entry_by',
+                        'entry_date',
+                        'prepared_by',
+                        'prepared_date',
+                        'prepared_status',
+                        'prepared_status_remarks',
+                        'approved_by',
+                        'approved_date',
+                        'approved_status',
+                        'approved_status_remarks',
+                        'updated_by',
+                        'updated_date',
+                        'form_no',
+                        'date_issued',
+                        'revision_no',
+                        'revision_date',
                     ]),
                     ['details' => $item->details]
                 ),
@@ -541,7 +572,7 @@ class AROIPFuelController extends Controller
         $headers = AROIPFuelHeader::query()
             ->whereDate('entry_date', $tanggal)
             ->orderBy('entry_date', 'desc')
-            ->get(['id','material','quantity','prepared_status','approved_status','entry_date']);
+            ->get(['id', 'material', 'quantity', 'prepared_status', 'approved_status', 'entry_date']);
 
         return view('rpt_analytical_result_of_incoming_plant_fuel.index', compact('headers', 'tanggal'));
     }

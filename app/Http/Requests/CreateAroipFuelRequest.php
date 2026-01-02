@@ -74,7 +74,8 @@ class CreateAroipFuelRequest extends FormRequest
             'analytical.supplier' => 'required|string|max:45',
             'analytical.police_no' => 'required|string|max:45',
             'analytical.analyst' => 'required|string|max:45',
-
+            'analytical.company' => 'required|string|max:45',
+            'analytical.plant' => 'required|string|max:45',
 
             'analytical.details' => 'required|array|min:1',
             'analytical.details.*.result' => 'required|numeric',
