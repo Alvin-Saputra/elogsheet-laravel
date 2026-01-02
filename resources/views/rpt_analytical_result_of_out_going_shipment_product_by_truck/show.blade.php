@@ -94,7 +94,7 @@
                     <span class="ml-2">{{ $header->product_name ?? '-' }}</span>
                 </div>
                 <div class="flex mt-1"><strong class="w-36">Quantity</strong>
-                    <span class="ml-2">{{ $header->quantity ?? $header->qty ?? '-' }}</span>
+                    <span class="ml-2">{{ $header->quantity ?? ($header->qty ?? '-') }}</span>
                 </div>
             </div>
 
@@ -128,47 +128,58 @@
                 <th>Remark</th>
             </tr>
         </thead>
+
         <tbody>
             @forelse($details as $d)
                 @php
-                    $shipTank = $firstValue($d, ['ships_tank', 'ship_tank', 'tank']);
-                    $noPolice = $firstValue($d, ['no_police', 'police_no']);
-                    $ffaRaw   = $firstValue($d, ['ffa']);
-                    $miRaw    = $firstValue($d, ['m_and_i', 'm_i']);
-                    $ivRaw    = $firstValue($d, ['iv']);
-                    $lovRedRaw = $firstValue($d, ['lovibond_color_red']);
-                    $lovYelRaw = $firstValue($d, ['lovibond_color_yellow']);
-                    $pvRaw    = $firstValue($d, ['pv']);
-                    $other    = $firstValue($d, ['other']);
-                    $remark   = $firstValue($d, ['remark']);
+                    // ships_tank column in DB is "ships_tank" (note plural)
+                    $shipTank = $firstValue($d, ['ships_tank', 'ship_tank', 'ship_tank_no', 'tank']);
+                    $noPolice = $firstValue($d, ['no_police', 'police_no', 'police']);
+                    $ffaRaw   = $firstValue($d, ['ffa', 'ffa_percent', 'ffa_pct']);
+                    $miRaw    = $firstValue($d, ['m_and_i', 'm_i', 'm_and_i_percent', 'm_i_percent']);
+                    $ivRaw    = $firstValue($d, ['iv', 'iv_value']);
+                    // lovibond actual DB columns: lovibond_color_red, lovibond_color_yellow
+                    $lovRedRaw = $firstValue($d, ['lovibond_color_red', 'lovibond_red', 'lov_red', 'lovibond_r']);
+                    $lovYelRaw = $firstValue($d, ['lovibond_color_yellow', 'lovibond_yellow', 'lov_yel', 'lovibond_y']);
+                    $pvRaw    = $firstValue($d, ['pv', 'peroxide_value']);
+                    $other    = $firstValue($d, ['other', 'notes']);
+                    $remark   = $firstValue($d, ['remark', 'remarks']);
                 @endphp
+
                 <tr>
-                    <td>{{ $shipTank ?? '-' }}</td>
-                    <td>{{ $noPolice ?? '-' }}</td>
-                    <td class="text-center">{{ $fmt($ffaRaw, 3) }}</td>
-                    <td class="text-center">{{ $fmt($miRaw, 3) }}</td>
-                    <td class="text-center">{{ $fmt($ivRaw, 3) }}</td>
-                    <td class="text-center">{{ $fmt($lovRedRaw, 2) }}</td>
-                    <td class="text-center">{{ $fmt($lovYelRaw, 2) }}</td>
-                    <td class="text-center">{{ $fmt($pvRaw, 3) }}</td>
-                    <td>{{ $other ?? '-' }}</td>
-                    <td>{{ $remark ?? '-' }}</td>
+                    <td class="px-2 py-1 small">{{ $shipTank ?? '-' }}</td>
+                    <td class="px-2 py-1 small">{{ $noPolice ?? '-' }}</td>
+
+                    <td class="px-2 py-1 text-center small">{{ $fmt($ffaRaw, 3) }}</td>
+                    <td class="px-2 py-1 text-center small">{{ $fmt($miRaw, 3) }}</td>
+                    <td class="px-2 py-1 text-center small">{{ $fmt($ivRaw, 3) }}</td>
+
+                    {{-- Lovibond colors usually displayed with 2 decimals --}}
+                    <td class="px-2 py-1 text-center small">{{ $fmt($lovRedRaw, 2) }}</td>
+                    <td class="px-2 py-1 text-center small">{{ $fmt($lovYelRaw, 2) }}</td>
+
+                    <td class="px-2 py-1 text-center small">{{ $fmt($pvRaw, 3) }}</td>
+                    <td class="px-2 py-1 small">{{ $other ?? '-' }}</td>
+                    <td class="px-2 py-1 small">{{ $remark ?? '-' }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="10" class="text-center italic text-gray-600">No data available</td>
+                    <td colspan="10" class="text-center py-4 italic text-gray-600 small">No data available</td>
                 </tr>
             @endforelse
         </tbody>
     </table>
 
-    {{-- SIGNATURE --}}
+    {{-- SIGNATURES --}}
     <div class="grid grid-cols-2 gap-6 mt-6 text-center small">
         <div>
             <div class="font-semibold">Corrected by</div>
             <div class="text-[12px]">(QC Leader)</div>
             <div class="h-12"></div>
-            <div class="font-medium">{{ $header->prepared_by ?? '____________________' }}</div>
+            <div class="font-medium">{{ $header->prepared_by ?? $header->corrected_by ?? '____________________' }}</div>
+            <div class="text-xs text-gray-600">
+                {{ $header->prepared_date ? \Carbon\Carbon::parse($header->prepared_date)->format('d-m-Y H:i') : ($header->corrected_date ? \Carbon\Carbon::parse($header->corrected_date)->format('d-m-Y H:i') : '') }}
+            </div>
         </div>
 
         <div>
@@ -176,6 +187,9 @@
             <div class="text-[12px]">(QC Head)</div>
             <div class="h-12"></div>
             <div class="font-medium">{{ $header->approved_by ?? '____________________' }}</div>
+            <div class="text-xs text-gray-600">
+                {{ $header->approved_date ? \Carbon\Carbon::parse($header->approved_date)->format('d-m-Y H:i') : '' }}
+            </div>
         </div>
     </div>
 
