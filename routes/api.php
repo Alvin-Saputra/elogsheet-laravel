@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AROIPChemicalController;
 use App\Http\Controllers\ARIMByTruckController;
 use App\Http\Controllers\ARIMByVesselController;
 use App\Http\Controllers\AROIPFuelController;
+use App\Http\Controllers\AROSByVesselController;
 use App\Http\Controllers\AROSProductByTruckController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\COAController;
@@ -116,4 +117,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('arosptruck/{id}', [AROSProductByTruckController::class, 'destroy']);
     Route::put('arosptruck/{id}', [AROSProductByTruckController::class, 'update']);
     Route::put('arosptruck/{id}/approve', [AROSProductByTruckController::class, 'updateApproval']);
+});
+
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('arosvess', [AROSByVesselController::class, 'create']);
+    Route::get('arosvess', [AROSByVesselController::class, 'get']);
+    Route::put('arosvess/{id}', [AROSByVesselController::class, 'update']);
+    Route::delete('arosvess/{id}', [AROSByVesselController::class, 'destroy']);
+    Route::put('arosvess/{id}/approve', [AROSByVesselController::class, 'updateApproval']);
 });
