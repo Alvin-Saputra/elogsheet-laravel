@@ -27,62 +27,6 @@ class AROSByVesselController extends Controller
     }
 
     /**
-     * Find highest numeric sequence used for details of a header (Dxxx suffix),
-     * returns 0 when none found.
-     */
-    private function getMaxDetailSequence(string $headerId): int
-    {
-        $rows = AROSByVesselDetail::where('id_hdr', $headerId)->pluck('id')->toArray();
-        $max = 0;
-        foreach ($rows as $rid) {
-            if (preg_match('/D(\d+)$/', $rid, $m)) {
-                $num = intval($m[1]);
-                if ($num > $max)
-                    $max = $num;
-            }
-        }
-        return $max;
-    }
-
-    /**
-     * Generate a detail id that fits within the detail.id column length (default 16).
-     * It will try sequential suffixes until it finds an unused id or throw an Exception.
-     *
-     * @param string $headerId  The header id (used as prefix)
-     * @param int    $startSeq  Sequence to start with (normally 1)
-     * @param int    $maxLen    Maximum total length of id (detail.id column length)
-     * @param int    $seqDigits Number of digits for sequence (e.g. 3 -> D001)
-     * @return string
-     * @throws \Exception
-     */
-    private function makeDetailId(string $headerId, int $startSeq = 1, int $maxLen = 16, int $seqDigits = 3): string
-    {
-        $seq = max(1, (int) $startSeq);
-        $attempt = 0;
-        $maxAttempts = 10000; // safety cap
-
-        do {
-            $suffix = 'D' . str_pad($seq, $seqDigits, '0', STR_PAD_LEFT);
-            $prefixLen = $maxLen - strlen($suffix);
-            if ($prefixLen <= 0) {
-                throw new \Exception("Header id too long to generate detail id within {$maxLen} chars");
-            }
-            // use mb_substr to be safe with multibyte (but IDs are ascii)
-            $prefix = mb_substr($headerId, 0, $prefixLen);
-            $candidate = $prefix . $suffix;
-
-            if (!AROSByVesselDetail::where('id', $candidate)->exists()) {
-                return $candidate;
-            }
-
-            $seq++;
-            $attempt++;
-        } while ($attempt < $maxAttempts);
-
-        throw new \Exception('Unable to generate unique detail id within length constraints');
-    }
-
-    /**
      * Normalize roles value to an array and decide which prefix to use.
      * Returns ['prefix' => 'prepared'|'approved', 'roles' => array] or false when not allowed.
      */
@@ -230,17 +174,12 @@ class AROSByVesselController extends Controller
 
             $header = AROSByVesselHeader::create($headerPayload);
 
-            // create details (use helper to ensure detail.id fits column length)
-            $detailRows = $data['details'] ?? $data['detail'] ?? [];
-            if (!empty($detailRows) && is_array($detailRows)) {
-                $startSeq = $this->getMaxDetailSequence($header->id) + 1;
-                foreach ($detailRows as $index => $row) {
-                    $detailId = $this->makeDetailId($header->id, $startSeq + $index);
-                    AROSByVesselDetail::create(array_merge(Arr::except($row, ['id']), [
-                        'id' => $detailId,
-                        'id_hdr' => $header->id,
-                    ]));
-                }
+            foreach ($data['details'] as $index => $row) {
+                AROSByVesselDetail::create([
+                    ...$row,
+                    'id' => $header->id . 'D' . str_pad($index + 1, 3, '0', STR_PAD_LEFT),
+                    'id_hdr' => $header->id,
+                ]);
             }
 
             // persist new controlnumber
