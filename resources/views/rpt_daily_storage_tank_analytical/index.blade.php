@@ -72,40 +72,74 @@
                 </div>
             </form>
         </div>
-        {{-- Approval Day --}}
-        {{-- <div x-data="{ openRejectModal: false }">
+
+        {{-- Approval Day (Approve / Reject Hari Ini) --}}
+        <div x-data="{ openRejectModal: false }" class="mb-6">
+            {{-- Info status jika tidak bisa approve/reject --}}
+            @if (! $canApproveReject && $statusMessage)
+                <div class="mb-4 p-3 text-sm text-yellow-800 bg-yellow-100 rounded-lg">
+                    {{ $statusMessage }}
+                </div>
+            @endif
             <div class="flex gap-2 mb-4">
-                <form action="{{ route('report-monitoring-dry-fractionation.approve-date') }}" method="POST"> @csrf <input
-                        type="hidden" name="posting_date" value="{{ $tanggal }}">
+                {{-- Approve Hari Ini (form langsung) --}}
+                <form action="{{ route('daily-storage-tank-analytical.approve-date') }}" method="POST">
+                    @csrf
+                    <input type="hidden" name="posting_date" value="{{ $tanggal }}">
                     <button type="submit"
-                        class="px-4 py-2 text-sm font-semibold rounded-lg {{ $canApproveReject ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed' }}"
-                        {{ !$canApproveReject ? 'disabled' : '' }}>Approve Hari Ini</button>
+                        class="px-4 py-2 text-sm font-semibold rounded-lg
+                        {{ $canApproveReject ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed' }}"
+                        {{ $canApproveReject ? '' : 'disabled' }}>
+                        Approve Hari Ini
+                    </button>
                 </form>
+
+                {{-- Reject Hari Ini (buka modal) --}}
                 <button type="button" @click="openRejectModal = true"
-                    class="px-4 py-2 text-sm font-semibold rounded-lg {{ $canApproveReject ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed' }}"
-                    {{ !$canApproveReject ? 'disabled' : '' }}>Reject Hari Ini</button>
+                    class="px-4 py-2 text-sm font-semibold rounded-lg
+                    {{ $canApproveReject ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed' }}"
+                    {{ $canApproveReject ? '' : 'disabled' }}>
+                    Reject Hari Ini
+                </button>
             </div>
-            <div x-show="openRejectModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50"
-                x-cloak>
-                <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
-                    <h2 class="text-lg font-semibold text-gray-800 mb-4">Reject Laporan</h2>
-                    <form action="{{ route('report-monitoring-dry-fractionation.reject-date') }}" method="POST"> @csrf
+
+
+
+            {{-- Modal Reject Hari Ini --}}
+            <div x-show="openRejectModal" x-transition
+                 class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50"
+                 x-cloak>
+                <div class="bg-white rounded-lg shadow-lg w-full max-w-lg p-6">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-3">Konfirmasi Reject Semua</h2>
+                    <p class="text-sm text-gray-600 mb-4">
+                        Silakan masukkan alasan untuk menolak semua laporan tanggal <strong>{{ $tanggal }}</strong>.
+                    </p>
+
+                    <form action="{{ route('daily-storage-tank-analytical.reject-date') }}" method="POST" class="space-y-4">
+                        @csrf
                         <input type="hidden" name="posting_date" value="{{ $tanggal }}">
-                        <div class="mb-4">
-                            <label for="remark" class="block text-sm font-medium text-gray-700">Alasan Reject</label>
-                            <textarea id="remark" name="remark" rows="3" required
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-red-500 focus:border-red-500 sm:text-sm"></textarea>
+
+                        <div>
+                            <label for="remark-day" class="block text-sm font-medium text-gray-700">Alasan Reject</label>
+                            <textarea id="remark-day" name="remark" rows="4" required
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-red-500 focus:border-red-500 sm:text-sm"
+                                placeholder="Tuliskan alasan reject untuk semua laporan hari ini..."></textarea>
                         </div>
+
                         <div class="flex justify-end gap-2">
                             <button type="button" @click="openRejectModal = false"
-                                class="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded-lg text-gray-700">Batal</button>
+                                class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-lg">Batal</button>
+
                             <button type="submit"
-                                class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg">Reject</button>
+                                class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg">
+                                Reject Semua ({{ $tanggal }})
+                            </button>
                         </div>
                     </form>
                 </div>
             </div>
-        </div> --}}
+        </div>
+
 
         {{-- Tabel --}}
         <div class="overflow-x-auto">
@@ -128,12 +162,12 @@
                 <tbody class="text-sm text-gray-700">
                     @forelse ($data as $item)
                         <tr class="hover:bg-gray-50">
-                            <td>{{ $loop->iteration }}</td>
-                            <td>{{ $item->id }}</td>
-                            <td>{{ $item->plant }}</td>
-                            <td>{{ $item->transaction_date }}</td>
-                            <td>{{ $item->tank_no }}</td>
-                            <td>{{ $item->oil_type }}</td>
+                            <td class="px-4 py-2 border-b">{{ $loop->iteration }}</td>
+                            <td class="px-4 py-2 border-b">{{ $item->id }}</td>
+                            <td class="px-4 py-2 border-b">{{ $item->plant }}</td>
+                            <td class="px-4 py-2 border-b">{{ $item->transaction_date }}</td>
+                            <td class="px-4 py-2 border-b">{{ $item->tank_no }}</td>
+                            <td class="px-4 py-2 border-b">{{ $item->oil_type }}</td>
 
                             <td class="px-2 py-2 border-b text-center">
                                 @if ($item->prepared_status == 'Approved')
@@ -153,73 +187,113 @@
                                     <span class="px-2 py-1 text-xs rounded bg-gray-100 text-gray-600">Pending</span>
                                 @endif
                             </td>
+
+                            {{-- ACTION: tombol selalu tampil tapi disabled jika user tidak berwenang --}}
                             <td class="px-2 py-2 border-b text-center">
+                                @php
+                                    $role = auth()->user()->roles ?? null;
+
+                                    $canApproveRow = false;
+                                    $canRejectRow = false;
+
+                                    // LEAD can prepare (prepared_status) when not yet prepared
+                                    if (in_array($role, ['LEAD', 'LEAD_QC']) && is_null($item->prepared_status)) {
+                                        $canApproveRow = true;
+                                        $canRejectRow = true;
+                                    }
+
+                                    // MGR can approve final (approved_status) when prepared is Approved and not yet approved
+                                    if (in_array($role, ['MGR', 'MGR_QC', 'MGR_PROD', 'ADM'])
+                                        && is_null($item->approved_status)
+                                        && $item->prepared_status === 'Approved'
+                                        && $item->prepared_status !== 'Rejected') {
+                                        $canApproveRow = true;
+                                        $canRejectRow = true;
+                                    }
+
+                                    $disabledApproveTitle = $canApproveRow ? '' : 'Anda tidak memiliki hak atau kondisi belum terpenuhi';
+                                    $disabledRejectTitle = $canRejectRow ? '' : 'Anda tidak memiliki hak atau kondisi belum terpenuhi';
+                                @endphp
+
                                 <div class="flex justify-center gap-2" x-data="{ showApprove: false, showReject: false }">
-                                    @if ((auth()->user()->roles === 'LEAD_QC' || auth()->user()->roles === 'LEAD') && is_null($item->prepared_status))
-                                        <button @click="showApprove = true"
-                                            class="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 shadow">Approve</button>
-                                        <button @click="showReject = true"
-                                            class="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 shadow">Reject</button>
+                                    {{-- Approve --}}
+                                    <button
+                                        @if($canApproveRow) @click="showApprove = true" @endif
+                                        type="button"
+                                        title="{{ $disabledApproveTitle }}"
+                                        class="px-3 py-1 text-xs rounded shadow
+                                            {{ $canApproveRow ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed' }}"
+                                        {{ $canApproveRow ? '' : 'disabled' }}>
+                                        Approve
+                                    </button>
+
+                                    {{-- Reject --}}
+                                    <button
+                                        @if($canRejectRow) @click="showReject = true" @endif
+                                        type="button"
+                                        title="{{ $disabledRejectTitle }}"
+                                        class="px-3 py-1 text-xs rounded shadow
+                                            {{ $canRejectRow ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed' }}"
+                                        {{ $canRejectRow ? '' : 'disabled' }}>
+                                        Reject
+                                    </button>
+
+                                    {{-- Modal Approve (only if allowed) --}}
+                                    @if ($canApproveRow)
+                                        <div x-show="showApprove"
+                                            class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+                                            x-cloak>
+                                            <div class="bg-white p-6 rounded-lg shadow-xl">
+                                                <h2 class="text-lg font-bold mb-4">Confirm Approval</h2>
+                                                <p>Approve ticket #{{ $item->id }}?</p>
+                                                <div class="mt-6 flex justify-end gap-2">
+                                                    <button @click="showApprove = false"
+                                                        class="px-4 py-2 bg-gray-300 rounded">Cancel</button>
+                                                    <form method="POST"
+                                                        action="{{ route('daily-storage-tank-analytical.approveReport', $item->id) }}">
+                                                        @csrf
+                                                        <button type="submit"
+                                                            class="px-4 py-2 bg-green-600 text-white rounded">Approve</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
                                     @endif
-                                    @if (
-                                        (auth()->user()->roles === 'MGR_QC' || auth()->user()->roles === 'MGR' || auth()->user()->roles === 'ADM') &&
-                                            is_null($item->approved_status) &&
-                                            $item->prepared_status === 'Approved' &&
-                                            $item->prepared_status != 'Rejected')
-                                        <button @click="showApprove = true"
-                                            class="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 shadow">Approve</button>
-                                        <button @click="showReject = true"
-                                            class="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 shadow">Reject</button>
-                                    @endif
-                                    <div x-show="showApprove"
-                                        class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
-                                        x-cloak>
-                                        <div class="bg-white p-6 rounded-lg shadow-xl">
-                                            <h2 class="text-lg font-bold mb-4">Confirm Approval</h2>
-                                            <p>Approve ticket #{{ $item->id }}?</p>
-                                            <div class="mt-6 flex justify-end gap-2">
-                                                <button @click="showApprove = false"
-                                                    class="px-4 py-2 bg-gray-300 rounded">Cancel</button>
+
+                                    {{-- Modal Reject (only if allowed) --}}
+                                    @if ($canRejectRow)
+                                        <div x-show="showReject"
+                                            class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+                                            x-cloak>
+                                            <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
+                                                <h2 class="text-lg font-bold mb-4">Confirm Rejection</h2>
                                                 <form method="POST"
-                                                    action="{{ route('daily-storage-tank-analytical.approveReport', $item->id) }}">
+                                                    action="{{ route('daily-storage-tank-analytical.rejectReport', $item->id) }}">
                                                     @csrf
-                                                    <button type="submit"
-                                                        class="px-4 py-2 bg-green-600 text-white rounded">Approve</button>
+                                                    <label for="remark-{{ $item->id }}" class="block mb-2">Reason for
+                                                        rejection:</label>
+                                                    <textarea id="remark-{{ $item->id }}" name="remark" class="w-full border rounded p-2" rows="3" required></textarea>
+                                                    <div class="mt-6 flex justify-end gap-2">
+                                                        <button type="button" @click="showReject = false"
+                                                            class="px-4 py-2 bg-gray-300 rounded">Cancel</button>
+                                                        <button type="submit"
+                                                            class="px-4 py-2 bg-red-600 text-white rounded">Reject</button>
+                                                    </div>
                                                 </form>
                                             </div>
                                         </div>
-                                    </div>
-                                    <div x-show="showReject"
-                                        class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
-                                        x-cloak>
-                                        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
-                                            <h2 class="text-lg font-bold mb-4">Confirm Rejection</h2>
-                                            <form method="POST"
-                                                action="{{ route('daily-storage-tank-analytical.rejectReport', $item->id) }}">
-                                                @csrf
-                                                <label for="remark-{{ $item->id }}" class="block mb-2">Reason for
-                                                    rejection:</label>
-                                                <textarea id="remark-{{ $item->id }}" name="remark" class="w-full border rounded p-2" rows="3" required></textarea>
-                                                <div class="mt-6 flex justify-end gap-2">
-                                                    <button type="button" @click="showReject = false"
-                                                        class="px-4 py-2 bg-gray-300 rounded">Cancel</button>
-                                                    <button type="submit"
-                                                        class="px-4 py-2 bg-red-600 text-white rounded">Reject</button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
+                                    @endif
                                 </div>
                             </td>
 
-
                             <td class="px-2 py-2 border-b text-center">
                                 <a href="{{ route('daily-storage-tank-analytical.show', $item->id) }}"
-                                    class="text-blue-600 hover:text-blue-800"><svg xmlns="http://www.w3.org/2000/svg"
-                                        viewBox="0 0 512 512" class="w-5 h-5 inline-block">
+                                    class="text-blue-600 hover:text-blue-800" title="View detail">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="w-5 h-5 inline-block">
                                         <path fill="currentColor"
                                             d="M256 512a256 256 0 1 0 0-512 256 256 0 1 0 0 512zM224 160a32 32 0 1 1 64 0 32 32 0 1 1 -64 0zm-8 64l48 0c13.3 0 24 10.7 24 24l0 88 8 0c13.3 0 24 10.7 24 24s-10.7 24-24 24l-80 0c-13.3 0-24-10.7-24-24s10.7-24 24-24l24 0 0-64-24 0c-13.3 0-24-10.7-24-24s10.7-24 24-24z" />
-                                    </svg></a>
+                                    </svg>
+                                </a>
                             </td>
                         </tr>
                     @empty
@@ -232,13 +306,6 @@
                 </tbody>
             </table>
         </div>
-        {{-- @if ($reports->hasPages())
-            <div class="mt-4">{{ $reports->links() }}</div>
-        @endif --}}
 
-        {{-- Footer info --}}
-        {{-- <div class="mt-6 text-sm text-gray-500 italic">
-            Menampilkan {{ $reports->count() }} data ticket.
-        </div> --}}
     </div>
 @endsection

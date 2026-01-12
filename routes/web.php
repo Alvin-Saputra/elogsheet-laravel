@@ -4,6 +4,7 @@ use App\Http\Controllers\ARIMByTruckController;
 use App\Http\Controllers\ARIMByVesselController;
 use App\Http\Controllers\AROIPChemicalController;
 use App\Http\Controllers\AROIPFuelController;
+use App\Http\Controllers\AROSByVesselController;
 use App\Http\Controllers\AROSProductByTruckController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
@@ -299,6 +300,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/{id}', [RptDailyStorageTankAnalyticalController::class, 'show'])->name('show');
         Route::get('/export/view', [RptDailyStorageTankAnalyticalController::class, 'exportLayoutPreview'])->name('export.view');
         Route::get('/export/pdf', [RptDailyStorageTankAnalyticalController::class, 'exportPdf'])->name('export.pdf');
+        Route::post('/approve-date', [RptDailyStorageTankAnalyticalController::class, 'approveDate'])->name('approve-date');
+        Route::post('/reject-date', [RptDailyStorageTankAnalyticalController::class, 'rejectDate'])->name('reject-date');
+
     });
 
     Route::prefix('daily-quality-composite-fractionation')->name('daily-quality-composite-fractionation.')->group(function () {
@@ -352,7 +356,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/{id}/export/pdf', [AROIPFuelController::class, 'getById'])->name('export');
         });
     Route::prefix('analytical-result-outgoing-shipment-product-by-truck')
-    ->name('analytical-result-outgoing-shipment-product-by-truck.')
+        ->name('analytical-result-outgoing-shipment-product-by-truck.')
         ->group(function () {
             Route::get('/', [AROSProductByTruckController::class, 'index'])->name('index');
             Route::post('/{id}/approve-report', [AROSProductByTruckController::class, 'updateApprovalStatusWeb'])->name('approveReject');
@@ -360,5 +364,23 @@ Route::middleware('auth')->group(function () {
             Route::get('/{id}/export/view', [AROSProductByTruckController::class, 'getById'])->name('preview');
             Route::get('/{id}/export/pdf', [AROSProductByTruckController::class, 'getById'])->name('export');
         });
+    Route::prefix('analytical-result-outgoing-shipment-by-vessel')
+        ->name('analytical-result-outgoing-shipment-by-vessel.')
+        ->group(function () {
 
+            Route::get('/', [AROSByVesselController::class, 'index'])
+                ->name('index');
+
+            Route::post('/{id}/approve-report', [AROSByVesselController::class, 'updateApprovalStatusWeb'])
+                ->name('approveReject');
+
+            Route::get('/{id}', [AROSByVesselController::class, 'getById'])
+                ->name('show');
+
+            Route::get('/{id}/export/view', [AROSByVesselController::class, 'getById'])
+                ->name('preview');
+
+            Route::get('/{id}/export/pdf', [AROSByVesselController::class, 'getById'])
+                ->name('export');
+        });
 });

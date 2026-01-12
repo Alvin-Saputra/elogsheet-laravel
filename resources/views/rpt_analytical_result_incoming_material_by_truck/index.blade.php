@@ -4,8 +4,6 @@
 
 @section('content')
 
-
-
     <div class="bg-white p-6 rounded shadow-md">
         <div class="flex items-center justify-between mb-6">
             <div>
@@ -29,6 +27,25 @@
             </div>
         </div>
 
+        {{-- Flash messages --}}
+        @if(session('error'))
+            <div class="mb-4 px-4 py-2 bg-red-100 text-red-700 rounded">
+                {{ session('error') }}
+            </div>
+        @endif
+
+        @if(session('success-approve'))
+            <div class="mb-4 px-4 py-2 bg-green-100 text-green-700 rounded">
+                {{ session('success-approve') }}
+            </div>
+        @endif
+
+        @if(session('success-reject'))
+            <div class="mb-4 px-4 py-2 bg-green-100 text-green-700 rounded">
+                {{ session('success-reject') }}
+            </div>
+        @endif
+
         {{-- Filter --}}
         @php
             use Carbon\Carbon;
@@ -42,7 +59,6 @@
                     <input type="date" id="filter_tanggal" name="filter_tanggal" value="{{ $selectedDate }}"
                         class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-red-500 focus:border-red-500 sm:text-sm">
                 </div>
-
 
                 {{-- Tombol Filter --}}
                 <div class="flex items-end gap-2">
@@ -70,27 +86,25 @@
                         <th class="px-4 py-2 border-b text-left">Arrival</th>
                         <th class="px-4 py-2 border-b text-left">Plant</th>
                         <th class="px-4 py-2 border-b text-left">Material</th>
-                        {{-- === MODIFIED COLUMNS START === --}}
                         <th class="px-4 py-2 border-b text-center">Verified Status</th>
                         <th class="px-4 py-2 border-b text-center">Approved Status</th>
                         <th class="px-4 py-2 border-b text-center">Action</th>
-                        <th class="px-4 py-2 border-b text-center">Report</th> {{-- <-- NEW COLUMN --}}
-                        {{-- === MODIFIED COLUMNS END === --}}
+                        <th class="px-4 py-2 border-b text-center">Report</th>
                         <th class="px-4 py-2 border-b text-center">Detail</th>
                     </tr>
                 </thead>
                 <tbody class="text-sm text-gray-700">
                     @forelse ($headers as $index => $doc)
                         <tr class="{{ $index % 2 === 0 ? 'bg-white' : 'bg-gray-50' }} hover:bg-gray-100">
-                            <td class="px-4 py-2 border-b">
-                                {{ $index + 1 }}</td>
+                            <td class="px-4 py-2 border-b">{{ $index + 1 }}</td>
                             <td class="px-4 py-2 border-b">{{ $doc->id }}</td>
                             <td class="px-4 py-2 border-b">
-                                {{ Carbon::parse($doc->transaction_date)->format('Y-m-d H:i') }}</td>
-                            <td class="px-4 py-2 border-b"> {{ $doc->plant }}</td>
-                            <td class="px-4 py-2 border-b"> {{ $doc->material }}</td>
+                                {{ \Carbon\Carbon::parse($doc->arrival_date)->timezone('Asia/Jakarta')->format('Y-m-d H:i') }}
+                            </td>
+                            <td class="px-4 py-2 border-b">{{ $doc->plant }}</td>
+                            <td class="px-4 py-2 border-b">{{ $doc->material }}</td>
 
-                            {{-- === NEW "VERIFIED STATUS" COLUMN === --}}
+                            {{-- Verified Status --}}
                             <td class="px-4 py-2 border-b text-center">
                                 <div class="flex items-center justify-center gap-1">
                                     @if ($doc->prepared_status == 'Approved')
@@ -103,12 +117,11 @@
                                 </div>
                             </td>
 
-                            {{-- === NEW "CHECKED STATUS" COLUMN === --}}
+                            {{-- Approved Status --}}
                             <td class="px-4 py-2 border-b text-center">
                                 <div class="flex items-center justify-center gap-1 mt-1">
                                     @if ($doc->approved_status == 'Approved')
-                                        <span
-                                            class="px-2 py-0.5 text-xs rounded bg-green-100 text-green-700">Approved</span>
+                                        <span class="px-2 py-0.5 text-xs rounded bg-green-100 text-green-700">Approved</span>
                                     @elseif ($doc->approved_status == 'Rejected')
                                         <span class="px-2 py-0.5 text-xs rounded bg-red-100 text-red-700">Rejected</span>
                                     @else
@@ -117,14 +130,14 @@
                                 </div>
                             </td>
 
-                            {{-- === "ACTION" COLUMN (Route names corrected) === --}}
+                            {{-- Action --}}
                             <td class="px-4 py-2 border-b text-center">
                                 <div class="flex justify-center gap-2">
 
-                                    {{-- === SHIFT LEADER (Verify) ACTIONS === --}}
+                                    {{-- SHIFT LEADER (Verify) ACTIONS --}}
                                     @if (!$doc->prepared_status)
-                                        {{-- FIXED Route Name --}}
                                         @if (auth()->user()->roles === 'LEAD' || auth()->user()->roles === 'LEAD_QC')
+                                            {{-- Approve form (unchanged) --}}
                                             <form
                                                 action="{{ route('analytical-result-incoming-material-by-truck.approveReject', $doc->id) }}?status=Approved"
                                                 method="POST">
@@ -135,19 +148,52 @@
                                                     Approve
                                                 </button>
                                             </form>
-                                            {{-- FIXED Route Name --}}
-                                            <form
-                                                action="{{ route('analytical-result-incoming-material-by-truck.approveReject', $doc->id) }}?status=Rejected"
-                                                method="POST">
-                                                @csrf
-                                                <button type="submit"
+
+                                            {{-- Reject: modal with remark --}}
+                                            <div x-data="{ open{{ $doc->id }}: false }" class="relative">
+                                                <button type="button" @click="open{{ $doc->id }} = true"
                                                     class="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 shadow"
                                                     title="Shift Leader Reject">
                                                     Reject
                                                 </button>
-                                            </form>
+
+                                                {{-- Modal --}}
+                                                <div x-show="open{{ $doc->id }}" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                                                    <div @click.outside="open{{ $doc->id }} = false" class="bg-white w-full max-w-md rounded-lg shadow-lg p-6">
+                                                        <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                                                            Reject Report #{{ $doc->id }}
+                                                        </h3>
+
+                                                        <form method="POST"
+                                                              action="{{ route('analytical-result-incoming-material-by-truck.approveReject', $doc->id) }}?status=Rejected">
+                                                            @csrf
+
+                                                            <div class="mb-4">
+                                                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                                                    Reject Reason <span class="text-red-500">*</span>
+                                                                </label>
+                                                                <textarea name="remark" required rows="3"
+                                                                          class="w-full border border-gray-300 rounded-md shadow-sm focus:ring focus:ring-red-200 text-sm"
+                                                                          placeholder="Enter rejection reason..."></textarea>
+                                                            </div>
+
+                                                            <div class="flex justify-end gap-2">
+                                                                <button type="button" @click="open{{ $doc->id }} = false"
+                                                                        class="px-4 py-2 text-sm bg-gray-300 rounded">
+                                                                    Cancel
+                                                                </button>
+
+                                                                <button type="submit"
+                                                                        class="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700">
+                                                                    Confirm Reject
+                                                                </button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+
                                         @else
-                                            {{-- Disabled for other roles (e.g., Manager) --}}
                                             <button type="button"
                                                 class="px-3 py-1 bg-gray-400 text-white text-xs rounded shadow opacity-50 cursor-not-allowed"
                                                 disabled>
@@ -160,9 +206,10 @@
                                             </button>
                                         @endif
 
-                                        {{-- === MANAGER (CHECK) ACTIONS === --}}
+                                    {{-- MANAGER ACTIONS --}}
                                     @elseif ($doc->prepared_status == 'Approved' && !$doc->approved_status)
                                         @if (auth()->user()->roles == 'MGR' || auth()->user()->roles == 'MGR_QC')
+                                            {{-- Approve --}}
                                             <form
                                                 action="{{ route('analytical-result-incoming-material-by-truck.approveReject', $doc->id) }}?status=Approved"
                                                 method="POST">
@@ -173,18 +220,52 @@
                                                     Approve
                                                 </button>
                                             </form>
-                                            <form
-                                                action="{{ route('analytical-result-incoming-material-by-truck.approveReject', $doc->id) }}?status=Rejected"
-                                                method="POST">
-                                                @csrf
-                                                <button type="submit"
+
+                                            {{-- Reject: modal with remark --}}
+                                            <div x-data="{ open{{ $doc->id }}: false }" class="relative">
+                                                <button type="button" @click="open{{ $doc->id }} = true"
                                                     class="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 shadow"
                                                     title="Manager Reject">
                                                     Reject
                                                 </button>
-                                            </form>
+
+                                                {{-- Modal --}}
+                                                <div x-show="open{{ $doc->id }}" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                                                    <div @click.outside="open{{ $doc->id }} = false" class="bg-white w-full max-w-md rounded-lg shadow-lg p-6">
+                                                        <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                                                            Reject Report #{{ $doc->id }}
+                                                        </h3>
+
+                                                        <form method="POST"
+                                                              action="{{ route('analytical-result-incoming-material-by-truck.approveReject', $doc->id) }}?status=Rejected">
+                                                            @csrf
+
+                                                            <div class="mb-4">
+                                                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                                                    Reject Reason <span class="text-red-500">*</span>
+                                                                </label>
+                                                                <textarea name="remark" required rows="3"
+                                                                          class="w-full border border-gray-300 rounded-md shadow-sm focus:ring focus:ring-red-200 text-sm"
+                                                                          placeholder="Enter rejection reason..."></textarea>
+                                                            </div>
+
+                                                            <div class="flex justify-end gap-2">
+                                                                <button type="button" @click="open{{ $doc->id }} = false"
+                                                                        class="px-4 py-2 text-sm bg-gray-300 rounded">
+                                                                    Cancel
+                                                                </button>
+
+                                                                <button type="submit"
+                                                                        class="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700">
+                                                                    Confirm Reject
+                                                                </button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+
                                         @else
-                                            {{-- Disabled for other roles (e.g., Shift Leader) --}}
                                             <button type="button"
                                                 class="px-3 py-1 bg-gray-400 text-white text-xs rounded shadow opacity-50 cursor-not-allowed"
                                                 disabled>
@@ -197,7 +278,7 @@
                                             </button>
                                         @endif
 
-                                        {{-- === FINAL STATUS (NO ACTIONS) === --}}
+                                    {{-- Final / no actions --}}
                                     @else
                                         <span class="text-xs text-gray-500">
                                             @if ($doc->prepared_status == 'Rejected')
@@ -212,17 +293,15 @@
                                 </div>
                             </td>
 
-                            {{-- === NEW "REPORT" COLUMN === --}}
+                            {{-- Report --}}
                             <td class="px-4 py-2 border-b text-center">
                                 <div class="flex justify-center gap-2">
-                                    <!-- Preview Button -->
                                     <a href="{{ route('analytical-result-incoming-material-by-truck.preview', $doc->id) }}?intention=preview"
                                         target="_blank"
                                         class="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-gray-700 shadow"
                                         title="Preview PDF">
                                         Preview
                                     </a>
-                                    <!-- Download Button -->
                                     <a href="{{ route('analytical-result-incoming-material-by-truck.export', $doc->id) }}?intention=export"
                                         class="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 shadow"
                                         title="Download PDF">
@@ -231,7 +310,7 @@
                                 </div>
                             </td>
 
-                            {{-- === "DETAIL" COLUMN (Unchanged) === --}}
+                            {{-- Detail --}}
                             <td class="px-4 py-2 border-b text-center">
                                 <a href="{{ route('analytical-result-incoming-material-by-truck.show', $doc->id) }}?intention=show"
                                     class="text-blue-600 hover:text-blue-800 inline-flex items-center justify-center">
@@ -254,6 +333,8 @@
                 </tbody>
 
             </table>
+
+            {{-- transient flash notifications (auto-hide handled by Alpine) --}}
             <div x-data="{ show: {{ session('success-approve') ? 'true' : 'false' }} }" x-show="show" x-init="setTimeout(() => show = false, 3000)"
                 class="fixed bottom-5 right-5 bg-green-500 text-white px-4 py-2 rounded shadow-lg">
                 {{ session('success-approve') }}
@@ -264,4 +345,5 @@
                 {{ session('success-reject') }}
             </div>
         </div>
-    @endsection
+    </div>
+@endsection

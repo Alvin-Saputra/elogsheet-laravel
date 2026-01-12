@@ -60,10 +60,10 @@ class ARIMByTruckDetail extends Model
         return $this->belongsTo(ARIMByVesselHeader::class, 'id_hdr', 'id');
     }
 
-    public function getSamplingDateAttribute($value)
-    {
-        return $value
-            ? Carbon::parse($value)->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')
-            : null;
-    }
+    // public function getSamplingDateAttribute($value)
+    // {
+    //     return $value
+    //         ? Carbon::parse($value)->timezone('Asia/Jakarta')
+    //         : null;
+    // }
 }

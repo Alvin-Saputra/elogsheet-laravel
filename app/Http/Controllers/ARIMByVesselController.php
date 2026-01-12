@@ -63,7 +63,7 @@ class ARIMByVesselController extends Controller
                 'menu_id' => 'required',
                 'company' => 'required',
                 'plant' => 'required',
-                'arrival' => ['required'],
+                'arrival' => 'required',
                 'material' => 'required',
                 'quantity' => 'required',
                 'supplier' => 'required',
@@ -126,7 +126,7 @@ class ARIMByVesselController extends Controller
 
             //get data form no
             $data_form = MDataFormNo::where('is_menu', $data['menu_id'])->first();
-            if (! $data_form) {
+            if (!$data_form) {
                 return response()->json([
                     'success' => false,
                     'error' => 'INVALID_DATA_FORM',
@@ -138,8 +138,8 @@ class ARIMByVesselController extends Controller
             $nextnum = intval($control['autonumber']) + 1;
             $padded_num = str_pad($nextnum, 6, '0', STR_PAD_LEFT);
             $hd_id = $control['prefix'];
-            $suffix = $control['plantid'].$control['accountingyear'].$padded_num;
-            $header_id = $hd_id.$suffix;
+            $suffix = $control['plantid'] . $control['accountingyear'] . $padded_num;
+            $header_id = $hd_id . $suffix;
             $now = new DateTime();
 
             $payload = [
@@ -160,7 +160,7 @@ class ARIMByVesselController extends Controller
 
             //inser detail
             foreach ($detail as $key => $det) {
-                $id_det = $hd_id.'D'.$suffix.$key;
+                $id_det = $hd_id . 'D' . $suffix . $key;
                 $payload_det = [
                     ...$det,
                     'id' => $id_det,
@@ -213,7 +213,7 @@ class ARIMByVesselController extends Controller
                     $detail = ARIMByVesselHeader::find($hd['id'])->details()->get()->toArray();
                     array_push($result, [...$hd, 'detail' => $detail]);
                 }
-            } elseif (! $plant && $date) {
+            } elseif (!$plant && $date) {
                 $header = ARIMByVesselHeader::whereDate('arrival', $date)->get()->toArray();
 
                 foreach ($header as $hd) {
@@ -305,7 +305,7 @@ class ARIMByVesselController extends Controller
 
             // find header
             $header = ARIMByVesselHeader::where('id', $id)->first();
-            if (! $header) {
+            if (!$header) {
                 DB::rollBack();
 
                 return response()->json(['success' => false, 'error' => 'NOT_FOUND'], 404);
@@ -340,7 +340,7 @@ class ARIMByVesselController extends Controller
                     $processedIds[] = $providedId;
                 } else {
                     // create new detail row
-                    $id_det = $providedId ?? ($id.'D'.$key);
+                    $id_det = $providedId ?? ($id . 'D' . $key);
                     $payload_det = [
                         ...$det,
                         'id' => $id_det,
@@ -353,7 +353,7 @@ class ARIMByVesselController extends Controller
 
             // delete any existing detail rows that were not included in the payload
             $toDelete = array_diff($existingIds, $processedIds);
-            if (! empty($toDelete)) {
+            if (!empty($toDelete)) {
                 ARIMByVesselDetail::where('id_hdr', $id)->whereIn('id', $toDelete)->delete();
             }
 
@@ -378,7 +378,7 @@ class ARIMByVesselController extends Controller
     {
         try {
             $header = ARIMByVesselHeader::find($id);
-            if (! $header) {
+            if (!$header) {
                 return response()->json(['success' => false, 'error' => 'NOT_FOUND'], 404);
             }
 
@@ -402,7 +402,7 @@ class ARIMByVesselController extends Controller
     {
         $tanggal = $request->input('filter_tanggal');
 
-        if (! $tanggal) {
+        if (!$tanggal) {
             $tanggal = now()->toDateString();
         }
         $plantCode = session('plant_code');
@@ -429,7 +429,7 @@ class ARIMByVesselController extends Controller
             $status = $data['approve_status'];
             $remark = $data['remark'];
 
-            if (! $header) {
+            if (!$header) {
                 DB::rollBack();
 
                 return response()->json([
@@ -503,7 +503,7 @@ class ARIMByVesselController extends Controller
         ]);
 
         $pdf->setPaper('a4', 'portrait');
-        $fileName = 'startup-produksi-checklist-'.$data->id.'.pdf';
+        $fileName = 'startup-produksi-checklist-' . $data->id . '.pdf';
 
         return $pdf->stream($fileName);
     }
@@ -521,14 +521,14 @@ class ARIMByVesselController extends Controller
                 'header' => $data,
             ]),
             'export' => (function () use ($data) {
-                $pdf = Pdf::loadView('exports.report_analytical_result_incoming_material_by_vessel_pdf', [
+                    $pdf = Pdf::loadView('exports.report_analytical_result_incoming_material_by_vessel_pdf', [
                     'header' => $data,
-                ]);
-                $pdf->setPaper('a4', 'portrait');
-                $fileName = 'startup-produksi-checklist-'.$data->id.'.pdf';
+                    ]);
+                    $pdf->setPaper('a4', 'portrait');
+                    $fileName = 'startup-produksi-checklist-' . $data->id . '.pdf';
 
-                return $pdf->stream($fileName);
-            })(),
+                    return $pdf->stream($fileName);
+                })(),
             default => abort(400, 'Invalid intention')
         };
     }

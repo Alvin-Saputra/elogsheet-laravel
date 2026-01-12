@@ -68,52 +68,53 @@ class ARIMByTruckHeader extends Model
         return $this->hasMany(ARIMByTruckDetail::class, 'id_hdr', 'id');
     }
 
-    public function getTransactionDateAttribute($value)
-    {
-        return $value
-            ? Carbon::parse($value)->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')
-            : null;
-    }
+    // public function getTransactionDateAttribute($value)
+    // {
+    //     return $value
+    //         ? Carbon::parse($value)->timezone('Asia/Jakarta')
+    //         : null;
+    // }
 
-    public function getArrivalDateAttribute($value)
-    {
-        return $value
-            ? Carbon::parse($value)->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')
-            : null;
-    }
+    // public function getArrivalDateAttribute($value)
+    // {
+    //     return $value
+    //         ? Carbon::parse($value)->timezone('Asia/Jakarta')
+    //         : null;
+    // }
 
-    public function getEntryDateAttribute($value)
-    {
-        return $value
-            ? Carbon::parse($value)->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')
-            : null;
-    }
+    // public function getEntryDateAttribute($value)
+    // {
+    //     return $value
+    //         ? Carbon::parse($value)->timezone('Asia/Jakarta')
+    //         : null;
+    // }
 
-    public function getPreparedDateAttribute($value)
-    {
-        return $value
-            ? Carbon::parse($value)->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')
-            : null;
-    }
+    // public function getPreparedDateAttribute($value)
+    // {
+    //     return $value
+    //         ? Carbon::parse($value)->timezone('Asia/Jakarta')
+    //         : null;
+    // }
 
-    public function getApprovedDateAttribute($value)
-    {
-        return $value
-            ? Carbon::parse($value)->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')
-            : null;
-    }
+    // public function getApprovedDateAttribute($value)
+    // {
+    //     return $value
+    //         ? Carbon::parse($value)->timezone('Asia/Jakarta')
+    //         : null;
+    // }
 
-    public function getUpdatedDateAttribute($value)
-    {
-        return $value
-            ? Carbon::parse($value)->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')
-            : null;
-    }
+    // public function getUpdatedDateAttribute($value)
+    // {
+    //     return $value
+    //         ? Carbon::parse($value)->timezone('Asia/Jakarta')
+    //         : null;
+    // }
 
-    public function getDateIssuedAttribute($value)
-    {
-        return $value
-            ? Carbon::parse($value)->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')
-            : null;
-    }
+    // public function getDateIssuedAttribute($value)
+    // {
+    //     return $value
+    //         ? Carbon::parse($value)->timezone('Asia/Jakarta')
+    //         : null;
+    // }
+
 }
