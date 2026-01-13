@@ -133,7 +133,7 @@ class AROSByVesselController extends Controller
             $user = $request->user()->getDisplayNameAttribute();
 
             // Resolve form metadata using menu_id
-            $dataForm = null;
+            $dataForm = MDataFormNo::find(21);
             if (!empty($data['menu_id'])) {
                 $dataForm = MDataFormNo::where('is_menu', $data['menu_id'])->first();
             }
@@ -361,4 +361,157 @@ class AROSByVesselController extends Controller
             ], 500);
         }
     }
+
+    // -----------------------
+// WEB: admin dashboard endpoints
+// -----------------------
+
+    /**
+     * Web index — list by sampling date
+     */
+    public function index(Request $request)
+    {
+        $filterDate = $request->input('filter_tanggal', now()->toDateString());
+
+        $headers = AROSByVesselHeader::query()
+            ->whereDate('sampling_date', $filterDate)
+            ->orderBy('sampling_date', 'desc')
+            ->get([
+                'id',
+                'product_name',
+                'quantity',
+                'vessel_name',
+                'destination',
+                'shipper',
+                'prepared_status',
+                'approved_status',
+                'sampling_date',
+            ]);
+
+        return view(
+            'rpt_analytical_result_outgoing_shipment_by_vessel.index',
+            compact('headers', 'filterDate')
+        );
+    }
+
+    /**
+     * Web show (detail)
+     */
+    public function show($id)
+    {
+        $header = $this->findHeaderWithId($id);
+
+        return view(
+            'rpt_analytical_result_outgoing_shipment_by_vessel.show',
+            compact('header')
+        );
+    }
+
+    /**
+     * Web preview (layout preview)
+     */
+    public function preview($id)
+    {
+        $header = $this->findHeaderWithId($id);
+
+        return view(
+            'rpt_analytical_result_outgoing_shipment_by_vessel.preview_layout',
+            compact('header')
+        );
+    }
+
+    /**
+     * Web export PDF
+     */
+    public function export($id)
+    {
+        $header = $this->findHeaderWithId($id);
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView(
+            'exports.report_analytical_result_outgoing_shipment_by_vessel_pdf',
+            compact('header')
+        );
+
+        $pdf->setPaper('a4', 'landscape');
+
+        return $pdf->stream(
+            'aros-by-vessel-' . $header->id . '.pdf'
+        );
+    }
+
+    /**
+     * Unified getById for web (show | preview | export)
+     */
+    public function getById(Request $request, $id)
+    {
+        $header = $this->findHeaderWithId($id);
+        $intention = $request->query('intention');
+
+        return match ($intention) {
+            'show' => view(
+                'rpt_analytical_result_outgoing_shipment_by_vessel.show',
+                compact('header')
+            ),
+
+            'preview' => view(
+                'rpt_analytical_result_outgoing_shipment_by_vessel.preview_layout',
+                compact('header')
+            ),
+
+            'export' => (function () use ($header) {
+                    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView(
+                    'exports.report_analytical_result_outgoing_shipment_by_vessel_pdf',
+                    compact('header')
+                    );
+
+                    $pdf->setPaper('a4', 'landscape');
+
+                    return $pdf->stream(
+                    'aros-by-vessel-' . $header->id . '.pdf'
+                    );
+                })(),
+
+            default => abort(400, 'Invalid intention'),
+        };
+    }
+
+    /**
+     * Web approval action (POST) — similar semantics to API approval but returns redirect with flash.
+     * Accepts ?status=Approved|Rejected and optional remark in request body.
+     */
+    public function updateApprovalStatusWeb(Request $request, $id)
+    {
+        DB::beginTransaction();
+        try {
+            $report = AROSByVesselHeader::findOrFail($id);
+
+            // status can come from ?status=Approved or form input 'status'
+            $status = $request->query('status') ?? $request->input('status');
+            $remark = $request->input('remark');
+            $username = auth()->user()?->username ?? auth()->user()?->getDisplayNameAttribute();
+            $role = auth()->user()?->roles ?? null;
+
+            $isSuccess = $this->processApprovalStatus($report, $status, $remark, $username, $role);
+
+            if (!$isSuccess) {
+                DB::rollBack();
+                return back()->with('error', 'You do not have permission to update approval status');
+            }
+
+            DB::commit();
+
+            if ($status === 'Approved') {
+                return back()->with('success-approve', "Tiket {$report->id} berhasil di-{$status}");
+            } elseif ($status === 'Rejected') {
+                return back()->with('success-reject', "Tiket {$report->id} berhasil di-{$status}");
+            }
+
+            return back()->with('success', 'Approval status updated');
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            return back()->with('error', $th->getMessage());
+        }
+    }
+
+
 }
