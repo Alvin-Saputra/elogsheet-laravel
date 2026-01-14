@@ -6,6 +6,7 @@ use App\Http\Controllers\AROIPChemicalController;
 use App\Http\Controllers\AROIPFuelController;
 use App\Http\Controllers\AROSProductByTruckController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\DailyProdFracController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LogsheetDryFraController;
 use App\Http\Controllers\MstBusinessUnitController;
@@ -201,16 +202,26 @@ Route::middleware('auth')->group(function () {
         });
 
         // Fractination
+        // Route::prefix('fractionation')->name('fractionation.')->group(function () {
+        //     Route::get('/', [RptDailyPFraController::class, 'index'])->name('index');
+        //     Route::get('/{id}', [RptDailyPFraController::class, 'show'])->name('show');
+        //     Route::post('/approve-date', [RptDailyPFraController::class, 'approveDate'])->name('approve-date');
+        //     Route::post('/reject-date', [RptDailyPFraController::class, 'rejectDate'])->name('reject-date');
+        //     Route::post('/{id}/approve', [RptDailyPFraController::class, 'approveTicket'])->name('approve');
+        //     Route::post('/{id}/reject', [RptDailyPFraController::class, 'rejectTicket'])->name('reject');
+        //     Route::get('/export/view', [RptDailyPFraController::class, 'exportLayoutPreview'])->name('export.view');
+        //     Route::get('/export/excel', [RptDailyPFraController::class, 'exportExcel'])->name('export.excel');
+        //     Route::get('/export/pdf', [RptDailyPFraController::class, 'exportPdf'])->name('export.pdf');
+        // });
+
         Route::prefix('fractionation')->name('fractionation.')->group(function () {
-            Route::get('/', [RptDailyPFraController::class, 'index'])->name('index');
-            Route::get('/{id}', [RptDailyPFraController::class, 'show'])->name('show');
-            Route::post('/approve-date', [RptDailyPFraController::class, 'approveDate'])->name('approve-date');
-            Route::post('/reject-date', [RptDailyPFraController::class, 'rejectDate'])->name('reject-date');
-            Route::post('/{id}/approve', [RptDailyPFraController::class, 'approveTicket'])->name('approve');
-            Route::post('/{id}/reject', [RptDailyPFraController::class, 'rejectTicket'])->name('reject');
-            Route::get('/export/view', [RptDailyPFraController::class, 'exportLayoutPreview'])->name('export.view');
-            Route::get('/export/excel', [RptDailyPFraController::class, 'exportExcel'])->name('export.excel');
-            Route::get('/export/pdf', [RptDailyPFraController::class, 'exportPdf'])->name('export.pdf');
+            Route::get('/', [DailyProdFracController::class, 'index'])->name('index');
+            Route::get('/{id}', [DailyProdFracController::class, 'show'])->name('show');
+            Route::post('/approval-per-shift', [DailyProdFracController::class, 'approveShiftWorkCenter'])->name('approvalPerShift');
+            Route::post('/approval-per-date', [DailyProdFracController::class, 'approvalDate'])->name('approvalPerDate');
+            Route::get('/export/view', [DailyProdFracController::class, 'exportLayoutPreview'])->name('export.view');
+            Route::get('/export/excel', [DailyProdFracController::class, 'exportExcel'])->name('export.excel');
+            Route::get('/export/pdf', [DailyProdFracController::class, 'exportPdf'])->name('export.pdf');
         });
     });
 
@@ -352,7 +363,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/{id}/export/pdf', [AROIPFuelController::class, 'getById'])->name('export');
         });
     Route::prefix('analytical-result-outgoing-shipment-product-by-truck')
-    ->name('analytical-result-outgoing-shipment-product-by-truck.')
+        ->name('analytical-result-outgoing-shipment-product-by-truck.')
         ->group(function () {
             Route::get('/', [AROSProductByTruckController::class, 'index'])->name('index');
             Route::post('/{id}/approve-report', [AROSProductByTruckController::class, 'updateApprovalStatusWeb'])->name('approveReject');
@@ -360,5 +371,4 @@ Route::middleware('auth')->group(function () {
             Route::get('/{id}/export/view', [AROSProductByTruckController::class, 'getById'])->name('preview');
             Route::get('/{id}/export/pdf', [AROSProductByTruckController::class, 'getById'])->name('export');
         });
-
 });
