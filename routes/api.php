@@ -126,6 +126,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('dryfrac', [DryFraController::class, 'create']);
     Route::get('dryfrac', [DryFraController::class, 'get']);
     Route::delete('dryfrac/{id}', [DryFraController::class, 'destroy']);
+    Route::put('dryfrac/approve-reject', [DryFraController::class, 'updateApprovalStatusApi']);
+    Route::put('dryfrac/approve-reject-perdate', [DryFraController::class, 'updateApprovalStatusPerDateApi']);
     Route::put('dryfrac/{id}', [DryFraController::class, 'update']);
-    // Route::put('arosptruck/{id}/approve', [AROSProductByTruckController::class, 'updateApproval']);
+    
 });

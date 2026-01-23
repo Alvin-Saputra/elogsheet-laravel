@@ -1,39 +1,40 @@
 <?php
 
-use App\Http\Controllers\ARIMByTruckController;
-use App\Http\Controllers\ARIMByVesselController;
-use App\Http\Controllers\AROIPChemicalController;
-use App\Http\Controllers\AROIPFuelController;
-use App\Http\Controllers\AROSProductByTruckController;
-use App\Http\Controllers\Auth\LoginController;
-use App\Http\Controllers\DailyProdFracController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\LogsheetDryFraController;
-use App\Http\Controllers\MstBusinessUnitController;
-use App\Http\Controllers\MstMastervalueController;
-use App\Http\Controllers\MstPlantController;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\DryFraController;
 use App\Http\Controllers\MstRoleController;
 use App\Http\Controllers\MstUserController;
-use App\Http\Controllers\RptChangeProductController;
+use App\Http\Controllers\MstPlantController;
+use App\Http\Controllers\AROIPFuelController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\RptQualityController;
+use App\Http\Controllers\ARIMByTruckController;
+use App\Http\Controllers\ARIMByVesselController;
 use App\Http\Controllers\RptDailyPFraController;
 use App\Http\Controllers\RptDailyPRefController;
-use App\Http\Controllers\RptDailyProductionController;
-use App\Http\Controllers\RptDailyQualityCompositeFractionation;
-use App\Http\Controllers\RptDailyStorageTankAnalyticalController;
-use App\Http\Controllers\RptDeodorizingController;
 use App\Http\Controllers\RptLampGlassController;
-use App\Http\Controllers\RptLogsheetDryFraController;
+use App\Http\Controllers\AROIPChemicalController;
+use App\Http\Controllers\DailyProdFracController;
+use App\Http\Controllers\LogsheetDryFraController;
+use App\Http\Controllers\MstMastervalueController;
+use App\Http\Controllers\RptDeodorizingController;
 use App\Http\Controllers\RptLogsheetPBFController;
+use App\Http\Controllers\MstBusinessUnitController;
+use App\Http\Controllers\RptChangeProductController;
+use App\Http\Controllers\RptLogsheetDryFraController;
 /*
 |--------------------------------------------------------------------------
 | Guest Routes (Login)
 |--------------------------------------------------------------------------
 */
 
-use App\Http\Controllers\RptQualityController;
+use App\Http\Controllers\AROSProductByTruckController;
+use App\Http\Controllers\RptDailyProductionController;
 use App\Http\Controllers\RptStartupProduksiController;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\RptDailyQualityCompositeFractionation;
+use App\Http\Controllers\RptDailyStorageTankAnalyticalController;
 
 Route::get('/', function () {
     return Auth::check()
@@ -371,4 +372,14 @@ Route::middleware('auth')->group(function () {
             Route::get('/{id}/export/view', [AROSProductByTruckController::class, 'getById'])->name('preview');
             Route::get('/{id}/export/pdf', [AROSProductByTruckController::class, 'getById'])->name('export');
         });
+
+
+    Route::prefix('logsheet-monitoring-dry-fractionation')->name('logsheet-monitoring-dry-fractionation.')->group(function () {
+        Route::get('/', [DryFraController::class, 'index'])->name('index');
+        Route::post('/approval-per-crystallizer', [DryFraController::class, 'approvePerCrystallizer'])->name('approvalPerCrystallizer');
+        Route::post('/approval-per-date', [DryFraController::class, 'approvePerDate'])->name('approvalPerDate');
+        Route::get('/preview', [DryFraController::class, 'preview'])->name('preview');
+        Route::get('/export', [DryFraController::class, 'export'])->name('export');
+        Route::get('/{id}', [DryFraController::class, 'show'])->name('show');
+    });
 });

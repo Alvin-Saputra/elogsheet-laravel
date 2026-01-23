@@ -690,7 +690,7 @@ class RptQualityController extends Controller
         // }
         return $query->select($baseSelect)
             ->orderBy('time')
-            ->collect();
+            ->get();
     }
 
     private function getMainDataQc(string $tanggal, ?string $workCenter)

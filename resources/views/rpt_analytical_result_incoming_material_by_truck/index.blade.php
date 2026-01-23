@@ -86,7 +86,7 @@
                                 {{ $index + 1 }}</td>
                             <td class="px-4 py-2 border-b">{{ $doc->id }}</td>
                             <td class="px-4 py-2 border-b">
-                                {{ Carbon::parse($doc->transaction_date)->format('Y-m-d H:i') }}</td>
+                                {{ Carbon::parse($doc->arrival_date)->format('Y-m-d') }}</td>
                             <td class="px-4 py-2 border-b"> {{ $doc->plant }}</td>
                             <td class="px-4 py-2 border-b"> {{ $doc->material }}</td>
 

@@ -28,7 +28,7 @@ class DailyProdFracController extends Controller
             ->get();
 
         // 3. Query Data Utama
-        $query = LSDailyProdFrac::query();
+        $query = LSDailyProdFrac::query()->where('flag', 'T');
 
         // Filter by Date (Gunakan transaction_date agar sesuai mobile app grouping)
         $query->whereDate('transaction_date', $tanggal);

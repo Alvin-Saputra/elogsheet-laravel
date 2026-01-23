@@ -177,50 +177,99 @@ class ARIMByTruckController extends Controller
         }
     }
 
+    // public function get(Request $request)
+    // {
+    //     try {
+    //         //check if id header exist, get by header id
+    //         $id_header = $request->query('id');
+    //         $plant = $request->query('plant');
+    //         $date = $request->query('date');
+    //         $result = [];
+    //         if ($id_header) {
+    //             $header = ARIMByTruckHeader::where('plant', $plant)->where('id', $id_header)->first()->toArray();
+    //             $detail = ARIMByTruckHeader::find($header['id'])->details()->get()->toArray();
+    //             $result = [
+    //                 [
+    //                     ...$header,
+    //                     "detail" => $detail
+    //                 ]
+    //             ];
+    //         } else if ($plant && $date) {
+    //             $header = ARIMByTruckHeader::where('plant', $plant)->whereDate('arrival_date', $date)->get()->toArray();
+
+    //             foreach ($header as $hd) {
+    //                 $detail = ARIMByTruckHeader::find($hd['id'])->details()->get()->toArray();
+    //                 array_push($result, [...$hd, 'detail' => $detail]);
+    //             }
+    //         } else if (!$plant && $date) {
+    //             $header = ARIMByTruckHeader::whereDate('arrival', $date)->get()->toArray();
+
+    //             foreach ($header as $hd) {
+    //                 $detail = ARIMByTruckHeader::find($hd['id'])->details()->get()->toArray();
+    //                 array_push($result, [...$hd, 'detail' => $detail]);
+    //             }
+    //         } else {
+    //             $header = ARIMByTruckHeader::where('plant', $plant)->get()->toArray();
+    //             foreach ($header as $hd) {
+    //                 $detail = ARIMByTruckHeader::find($hd['id'])->details()->get()->toArray();
+    //                 array_push($result, [...$hd, 'detail' => $detail]);
+    //             }
+    //         }
+    //         return response()->json([
+    //             'success' => true,
+    //             "data" => $result
+    //         ], 200);
+    //     } catch (\Throwable $th) {
+    //         //throw $th;
+    //         return response()->json([
+    //             'success' => false,
+    //             'data' => $th->getMessage()
+    //         ], 500);
+    //     }
+    // }
+
+
     public function get(Request $request)
     {
         try {
-            //check if id header exist, get by header id
             $id_header = $request->query('id');
             $plant = $request->query('plant');
             $date = $request->query('date');
-            $result = [];
+
+            // Mulai query builder
+            $query = ARIMByTruckHeader::query();
+
+            // Gunakan 'with' untuk mengambil relation 'details' sekaligus (Mencegah N+1 Problem)
+            $query->with('details');
+
+            // Logic Filter
             if ($id_header) {
-                $header = ARIMByTruckHeader::where('plant', $plant)->where('id', $id_header)->first()->toArray();
-                $detail = ARIMByTruckHeader::find($header['id'])->details()->get()->toArray();
-                $result = [
-                    [
-                        ...$header,
-                        "detail" => $detail
-                    ]
-                ];
+                $query->where('plant', $plant)->where('id', $id_header);
             } else if ($plant && $date) {
-                $header = ARIMByTruckHeader::where('plant', $plant)->whereDate('arrival_date', $date)->get()->toArray();
-
-                foreach ($header as $hd) {
-                    $detail = ARIMByTruckHeader::find($hd['id'])->details()->get()->toArray();
-                    array_push($result, [...$hd, 'detail' => $detail]);
-                }
+                $query->where('plant', $plant)->whereDate('arrival_date', $date);
             } else if (!$plant && $date) {
-                $header = ARIMByTruckHeader::whereDate('arrival', $date)->get()->toArray();
-
-                foreach ($header as $hd) {
-                    $detail = ARIMByTruckHeader::find($hd['id'])->details()->get()->toArray();
-                    array_push($result, [...$hd, 'detail' => $detail]);
-                }
+                // Asumsi typo di kode asli 'arrival' harusnya 'arrival_date'
+                $query->whereDate('arrival_date', $date);
             } else {
-                $header = ARIMByTruckHeader::where('plant', $plant)->get()->toArray();
-                foreach ($header as $hd) {
-                    $detail = ARIMByTruckHeader::find($hd['id'])->details()->get()->toArray();
-                    array_push($result, [...$hd, 'detail' => $detail]);
+                // Default jika hanya plant atau tidak ada parameter
+                if ($plant) {
+                    $query->where('plant', $plant);
                 }
             }
+
+            // TAMBAHKAN INI: Pengurutan data
+            // Misalnya diurutkan berdasarkan tanggal kedatangan terbaru, lalu ID
+            $query->orderBy('arrival_date', 'asc')
+                  ->orderBy('transaction_date', 'asc');
+
+            // Eksekusi query
+            $result = $query->get();
+
             return response()->json([
                 'success' => true,
-                "data" => $result
+                'data' => $result
             ], 200);
         } catch (\Throwable $th) {
-            //throw $th;
             return response()->json([
                 'success' => false,
                 'data' => $th->getMessage()
@@ -431,7 +480,10 @@ class ARIMByTruckController extends Controller
         $headers = ARIMByTruckHeader::with('details')
             ->where('plant', $plantCode)
             ->whereDate('arrival_date', $tanggal)
+            ->orderBy('arrival_date', 'asc')
+            ->orderBy('transaction_date', 'asc')
             ->get();
+
 
         return view('rpt_analytical_result_incoming_material_by_truck.index', compact('headers', 'tanggal'));
     }
@@ -461,7 +513,7 @@ class ARIMByTruckController extends Controller
     }
 
 
-     public function updateApprovalStatusWeb(Request $request, $id)
+    public function updateApprovalStatusWeb(Request $request, $id)
     {
         $report = ARIMByTruckHeader::findOrFail($id);
         $status = $request->query('status');

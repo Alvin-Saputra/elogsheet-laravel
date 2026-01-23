@@ -152,7 +152,8 @@
             <tr>
                 <td>
                     <span class="info-label">Arrival Date:</span>
-                    <span class="info-value">{{ $header->arrival_date->format('Y-m-d H:i') }}</span>
+                    <span
+                        class="info-value">{{ $header->arrival_date ? \Carbon\Carbon::parse($header->arrival_date)->format('Y-m-d H:i') : '-' }}</span>
                 </td>
 
                 <td>
@@ -220,7 +221,7 @@
                 @forelse ($header->details as $detail)
                     <tr>
                         <td>{{ $detail->no ?? '-' }}</td>
-                        <td>{{ $detail->sampling_date?->format('Y-m-d') ?? '-' }}</td>
+                        <td>{{ $detail->sampling_date ? \Carbon\Carbon::parse($detail->sampling_date)->format('Y-m-d') : '-' }}</td>
                         <td>{{ $detail->police_no ?? '-' }}</td>
                         <td>{{ $detail->p_ffa ?? '-' }}</td>
                         <td>{{ $detail->p_moisture ?? '-' }}</td>
