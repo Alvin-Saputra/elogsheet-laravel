@@ -14,7 +14,7 @@
         </div>
 
         <x-section title="Informasi Umum">
-            <x-info label="Tanggal" :value="optional($data->transaction_date)->format('d M Y')" />
+            <x-info label="Tanggal Operasional" :value="optional($data->transaction_date)->format('d M Y')" />
             <x-info label="Time" :value="$data->time" />
         </x-section>
 
