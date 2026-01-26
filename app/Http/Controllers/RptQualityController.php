@@ -709,6 +709,8 @@ class RptQualityController extends Controller
                 't_quality_report_qc.*',
                 't_quality_report_qc.oil_type AS oil_type_id',
                 'm_product.raw_material AS oil_type',
+                'm_product.finish_good AS oil_type_fg',
+                'm_product.by_product AS oil_type_bp',
                 'm_mastervalue.name as refinery_name'
             )
             ->orderByRaw("CASE WHEN time BETWEEN '08:00:00' AND '15:59:59' THEN 1 WHEN time BETWEEN '16:00:00' AND '23:59:59' THEN 2 WHEN time BETWEEN '00:00:00' AND '07:59:59' THEN 3 ELSE 4 END")
