@@ -130,4 +130,81 @@ class RptDailyStorageTankAnalyticalController extends Controller
 
         return $pdf->stream("dry_fractionation_report_{$tanggal}.pdf");
     }
+
+    public function bulkApprove(Request $request)
+    {
+        $userRole = Auth::user()->roles;
+        $count = 0;
+        $tanggal = $request->input('tanggal') ?? now()->format('Y-m-d');
+
+        if ($userRole === "LEAD" or $userRole === "LEAD_QC") {
+            $reports = LSDailyStorageTankAnalytical::whereNull('prepared_status')
+                ->whereDate('posting_date', $tanggal)
+                ->get();
+            foreach ($reports as $report) {
+                $report->update([
+                    'prepared_status' => 'Approved',
+                    'prepared_status_remarks' => null,
+                    'prepared_date' => now(),
+                    'prepared_by' => auth()->user()->username ?? auth()->user()->name
+                ]);
+                $count++;
+            }
+        } elseif ($userRole === "MGR" or $userRole === "MGR_QC" or $userRole === "ADM") {
+            $reports = LSDailyStorageTankAnalytical::where('prepared_status', 'Approved')
+                ->whereNull('approved_status')
+                ->whereDate('posting_date', $tanggal)
+                ->get();
+            foreach ($reports as $report) {
+                $report->update([
+                    'approved_status' => 'Approved',
+                    'approved_status_remarks' => null,
+                    'approved_date' => now(),
+                    'approved_by' => auth()->user()->username ?? auth()->user()->name
+                ]);
+                $count++;
+            }
+        }
+
+        return back()->with('success', "Total {$count} tiket berhasil di-approve.");
+    }
+
+    public function bulkReject(Request $request)
+    {
+        $request->validate(['remark' => 'nullable|string|max:255']);
+        $userRole = Auth::user()->roles;
+        $count = 0;
+        $tanggal = $request->input('tanggal') ?? now()->format('Y-m-d');
+
+        if ($userRole === "LEAD" or $userRole === "LEAD_QC") {
+            $reports = LSDailyStorageTankAnalytical::whereNull('prepared_status')
+                ->whereDate('posting_date', $tanggal)
+                ->get();
+            foreach ($reports as $report) {
+                $report->update([
+                    'prepared_status' => 'Rejected',
+                    'prepared_status_remarks' => $request->remark,
+                    'prepared_date' => now(),
+                    'prepared_by' => auth()->user()->username ?? auth()->user()->name
+                ]);
+                $count++;
+            }
+        } elseif ($userRole === "MGR" or $userRole === "MGR_QC" or $userRole === "ADM") {
+            $reports = LSDailyStorageTankAnalytical::where('prepared_status', 'Approved')
+                ->whereNull('approved_status')
+                ->whereDate('posting_date', $tanggal)
+                ->get();
+            foreach ($reports as $report) {
+                $report->update([
+                    'approved_status' => 'Rejected',
+                    'approved_status_remarks' => $request->remark,
+                    'approved_date' => now(),
+                    'approved_by' => auth()->user()->username ?? auth()->user()->name
+                ]);
+                $count++;
+            }
+        }
+
+        return back()->with('success', "Total {$count} tiket berhasil di-reject.");
+    }
 }

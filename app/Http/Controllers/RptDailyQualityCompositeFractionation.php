@@ -180,4 +180,81 @@ class RptDailyQualityCompositeFractionation extends Controller
 
         return $pdf->stream("daily_quality_composite_fractionation_report_{$filterTanggal}.pdf");
     }
+
+    public function bulkApprove(Request $request)
+    {
+        $userRole = Auth::user()->roles;
+        $count = 0;
+        $tanggal = $request->input('tanggal') ?? now()->format('Y-m-d');
+
+        if ($userRole === "LEAD" or $userRole === "LEAD_QC") {
+            $reports = LSDailyQualityCompositeFractionation::whereNull('prepared_status')
+                ->whereDate('posting_date', $tanggal)
+                ->get();
+            foreach ($reports as $report) {
+                $report->update([
+                    'prepared_status' => 'Approved',
+                    'prepared_status_remarks' => null,
+                    'prepared_date' => now(),
+                    'prepared_by' => auth()->user()->username ?? auth()->user()->name
+                ]);
+                $count++;
+            }
+        } elseif ($userRole === "MGR" or $userRole === "MGR_QC" or $userRole === "ADM") {
+            $reports = LSDailyQualityCompositeFractionation::where('prepared_status', 'Approved')
+                ->whereNull('checked_status')
+                ->whereDate('posting_date', $tanggal)
+                ->get();
+            foreach ($reports as $report) {
+                $report->update([
+                    'checked_status' => 'Approved',
+                    'checked_status_remarks' => null,
+                    'checked_date' => now(),
+                    'checked_by' => auth()->user()->username ?? auth()->user()->name
+                ]);
+                $count++;
+            }
+        }
+
+        return back()->with('success', "Total {$count} tiket berhasil di-approve.");
+    }
+
+    public function bulkReject(Request $request)
+    {
+        $request->validate(['remark' => 'nullable|string|max:255']);
+        $userRole = Auth::user()->roles;
+        $count = 0;
+        $tanggal = $request->input('tanggal') ?? now()->format('Y-m-d');
+
+        if ($userRole === "LEAD" or $userRole === "LEAD_QC") {
+            $reports = LSDailyQualityCompositeFractionation::whereNull('prepared_status')
+                ->whereDate('posting_date', $tanggal)
+                ->get();
+            foreach ($reports as $report) {
+                $report->update([
+                    'prepared_status' => 'Rejected',
+                    'prepared_status_remarks' => $request->remark,
+                    'prepared_date' => now(),
+                    'prepared_by' => auth()->user()->username ?? auth()->user()->name
+                ]);
+                $count++;
+            }
+        } elseif ($userRole === "MGR" or $userRole === "MGR_QC" or $userRole === "ADM") {
+            $reports = LSDailyQualityCompositeFractionation::where('prepared_status', 'Approved')
+                ->whereNull('checked_status')
+                ->whereDate('posting_date', $tanggal)
+                ->get();
+            foreach ($reports as $report) {
+                $report->update([
+                    'checked_status' => 'Rejected',
+                    'checked_status_remarks' => $request->remark,
+                    'checked_date' => now(),
+                    'checked_by' => auth()->user()->username ?? auth()->user()->name
+                ]);
+                $count++;
+            }
+        }
+
+        return back()->with('success', "Total {$count} tiket berhasil di-reject.");
+    }
 }

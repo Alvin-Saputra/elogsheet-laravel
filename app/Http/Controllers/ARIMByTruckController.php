@@ -145,10 +145,10 @@ class ARIMByTruckController extends Controller
                 // "revision_date" => $data_form['f_revision_date']->format('Y-m-d h:i:s')
             ];
 
-            //insert header 
+            //insert header
             $header = ARIMByTruckHeader::create($payload);
 
-            //inser detail 
+            //inser detail
             foreach ($detail as $key => $det) {
                 $id_det = $hd_id . "D" . $suffix . $key;
                 $payload_det = [
@@ -531,5 +531,64 @@ class ARIMByTruckController extends Controller
                 return back()->with('success-reject', "Tiket {$report->id} berhasil di-$status");
             }
         }
+    }
+
+    public function bulkApprove(Request $request)
+    {
+        $status = 'Approved';
+        $remark = null;
+        $username = auth()->user()->username;
+        $role = auth()->user()->roles;
+        $count = 0;
+        $tanggal = $request->input('tanggal') ?? now()->format('Y-m-d');
+
+        // Get reports based on role
+        if (in_array($role, ['LEAD', 'LEAD_QC'])) {
+            $reports = ARIMByTruckHeader::whereNull('prepared_status')
+                ->whereDate('arrival_date', $tanggal)
+                ->get();
+        } else {
+            $reports = ARIMByTruckHeader::where('prepared_status', 'Approved')
+                ->whereNull('approved_status')
+                ->whereDate('arrival_date', $tanggal)
+                ->get();
+        }
+
+        foreach ($reports as $report) {
+            $this->processApprovalStatus($report, $status, $remark, $username, $role);
+            $count++;
+        }
+
+        return back()->with('success', "Total {$count} tiket berhasil di-approve.");
+    }
+
+    public function bulkReject(Request $request)
+    {
+        $request->validate(['remark' => 'nullable|string|max:255']);
+        $status = 'Rejected';
+        $remark = $request->remark;
+        $username = auth()->user()->username;
+        $role = auth()->user()->roles;
+        $count = 0;
+        $tanggal = $request->input('tanggal') ?? now()->format('Y-m-d');
+
+        // Get reports based on role
+        if (in_array($role, ['LEAD', 'LEAD_QC'])) {
+            $reports = ARIMByTruckHeader::whereNull('prepared_status')
+                ->whereDate('arrival_date', $tanggal)
+                ->get();
+        } else {
+            $reports = ARIMByTruckHeader::where('prepared_status', 'Approved')
+                ->whereNull('approved_status')
+                ->whereDate('arrival_date', $tanggal)
+                ->get();
+        }
+
+        foreach ($reports as $report) {
+            $this->processApprovalStatus($report, $status, $remark, $username, $role);
+            $count++;
+        }
+
+        return back()->with('success', "Total {$count} tiket berhasil di-reject.");
     }
 }
