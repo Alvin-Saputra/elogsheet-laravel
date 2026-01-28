@@ -308,8 +308,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [RptDailyStorageTankAnalyticalController::class, 'index'])->name('index');
         Route::post('/bulk/approve', [RptDailyStorageTankAnalyticalController::class, 'bulkApprove'])->name('bulk-approve');
         Route::post('/bulk/reject', [RptDailyStorageTankAnalyticalController::class, 'bulkReject'])->name('bulk-reject');
-        Route::post('/{id}/approve', [RptDailyStorageTankAnalyticalController::class, 'approveReport'])->name('approve');
-        Route::post('/{id}/reject', [RptDailyStorageTankAnalyticalController::class, 'rejectReport'])->name('reject');
+        Route::post('/{id}/approve', [RptDailyStorageTankAnalyticalController::class, 'approveReport'])->name('approveReport');
+        Route::post('/{id}/reject', [RptDailyStorageTankAnalyticalController::class, 'rejectReport'])->name('rejectReport');
         Route::get('/{id}', [RptDailyStorageTankAnalyticalController::class, 'show'])->name('show');
         Route::get('/export/view', [RptDailyStorageTankAnalyticalController::class, 'exportLayoutPreview'])->name('export.view');
         Route::get('/export/pdf', [RptDailyStorageTankAnalyticalController::class, 'exportPdf'])->name('export.pdf');
@@ -319,8 +319,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [RptDailyQualityCompositeFractionation::class, 'index'])->name('index');
         Route::post('/bulk/approve', [RptDailyQualityCompositeFractionation::class, 'bulkApprove'])->name('bulk-approve');
         Route::post('/bulk/reject', [RptDailyQualityCompositeFractionation::class, 'bulkReject'])->name('bulk-reject');
-        Route::post('/{id}/approve', [RptDailyQualityCompositeFractionation::class, 'approveReport'])->name('approve');
-        Route::post('/{id}/reject', [RptDailyQualityCompositeFractionation::class, 'rejectReport'])->name('reject');
+        Route::post('/{id}/approve', [RptDailyQualityCompositeFractionation::class, 'approveReport'])->name('approveReport');
+        Route::post('/{id}/reject', [RptDailyQualityCompositeFractionation::class, 'rejectReport'])->name('rejectReport');
         Route::get('/{id}', [RptDailyQualityCompositeFractionation::class, 'show'])->name('show');
         Route::get('/export/view', [RptDailyQualityCompositeFractionation::class, 'exportLayoutPreview'])->name('export.view');
         Route::get('/export/pdf', [RptDailyQualityCompositeFractionation::class, 'exportPdf'])->name('export.pdf');
