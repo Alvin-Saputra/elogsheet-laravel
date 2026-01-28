@@ -132,6 +132,7 @@
                 <div>
                     Prepared by,<br><br><br>
                     <strong>({{ $lastShift['prepared']['name'] ?? '-' }})</strong><br>
+                     <p>({{ $lastShift['prepared']['role'] ?? '-' }})</p><br>
                     {{ $lastShift['prepared']['date']
                         ? \Carbon\Carbon::parse($lastShift['prepared']['date'])->format('d-m-Y H:i')
                         : '' }}
@@ -139,6 +140,7 @@
                 <div>
                     Acknowledged by,<br><br><br>
                     <strong>({{ $lastShift['acknowledge']['name'] ?? '-' }})</strong><br>
+                     <p>({{ $lastShift['acknowledge']['role'] ?? '-' }})</p><br>
                     {{ $lastShift['acknowledge']['date']
                         ? \Carbon\Carbon::parse($lastShift['acknowledge']['date'])->format('d-m-Y H:i')
                         : '' }}

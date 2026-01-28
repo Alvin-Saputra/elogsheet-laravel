@@ -80,7 +80,7 @@
     @if (!empty($refineryMachine))
         {{-- This block runs if a specific machine is selected --}}
         <h4 class="text-md font-bold mt-6 mb-2">
-            Work Center: {{ $rm }}
+            Work Center: {{ $refineryMachine }}
         </h4>
         <table>
             <thead>
