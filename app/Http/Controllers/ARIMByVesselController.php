@@ -534,4 +534,63 @@ class ARIMByVesselController extends Controller
             default => abort(400, 'Invalid intention')
         };
     }
+
+    public function bulkApprove(Request $request)
+    {
+        $status = 'Approved';
+        $remark = null;
+        $username = auth()->user()->username;
+        $role = auth()->user()->roles;
+        $count = 0;
+        $tanggal = $request->input('tanggal') ?? now()->format('Y-m-d');
+
+        // Get reports based on role
+        if (in_array($role, ['LEAD', 'LEAD_QC'])) {
+            $reports = ARIMByVesselHeader::whereNull('prepared_status')
+                ->whereDate('arrival', $tanggal)
+                ->get();
+        } else {
+            $reports = ARIMByVesselHeader::where('prepared_status', 'Approved')
+                ->whereNull('approved_status')
+                ->whereDate('arrival', $tanggal)
+                ->get();
+        }
+
+        foreach ($reports as $report) {
+            $this->processApprovalStatus($report, $status, $remark, $username, $role);
+            $count++;
+        }
+
+        return back()->with('success', "Total {$count} tiket berhasil di-approve.");
+    }
+
+    public function bulkReject(Request $request)
+    {
+        $request->validate(['remark' => 'nullable|string|max:255']);
+        $status = 'Rejected';
+        $remark = $request->remark;
+        $username = auth()->user()->username;
+        $role = auth()->user()->roles;
+        $count = 0;
+        $tanggal = $request->input('tanggal') ?? now()->format('Y-m-d');
+
+        // Get reports based on role
+        if (in_array($role, ['LEAD', 'LEAD_QC'])) {
+            $reports = ARIMByVesselHeader::whereNull('prepared_status')
+                ->whereDate('arrival', $tanggal)
+                ->get();
+        } else {
+            $reports = ARIMByVesselHeader::where('prepared_status', 'Approved')
+                ->whereNull('approved_status')
+                ->whereDate('arrival', $tanggal)
+                ->get();
+        }
+
+        foreach ($reports as $report) {
+            $this->processApprovalStatus($report, $status, $remark, $username, $role);
+            $count++;
+        }
+
+        return back()->with('success', "Total {$count} tiket berhasil di-reject.");
+    }
 }
