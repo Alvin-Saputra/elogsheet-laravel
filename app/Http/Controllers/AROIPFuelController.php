@@ -28,7 +28,13 @@ class AROIPFuelController extends Controller
 
     private function findHeaderWithId($id)
     {
-        return AROIPFuelHeader::with(['details', 'roa.details'])->findOrFail($id);
+        return AROIPFuelHeader::with([
+            'details',
+            'roa.details',
+            'roa.authorizedByUser',
+            'preparedByUser', // Load relasi yang baru dibuat
+            'approvedByUser'
+        ])->findOrFail($id);
     }
 
     /**
@@ -626,11 +632,11 @@ class AROIPFuelController extends Controller
             'show' => view('rpt_analytical_result_of_incoming_plant_fuel.show', ['header' => $data]),
             'preview' => view('rpt_analytical_result_of_incoming_plant_fuel.preview_layout', ['header' => $data]),
             'export' => (function () use ($data) {
-                    $pdf = Pdf::loadView('exports.report_rpt_analytical_result_of_incoming_plant_fuel_pdf', ['header' => $data]);
-                    $pdf->setPaper('a4', 'landscape');
-                    $fileName = 'aroip-fuel-' . $data->id . '.pdf';
-                    return $pdf->stream($fileName);
-                })(),
+                $pdf = Pdf::loadView('exports.report_rpt_analytical_result_of_incoming_plant_fuel_pdf', ['header' => $data]);
+                $pdf->setPaper('a4', 'landscape');
+                $fileName = 'aroip-fuel-' . $data->id . '.pdf';
+                return $pdf->stream($fileName);
+            })(),
             default => abort(400, 'Invalid intention'),
         };
     }

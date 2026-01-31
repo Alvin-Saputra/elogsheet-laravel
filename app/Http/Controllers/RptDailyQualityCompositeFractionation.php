@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Auth;
 
 class RptDailyQualityCompositeFractionation extends Controller
 {
-    
+
     private function getOperationalRange(string $tanggal)
     {
         $start = Carbon::parse($tanggal)->setTime(8, 0, 0);
@@ -18,7 +18,7 @@ class RptDailyQualityCompositeFractionation extends Controller
         return [$start, $end];
     }
 
-    
+
     private function getOperationalHours()
     {
         $hours = [];
@@ -27,7 +27,7 @@ class RptDailyQualityCompositeFractionation extends Controller
         return $hours;
     }
 
-    
+
     private function fillMissingHours($data)
     {
         $hours = $this->getOperationalHours();
@@ -48,20 +48,32 @@ class RptDailyQualityCompositeFractionation extends Controller
                         'work_center' => $rows->first()->work_center ?? null,
                         'crystalizer' => null,
 
-                        'rm_mni' => null, 'rm_iv' => null,
-                        'rm_color_r' => null, 'rm_color_y' => null,
-                        'rm_color_w' => null, 'rm_color_b' => null,
+                        'rm_mni' => null,
+                        'rm_iv' => null,
+                        'rm_color_r' => null,
+                        'rm_color_y' => null,
+                        'rm_color_w' => null,
+                        'rm_color_b' => null,
 
-                        'fg_ffa' => null, 'fg_mni' => null, 'fg_iv' => null,
-                        'fg_color_r' => null, 'fg_color_y' => null,
-                        'fg_color_w' => null, 'fg_color_b' => null,
-                        'fg_cp' => null, 'fg_clarity' => null,
+                        'fg_ffa' => null,
+                        'fg_mni' => null,
+                        'fg_iv' => null,
+                        'fg_color_r' => null,
+                        'fg_color_y' => null,
+                        'fg_color_w' => null,
+                        'fg_color_b' => null,
+                        'fg_cp' => null,
+                        'fg_clarity' => null,
                         'fg_to_tank' => null,
 
-                        'bp_ffa' => null, 'bp_mni' => null,
-                        'bp_iv' => null, 'bp_pv' => null,
-                        'bp_color_r' => null, 'bp_color_y' => null,
-                        'bp_color_w' => null, 'bp_color_b' => null,
+                        'bp_ffa' => null,
+                        'bp_mni' => null,
+                        'bp_iv' => null,
+                        'bp_pv' => null,
+                        'bp_color_r' => null,
+                        'bp_color_y' => null,
+                        'bp_color_w' => null,
+                        'bp_color_b' => null,
                         'bp_to_tank' => null,
 
                         'remarks' => null,
@@ -82,7 +94,8 @@ class RptDailyQualityCompositeFractionation extends Controller
         [$start, $end] = $this->getOperationalRange($filterTanggal);
 
         $query = LSDailyQualityCompositeFractionation::whereBetween(
-            'transaction_date', [$start, $end]
+            'transaction_date',
+            [$start, $end]
         );
 
         if ($filterJam) {
@@ -112,7 +125,7 @@ class RptDailyQualityCompositeFractionation extends Controller
         ]);
     }
 
-   
+
     public function approveReport($id)
     {
         $report = LSDailyQualityCompositeFractionation::findOrFail($id);
@@ -135,7 +148,7 @@ class RptDailyQualityCompositeFractionation extends Controller
         return back()->with('success', 'Report approved.');
     }
 
-  
+
     public function rejectReport(Request $request, $id)
     {
         $report = LSDailyQualityCompositeFractionation::findOrFail($id);
@@ -158,14 +171,14 @@ class RptDailyQualityCompositeFractionation extends Controller
         return back()->with('success', 'Report rejected.');
     }
 
-   
+
     public function show($id)
     {
         $data = LSDailyQualityCompositeFractionation::findOrFail($id);
         return view('rpt_daily_quality_composite_fractionation.show', compact('data'));
     }
 
-    
+
     public function exportLayoutPreview(Request $request)
     {
         $filterTanggal = $request->input('filter_tanggal', now()->toDateString());
@@ -174,24 +187,26 @@ class RptDailyQualityCompositeFractionation extends Controller
         [$start, $end] = $this->getOperationalRange($filterTanggal);
 
         $data = LSDailyQualityCompositeFractionation::whereBetween(
-            'transaction_date', [$start, $end]
+            'transaction_date',
+            [$start, $end]
         )
-        ->when($filterWorkCenter, fn($q) => $q->where('work_center', $filterWorkCenter))
-        ->get();
+            ->when($filterWorkCenter, fn($q) => $q->where('work_center', $filterWorkCenter))
+            ->get();
 
         $groupedData = $this->fillMissingHours($data);
         [$formInfoFirst, $formInfoLast] = $this->getFormInfo($filterTanggal);
 
         $sign = LSDailyQualityCompositeFractionation::whereBetween(
-            'transaction_date', [$start, $end]
+            'transaction_date',
+            [$start, $end]
         )
-        ->when($filterWorkCenter, fn($q) => $q->where('work_center', $filterWorkCenter))
-        ->where(function ($q) {
-            $q->whereNotNull('prepared_by')
-              ->orWhereNotNull('checked_by');
-        })
-        ->orderByDesc('transaction_date')
-        ->first();
+            ->when($filterWorkCenter, fn($q) => $q->where('work_center', $filterWorkCenter))
+            ->where(function ($q) {
+                $q->whereNotNull('prepared_by')
+                    ->orWhereNotNull('checked_by');
+            })
+            ->orderByDesc('transaction_date')
+            ->first();
 
         return view(
             'rpt_daily_quality_composite_fractionation.preview',
@@ -206,7 +221,7 @@ class RptDailyQualityCompositeFractionation extends Controller
         );
     }
 
- 
+
     public function exportPdf(Request $request)
     {
         $filterTanggal = $request->input('filter_tanggal', now()->toDateString());
@@ -215,25 +230,27 @@ class RptDailyQualityCompositeFractionation extends Controller
         [$start, $end] = $this->getOperationalRange($filterTanggal);
 
         $data = LSDailyQualityCompositeFractionation::whereBetween(
-            'transaction_date', [$start, $end]
+            'transaction_date',
+            [$start, $end]
         )
-        ->when($filterWorkCenter, fn($q) => $q->where('work_center', $filterWorkCenter))
-        ->get();
+            ->when($filterWorkCenter, fn($q) => $q->where('work_center', $filterWorkCenter))
+            ->get();
 
         $groupedData = $this->fillMissingHours($data);
         [$formInfoFirst, $formInfoLast] = $this->getFormInfo($filterTanggal);
 
         // 🔥 SIGNATURE DATA ASLI
         $sign = LSDailyQualityCompositeFractionation::whereBetween(
-            'transaction_date', [$start, $end]
+            'transaction_date',
+            [$start, $end]
         )
-        ->when($filterWorkCenter, fn($q) => $q->where('work_center', $filterWorkCenter))
-        ->where(function ($q) {
-            $q->whereNotNull('prepared_by')
-              ->orWhereNotNull('checked_by');
-        })
-        ->orderByDesc('transaction_date')
-        ->first();
+            ->when($filterWorkCenter, fn($q) => $q->where('work_center', $filterWorkCenter))
+            ->where(function ($q) {
+                $q->whereNotNull('prepared_by')
+                    ->orWhereNotNull('checked_by');
+            })
+            ->orderByDesc('transaction_date')
+            ->first();
 
         $pdf = Pdf::loadView(
             'exports.report_daily_quality_composite_fractionation_pdf',
@@ -255,15 +272,22 @@ class RptDailyQualityCompositeFractionation extends Controller
         [$start, $end] = $this->getOperationalRange($tanggal);
 
         $base = LSDailyQualityCompositeFractionation::whereBetween(
-            'transaction_date', [$start, $end]
+            'transaction_date',
+            [$start, $end]
         );
 
         $first = (clone $base)->orderBy('transaction_date')->first([
-            'form_no', 'date_issued', 'revision_no', 'revision_date'
+            'form_no',
+            'date_issued',
+            'revision_no',
+            'revision_date'
         ]);
 
         $last = (clone $base)->orderByDesc('revision_date')->first([
-            'form_no', 'date_issued', 'revision_no', 'revision_date'
+            'form_no',
+            'date_issued',
+            'revision_no',
+            'revision_date'
         ]);
 
         return [$first, $last];
@@ -273,12 +297,20 @@ class RptDailyQualityCompositeFractionation extends Controller
     {
         $userRole = Auth::user()->roles;
         $count = 0;
-        $tanggal = $request->input('tanggal') ?? now()->format('Y-m-d');
 
-        if ($userRole === "LEAD" or $userRole === "LEAD_QC") {
+        // 1. Ambil tanggal dasar (default hari ini)
+        $tanggalInput = $request->input('tanggal') ?? now()->format('Y-m-d');
+
+        // 2. Buat range: Tanggal Input s/d Tanggal Input + 1 Hari
+        $startDate = Carbon::parse($tanggalInput)->startOfDay();
+        $endDate   = Carbon::parse($tanggalInput)->addDay()->endOfDay();
+
+        if ($userRole === "LEAD" || $userRole === "LEAD_QC") {
+            // Gunakan whereBetween untuk mengambil range 2 hari tersebut
             $reports = LSDailyQualityCompositeFractionation::whereNull('prepared_status')
-                ->whereDate('posting_date', $tanggal)
+                ->whereBetween('transaction_date', [$startDate, $endDate])
                 ->get();
+
             foreach ($reports as $report) {
                 $report->update([
                     'prepared_status' => 'Approved',
@@ -288,11 +320,12 @@ class RptDailyQualityCompositeFractionation extends Controller
                 ]);
                 $count++;
             }
-        } elseif ($userRole === "MGR" or $userRole === "MGR_QC" or $userRole === "ADM") {
+        } elseif ($userRole === "MGR" || $userRole === "MGR_QC" || $userRole === "ADM") {
             $reports = LSDailyQualityCompositeFractionation::where('prepared_status', 'Approved')
                 ->whereNull('checked_status')
-                ->whereDate('posting_date', $tanggal)
+                ->whereBetween('transaction_date', [$startDate, $endDate])
                 ->get();
+
             foreach ($reports as $report) {
                 $report->update([
                     'checked_status' => 'Approved',
@@ -304,7 +337,7 @@ class RptDailyQualityCompositeFractionation extends Controller
             }
         }
 
-        return back()->with('success', "Total {$count} tiket berhasil di-approve.");
+        return back()->with('success', "Total {$count} tiket (Range: {$startDate->toDateString()} s/d {$endDate->toDateString()}) berhasil di-approve.");
     }
 
     public function bulkReject(Request $request)
@@ -312,12 +345,20 @@ class RptDailyQualityCompositeFractionation extends Controller
         $request->validate(['remark' => 'nullable|string|max:255']);
         $userRole = Auth::user()->roles;
         $count = 0;
-        $tanggal = $request->input('tanggal') ?? now()->format('Y-m-d');
 
-        if ($userRole === "LEAD" or $userRole === "LEAD_QC") {
+        // 1. Tentukan tanggal dasar
+        $tanggalInput = $request->input('tanggal') ?? now()->format('Y-m-d');
+
+        // 2. Buat range: Hari ini 00:00:00 s/d Besok 23:59:59
+        $startDate = Carbon::parse($tanggalInput)->startOfDay();
+        $endDate   = Carbon::parse($tanggalInput)->addDay()->endOfDay();
+
+        if ($userRole === "LEAD" || $userRole === "LEAD_QC") {
+            // Menggunakan whereBetween untuk mencakup 2 hari
             $reports = LSDailyQualityCompositeFractionation::whereNull('prepared_status')
-                ->whereDate('posting_date', $tanggal)
+                ->whereBetween('transaction_date', [$startDate, $endDate])
                 ->get();
+
             foreach ($reports as $report) {
                 $report->update([
                     'prepared_status' => 'Rejected',
@@ -327,11 +368,12 @@ class RptDailyQualityCompositeFractionation extends Controller
                 ]);
                 $count++;
             }
-        } elseif ($userRole === "MGR" or $userRole === "MGR_QC" or $userRole === "ADM") {
+        } elseif ($userRole === "MGR" || $userRole === "MGR_QC" || $userRole === "ADM") {
             $reports = LSDailyQualityCompositeFractionation::where('prepared_status', 'Approved')
                 ->whereNull('checked_status')
-                ->whereDate('posting_date', $tanggal)
+                ->whereBetween('transaction_date', [$startDate, $endDate])
                 ->get();
+
             foreach ($reports as $report) {
                 $report->update([
                     'checked_status' => 'Rejected',
@@ -343,6 +385,6 @@ class RptDailyQualityCompositeFractionation extends Controller
             }
         }
 
-        return back()->with('success', "Total {$count} tiket berhasil di-reject.");
+        return back()->with('success', "Total {$count} tiket (Range: {$startDate->toDateString()} s/d {$endDate->toDateString()}) berhasil di-reject.");
     }
 }

@@ -189,20 +189,20 @@
         <tr>
             <td class="text-center" style="width: 50%;">
                 <div class="font-bold">Corrected by</div>
-                <div style="font-size: 10px;">(QC Leader)</div>
+                <div style="font-size: 10px;">{{ optional($header->preparedByUser)->roles}}</div>
                 <div style="height: 50px;"></div>
                 <div class="font-bold" style="text-decoration: underline;">
-                    {{ $header->prepared_by ?? '_________________' }}</div>
+                    {{ optional($header->preparedByUser)->fullname ?? $header->prepared_by ?? '_________________' }}</div>
                 <div style="font-size: 10px;">
                     {{ $header->prepared_date ? \Carbon\Carbon::parse($header->prepared_date)->format('d-m-Y H:i') : '' }}
                 </div>
             </td>
             <td class="text-center" style="width: 50%;">
                 <div class="font-bold">Approved by</div>
-                <div style="font-size: 10px;">(QC Head)</div>
+                <div style="font-size: 10px;">{{ optional($header->approvedByUser)->roles}}</div>
                 <div style="height: 50px;"></div>
                 <div class="font-bold" style="text-decoration: underline;">
-                    {{ $header->approved_by ?? '_________________' }}</div>
+                    {{ optional($header->approvedByUser)->fullname ?? $header->approved_by ?? '_________________' }}</div>
                 <div style="font-size: 10px;">
                     {{ $header->approved_date ? \Carbon\Carbon::parse($header->approved_date)->format('d-m-Y H:i') : '' }}
                 </div>
@@ -337,7 +337,7 @@
                 <div class="font-bold">Authorized By</div>
                 <div style="height: 60px;"></div>
                 <div class="font-bold" style="text-decoration: underline;">
-                    {{ $roa->authorized_by ?? '_____________________' }}</div>
+                   {{optional($roa->authorizedByUser)->fullname ?? $roa->authorized_by ?? '_________________' }}</div>
             </td>
         </tr>
     </table>

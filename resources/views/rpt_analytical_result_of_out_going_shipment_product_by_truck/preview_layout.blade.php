@@ -172,9 +172,9 @@
     <div class="grid grid-cols-2 gap-6 mt-6 text-center small">
         <div>
             <div class="font-semibold">Corrected by</div>
-            <div class="text-[12px]">(QC Leader)</div>
+            <div class="text-[12px]">{{ optional($header->correctedByUser)->roles }}</div>
             <div class="h-12"></div>
-            <div class="font-medium">{{ $header->prepared_by ?? $header->corrected_by ?? '____________________' }}</div>
+            <div class="font-medium">{{ optional($header->correctedByUser)->fullname ?? $header->corrected_by ?? '____________________' }}</div>
             <div class="text-xs text-gray-600">
                 {{ $header->prepared_date ? \Carbon\Carbon::parse($header->prepared_date)->format('d-m-Y H:i') : ($header->corrected_date ? \Carbon\Carbon::parse($header->corrected_date)->format('d-m-Y H:i') : '') }}
             </div>
@@ -182,9 +182,9 @@
 
         <div>
             <div class="font-semibold">Approved by</div>
-            <div class="text-[12px]">(QC Head)</div>
+            <div class="text-[12px]">{{ optional($header->approvedByUser)->roles }}</div>
             <div class="h-12"></div>
-            <div class="font-medium">{{ $header->approved_by ?? '____________________' }}</div>
+            <div class="font-medium">{{ optional($header->approvedByUser)->fullname ?? $header->approved_by ?? '____________________' }}</div>
             <div class="text-xs text-gray-600">
                 {{ $header->approved_date ? \Carbon\Carbon::parse($header->approved_date)->format('d-m-Y H:i') : '' }}
             </div>

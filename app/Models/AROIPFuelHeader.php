@@ -58,4 +58,19 @@ class AROIPFuelHeader extends Model
     {
         return $this->hasMany(AROIPFuelDetail::class, 'id_hdr', 'id');
     }
+
+      public function preparedByUser()
+    {
+        return $this->belongsTo(MUser::class, 'prepared_by', 'username');
+    }
+
+    public function approvedByUser()
+    {
+        return $this->belongsTo(MUser::class, 'approved_by', 'username');
+    }
+
+    public function entriedByUser()
+    {
+        return $this->belongsTo(MUser::class, 'entry_by', 'username');
+    }
 }
