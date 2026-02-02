@@ -39,6 +39,7 @@ class UpdateArosByVesselRequest extends FormRequest
             'hasil_analisa_colour' => 'nullable|numeric',
             'hasil_analisa_pv' => 'nullable|numeric',
             'hasil_analisa_smp' => 'nullable|numeric',
+            'remark' => 'nullable|string|max:255',
 
             // details are optional on update; when present must be an array
             // Option B: when client wants to update an existing detail row it MUST provide details.*.id

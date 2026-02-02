@@ -174,12 +174,14 @@ class AROSByVesselController extends Controller
 
             $header = AROSByVesselHeader::create($headerPayload);
 
-            foreach ($data['details'] as $index => $row) {
-                AROSByVesselDetail::create([
-                    ...$row,
-                    'id' => $header->id . 'D' . str_pad($index + 1, 3, '0', STR_PAD_LEFT),
-                    'id_hdr' => $header->id,
-                ]);
+            if (!empty($data['details']) && is_array($data['details'])) {
+                foreach ($data['details'] as $index => $row) {
+                    AROSByVesselDetail::create([
+                        ...$row,
+                        'id'     => $header->id . 'D' . str_pad($index + 1, 3, '0', STR_PAD_LEFT),
+                        'id_hdr' => $header->id,
+                    ]);
+                }
             }
 
             // persist new controlnumber
@@ -459,17 +461,17 @@ class AROSByVesselController extends Controller
             ),
 
             'export' => (function () use ($header) {
-                    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView(
+                $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView(
                     'exports.report_analytical_result_outgoing_shipment_by_vessel_pdf',
                     compact('header')
-                    );
+                );
 
-                    $pdf->setPaper('a4', 'landscape');
+                $pdf->setPaper('a4', 'landscape');
 
-                    return $pdf->stream(
+                return $pdf->stream(
                     'aros-by-vessel-' . $header->id . '.pdf'
-                    );
-                })(),
+                );
+            })(),
 
             default => abort(400, 'Invalid intention'),
         };
@@ -512,6 +514,4 @@ class AROSByVesselController extends Controller
             return back()->with('error', $th->getMessage());
         }
     }
-
-
 }

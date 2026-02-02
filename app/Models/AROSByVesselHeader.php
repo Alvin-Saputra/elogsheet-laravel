@@ -35,6 +35,7 @@ class AROSByVesselHeader extends Model
         'hasil_analisa_colour',
         'hasil_analisa_pv',
         'hasil_analisa_smp',
+        'remark',
         'entry_by',
         'entry_date',
         'prepared_by',
