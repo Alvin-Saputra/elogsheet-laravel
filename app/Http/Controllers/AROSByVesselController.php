@@ -391,7 +391,7 @@ class AROSByVesselController extends Controller
             ]);
 
         return view(
-            'rpt_analytical_result_outgoing_shipment_by_vessel.index',
+            'rpt_analytical_result_of_out_going_shipment_product_by_vessel.index',
             compact('headers', 'filterDate')
         );
     }
@@ -456,17 +456,17 @@ class AROSByVesselController extends Controller
             ),
 
             'preview' => view(
-                'rpt_analytical_result_outgoing_shipment_by_vessel.preview_layout',
+                'rpt_analytical_result_of_out_going_shipment_product_by_vessel.preview_layout',
                 compact('header')
             ),
 
             'export' => (function () use ($header) {
                 $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView(
-                    'exports.report_analytical_result_outgoing_shipment_by_vessel_pdf',
+                    'exports.report_rpt_analytical_result_of_out_going_shipment_product_by_vessel_pdf',
                     compact('header')
                 );
 
-                $pdf->setPaper('a4', 'landscape');
+                $pdf->setPaper('f4', 'landscape');
 
                 return $pdf->stream(
                     'aros-by-vessel-' . $header->id . '.pdf'

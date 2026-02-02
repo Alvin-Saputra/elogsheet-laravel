@@ -1,38 +1,39 @@
 <?php
 
-use App\Http\Controllers\ARIMByTruckController;
-use App\Http\Controllers\ARIMByVesselController;
-use App\Http\Controllers\AROIPChemicalController;
-use App\Http\Controllers\AROIPFuelController;
-use App\Http\Controllers\AROSProductByTruckController;
-use App\Http\Controllers\Auth\LoginController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\LogsheetDryFraController;
-use App\Http\Controllers\MstBusinessUnitController;
-use App\Http\Controllers\MstMastervalueController;
-use App\Http\Controllers\MstPlantController;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\MstRoleController;
 use App\Http\Controllers\MstUserController;
-use App\Http\Controllers\RptChangeProductController;
+use App\Http\Controllers\MstPlantController;
+use App\Http\Controllers\AROIPFuelController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\RptQualityController;
+use App\Http\Controllers\ARIMByTruckController;
+use App\Http\Controllers\ARIMByVesselController;
+use App\Http\Controllers\AROSByVesselController;
 use App\Http\Controllers\RptDailyPFraController;
 use App\Http\Controllers\RptDailyPRefController;
-use App\Http\Controllers\RptDailyProductionController;
-use App\Http\Controllers\RptDailyQualityCompositeFractionation;
-use App\Http\Controllers\RptDailyStorageTankAnalyticalController;
-use App\Http\Controllers\RptDeodorizingController;
 use App\Http\Controllers\RptLampGlassController;
-use App\Http\Controllers\RptLogsheetDryFraController;
+use App\Http\Controllers\AROIPChemicalController;
+use App\Http\Controllers\LogsheetDryFraController;
+use App\Http\Controllers\MstMastervalueController;
+use App\Http\Controllers\RptDeodorizingController;
 use App\Http\Controllers\RptLogsheetPBFController;
+use App\Http\Controllers\MstBusinessUnitController;
+use App\Http\Controllers\RptChangeProductController;
+use App\Http\Controllers\RptLogsheetDryFraController;
 /*
 |--------------------------------------------------------------------------
 | Guest Routes (Login)
 |--------------------------------------------------------------------------
 */
 
-use App\Http\Controllers\RptQualityController;
+use App\Http\Controllers\AROSProductByTruckController;
+use App\Http\Controllers\RptDailyProductionController;
 use App\Http\Controllers\RptStartupProduksiController;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\RptDailyQualityCompositeFractionation;
+use App\Http\Controllers\RptDailyStorageTankAnalyticalController;
 
 Route::get('/', function () {
     return Auth::check()
@@ -352,7 +353,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/{id}/export/pdf', [AROIPFuelController::class, 'getById'])->name('export');
         });
     Route::prefix('analytical-result-outgoing-shipment-product-by-truck')
-    ->name('analytical-result-outgoing-shipment-product-by-truck.')
+        ->name('analytical-result-outgoing-shipment-product-by-truck.')
         ->group(function () {
             Route::get('/', [AROSProductByTruckController::class, 'index'])->name('index');
             Route::post('/{id}/approve-report', [AROSProductByTruckController::class, 'updateApprovalStatusWeb'])->name('approveReject');
@@ -361,4 +362,14 @@ Route::middleware('auth')->group(function () {
             Route::get('/{id}/export/pdf', [AROSProductByTruckController::class, 'getById'])->name('export');
         });
 
+
+    Route::prefix('analytical-result-outgoing-shipment-product-by-vessel')
+        ->name('analytical-result-outgoing-shipment-product-by-vessel.')
+        ->group(function () {
+            Route::get('/', [AROSByVesselController::class, 'index'])->name('index');
+            // Route::post('/{id}/approve-report', [AROSProductByTruckController::class, 'updateApprovalStatusWeb'])->name('approveReject');
+            // Route::get('/{id}', [AROSProductByTruckController::class, 'getById'])->name('show');
+            Route::get('/{id}/export/view', [AROSByVesselController::class, 'getById'])->name('preview');
+            Route::get('/{id}/export/pdf', [AROSByVesselController::class, 'getById'])->name('export');
+        });
 });
