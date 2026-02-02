@@ -74,4 +74,20 @@ class LSDailyQualityCompositeFractionation extends Model
         'checked_date' => 'datetime',
         'updated_date' => 'datetime'
     ];
+
+
+    public function preparedByUser()
+    {
+        return $this->belongsTo(MUser::class, 'prepared_by', 'username');
+    }
+
+    public function checkedByUser()
+    {
+        return $this->belongsTo(MUser::class, 'checked_by', 'username');
+    }
+
+    public function entriedByUser()
+    {
+        return $this->belongsTo(MUser::class, 'entry_by', 'username');
+    }
 }

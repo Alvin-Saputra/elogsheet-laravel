@@ -174,32 +174,31 @@ class RptDailyQualityCompositeFractionation extends Controller
 
     public function show($id)
     {
-        $data = LSDailyQualityCompositeFractionation::findOrFail($id);
+        $data = LSDailyQualityCompositeFractionation::with(['preparedByUser', 'checkedByUser', 'entriedByUser'])
+            ->findOrFail($id);
         return view('rpt_daily_quality_composite_fractionation.show', compact('data'));
     }
 
 
     public function exportLayoutPreview(Request $request)
     {
-        $filterTanggal = $request->input('filter_tanggal', now()->toDateString());
+        $filterTanggal    = $request->input('filter_tanggal', now()->toDateString());
         $filterWorkCenter = $request->input('filter_work_center');
 
         [$start, $end] = $this->getOperationalRange($filterTanggal);
 
-        $data = LSDailyQualityCompositeFractionation::whereBetween(
-            'transaction_date',
-            [$start, $end]
-        )
+        // 1. Add relationships to the main data
+        $data = LSDailyQualityCompositeFractionation::with(['entriedByUser', 'preparedByUser', 'checkedByUser'])
+            ->whereBetween('transaction_date', [$start, $end])
             ->when($filterWorkCenter, fn($q) => $q->where('work_center', $filterWorkCenter))
             ->get();
 
         $groupedData = $this->fillMissingHours($data);
         [$formInfoFirst, $formInfoLast] = $this->getFormInfo($filterTanggal);
 
-        $sign = LSDailyQualityCompositeFractionation::whereBetween(
-            'transaction_date',
-            [$start, $end]
-        )
+        // 2. Add relationships to the signature object ($sign)
+        $sign = LSDailyQualityCompositeFractionation::with(['preparedByUser', 'checkedByUser'])
+            ->whereBetween('transaction_date', [$start, $end])
             ->when($filterWorkCenter, fn($q) => $q->where('work_center', $filterWorkCenter))
             ->where(function ($q) {
                 $q->whereNotNull('prepared_by')
@@ -224,26 +223,23 @@ class RptDailyQualityCompositeFractionation extends Controller
 
     public function exportPdf(Request $request)
     {
-        $filterTanggal = $request->input('filter_tanggal', now()->toDateString());
+        $filterTanggal    = $request->input('filter_tanggal', now()->toDateString());
         $filterWorkCenter = $request->input('filter_work_center');
 
         [$start, $end] = $this->getOperationalRange($filterTanggal);
 
-        $data = LSDailyQualityCompositeFractionation::whereBetween(
-            'transaction_date',
-            [$start, $end]
-        )
+        // 1. Add relationships to the main data
+        $data = LSDailyQualityCompositeFractionation::with(['entriedByUser', 'preparedByUser', 'checkedByUser'])
+            ->whereBetween('transaction_date', [$start, $end])
             ->when($filterWorkCenter, fn($q) => $q->where('work_center', $filterWorkCenter))
             ->get();
 
         $groupedData = $this->fillMissingHours($data);
         [$formInfoFirst, $formInfoLast] = $this->getFormInfo($filterTanggal);
 
-        // 🔥 SIGNATURE DATA ASLI
-        $sign = LSDailyQualityCompositeFractionation::whereBetween(
-            'transaction_date',
-            [$start, $end]
-        )
+        // 2. Add relationships to the signature object ($sign)
+        $sign = LSDailyQualityCompositeFractionation::with(['preparedByUser', 'checkedByUser'])
+            ->whereBetween('transaction_date', [$start, $end])
             ->when($filterWorkCenter, fn($q) => $q->where('work_center', $filterWorkCenter))
             ->where(function ($q) {
                 $q->whereNotNull('prepared_by')

@@ -120,9 +120,9 @@
 <table class="signature-table" width="100%">
 <tr>
 <td>
-    Prepared By<br>Leader Shift<br><br><br>
+    Prepared By<br>{{ $sign?->preparedByUser?->roles }}<br><br><br>
     @if ($sign && $sign->prepared_by)
-        <strong>({{ $sign->prepared_by }})</strong><br>
+        <strong>({{ $sign?->preparedByUser?->fullname??$sign->prepared_by }})</strong><br>
         {{ \Carbon\Carbon::parse($sign->prepared_date)->format('d-m-Y H:i') }}
     @else
         (_________________)<br>-
@@ -130,9 +130,9 @@
 </td>
 
 <td>
-    Approved By<br>QC Section Head<br><br><br>
+    Approved By<br>{{ $sign?->checkedByUser?->roles }}<br><br><br>
     @if ($sign && $sign->checked_by)
-        <strong>({{ $sign->checked_by }})</strong><br>
+        <strong>({{ $sign?->checkedByUser?->fullname??$sign->checked_by }})</strong><br>
         {{ \Carbon\Carbon::parse($sign->checked_date)->format('d-m-Y H:i') }}
     @else
         (_________________)<br>-

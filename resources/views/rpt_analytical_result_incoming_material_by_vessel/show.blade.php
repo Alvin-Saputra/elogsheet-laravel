@@ -19,7 +19,7 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div>
                 <strong class="text-gray-600 block text-sm">Arrival Date:</strong>
-                <span class="text-sm">{{ Carbon::parse($header->transaction_date)->format('Y-m-d H:i') }}</span>
+                <span class="text-sm">{{  $header->arrival ? \Carbon\Carbon::parse($header->arrival)->format('Y-m-d') : 'N/A'  }}</span>
             </div>
 
             <div>

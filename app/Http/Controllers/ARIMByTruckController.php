@@ -504,7 +504,7 @@ class ARIMByTruckController extends Controller
                 $pdf = Pdf::loadView('exports.report_analytical_result_incoming_material_by_truck_pdf', [
                     'header' => $data,
                 ]);
-                $pdf->setPaper('a4', 'portrait');
+                $pdf->setPaper('a4', 'landscape');
                 $fileName = 'startup-produksi-checklist-' . $data->id . '.pdf';
                 return $pdf->stream($fileName);
             })(),

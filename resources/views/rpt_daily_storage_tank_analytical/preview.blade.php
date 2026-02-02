@@ -82,17 +82,38 @@
         </table>
     </div>
 
-    {{-- SIGN --}}
+  {{-- SIGN --}}
     <div class="flex justify-center gap-24 mt-10 text-xs text-center">
         <div>
             Prepared By<br><br><br>
-            {{ $sign->prepared_by ?? '________________' }}<br>
-            <small>{{ $sign->prepared_date ? \Carbon\Carbon::parse($sign->prepared_date)->format('d M Y H:i') : '' }}</small>
+            {{-- Use $sign instead of $tank --}}
+            {{ optional($sign->preparedByUser ?? null)->roles ?? 'QC Operator' }}<br>
+            
+            <span class="font-bold underline">
+                {{ optional($sign->preparedByUser ?? null)->fullname ?? $sign->prepared_by ?? '________________' }}
+            </span>
+            <br>
+            
+            {{-- Use $sign->prepared_date --}}
+            <small>
+                {{ isset($sign->prepared_date) ? \Carbon\Carbon::parse($sign->prepared_date)->format('d M Y H:i') : '-' }}
+            </small>
         </div>
+
         <div>
             Approved By<br><br><br>
-            {{ $sign->approved_by ?? '________________' }}<br>
-            <small>{{ $sign->approved_date ? \Carbon\Carbon::parse($sign->approved_date)->format('d M Y H:i') : '' }}</small>
+            {{-- Use $sign instead of $tank --}}
+            {{ optional($sign->approvedByUser ?? null)->roles ?? 'QC Supervisor' }}<br>
+            
+            <span class="font-bold underline">
+                {{ optional($sign->approvedByUser ?? null)->fullname ?? $sign->approved_by ?? '________________' }}
+            </span>
+            <br>
+
+            {{-- Use $sign->approved_date --}}
+            <small>
+                {{ isset($sign->approved_date) ? \Carbon\Carbon::parse($sign->approved_date)->format('d M Y H:i') : '-' }}
+            </small>
         </div>
     </div>
 

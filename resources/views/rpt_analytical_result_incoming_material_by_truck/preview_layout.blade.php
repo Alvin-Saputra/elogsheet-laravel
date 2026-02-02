@@ -20,7 +20,7 @@
 
                     {{-- Column 2: Titles --}}
                     <td class="w-3/5 text-center pt-2">
-                        <h3 class="text-xl font-bold uppercase">Analytical Result Incoming<br> Material By Vessel</h3>
+                        <h3 class="text-xl font-bold uppercase">Analytical Result Incoming<br> Material By Truck</h3>
                     </td>
 
                     {{-- Column 3: Form Info --}}
@@ -176,28 +176,28 @@
 
             <div>
                 <strong> Done by, </strong><br>
-                (Operator)<br>
+                {{ optional($header->entriedByUser)->roles }}<br>
                 <br>
-                ( {{ $header->entry_by ?? '_______________________' }} )<br>
+                ( {{ optional($header->entriedByUser)->fullname??$header->entry_by ?? '_______________________' }} )<br>
                 <small>Date:
                     {{ $header->entry_date ? \Carbon\Carbon::parse($header->entry_date)->format('d-m-Y H:i') : '' }}</small>
 
             </div>
             <div>
                 <strong>Prepared by:</strong><br>
-                (Shift Leader)<br>
+                {{ optional($header->preparedByUser)->roles }}<br>
 
                 <br>
-                ( {{ $header->prepared_by ?? '_______________________' }} )<br>
+                ( {{ optional($header->preparedByUser)->fullname??$header->prepared_by ?? '_______________________' }} )<br>
                 <small>Date:
                     {{ $header->prepared_date ? \Carbon\Carbon::parse($header->prepared_date)->format('d-m-Y H:i') : '' }}</small>
             </div>
             <div>
                 <strong>Approved by:</strong><br>
-                (Section Head)<br>
+                {{ optional($header->approvedByUser)->roles }}<br>
 
                 <br>
-                ( {{ $header->approved_by ?? '_______________________' }} )<br>
+                ( {{ optional($header->approvedByUser)->fullname??$header->approved_by ?? '_______________________' }} )<br>
                 <small>Date:
                     {{ $header->approved_date ? \Carbon\Carbon::parse($header->checked_date)->format('d-m-Y H:i') : '' }}</small>
             </div>
