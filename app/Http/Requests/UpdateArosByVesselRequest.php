@@ -58,6 +58,7 @@ class UpdateArosByVesselRequest extends FormRequest
             'details.*.palka_p_colour' => 'nullable|numeric',
             'details.*.palka_p_pv' => 'nullable|numeric',
             'details.*.palka_p_mni' => 'nullable|numeric',
+            'details.*.flag' => 'nullable|string|in:D,U,I'
         ];
     }
 }

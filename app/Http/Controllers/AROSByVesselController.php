@@ -215,6 +215,64 @@ class AROSByVesselController extends Controller
      * - For existing detail rows, client MUST send details[].id.
      * - For new rows, omit id (server will create one).
      */
+    // public function update(UpdateArosByVesselRequest $request, $id)
+    // {
+    //     try {
+    //         DB::beginTransaction();
+    //         $data = $request->validated();
+    //         $user = $request->user()->getDisplayNameAttribute();
+
+    //         $header = AROSByVesselHeader::with('details')->find($id);
+    //         if (!$header) {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Header not found',
+    //             ], 404);
+    //         }
+
+    //         $header->update(array_merge(Arr::except($data, ['details', 'detail', 'menu_id', 'hasil_analisa_komposit_palka']), [
+    //             'updated_by' => $user,
+    //             'updated_date' => now(),
+    //             'revision_no' => DB::raw('COALESCE(revision_no, 0) + 1'),
+    //             'revision_date' => now(),
+    //         ]));
+
+    //         if (!empty($data['details'])) {
+    //             foreach ($data['details'] as $row) {
+    //                 if (!empty($row['id'])) {
+    //                     $detail = AROSByVesselDetail::where('id', $row['id'])
+    //                         ->where('id_hdr', $header->id)
+    //                         ->first();
+
+    //                     if ($detail) {
+    //                         $detail->update(
+    //                             collect($row)->except('id')->toArray()
+    //                         );
+    //                     }
+    //                 }
+    //             }
+    //         }
+
+    //         DB::commit();
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'AROS By Vessel updated successfully',
+    //             'data' => $header->fresh('details'),
+    //         ], 200);
+    //     } catch (\Exception $e) {
+    //         DB::rollBack();
+
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Failed to update AROS By Vessel',
+    //             'error' => $e->getMessage(),
+    //         ], 500);
+    //     }
+    // }
+
+
+
     public function update(UpdateArosByVesselRequest $request, $id)
     {
         try {
@@ -230,34 +288,69 @@ class AROSByVesselController extends Controller
                 ], 404);
             }
 
-            $header->update(array_merge(Arr::except($data, ['details', 'detail', 'menu_id', 'hasil_analisa_komposit_palka']), [
-                'updated_by' => $user,
-                'updated_date' => now(),
-                'revision_no' => DB::raw('COALESCE(revision_no, 0) + 1'),
-                'revision_date' => now(),
-            ]));
+            if (isset($data['details']) && is_array($data['details'])) {
 
-            if (!empty($data['details'])) {
-                foreach ($data['details'] as $row) {
+                foreach ($data['details'] as $index => $row) {
+
+                    // Cek Flag
+                    $flag = $row['flag'] ?? ''; // Default kosong jika tidak ada flag
+
+                    // --- CASE 1: DELETE ---
+                    if ($flag === 'D') {
+                        if (!empty($row['id'])) {
+                            // Hanya hapus jika ID valid dan ada di DB
+                            AROSByVesselDetail::where('id', $row['id'])
+                                ->where('id_hdr', $header->id) // Pastikan milik header yang benar
+                                ->delete();
+                        }
+                        continue; // Lanjut ke iterasi berikutnya, jangan jalankan logika update/create
+                    }
+
+                    // --- CASE 2: UPDATE ---
+                    // Jika ID ada dan Flag BUKAN 'D' (bisa 'U' atau kosong)
                     if (!empty($row['id'])) {
                         $detail = AROSByVesselDetail::where('id', $row['id'])
                             ->where('id_hdr', $header->id)
                             ->first();
 
                         if ($detail) {
-                            $detail->update(
-                                collect($row)->except('id')->toArray()
-                            );
+                            $updateData = Arr::except($row, ['id', 'id_hdr', 'flag']); // Buang flag agar tidak error di SQL
+                            $detail->update($updateData);
                         }
+                    }
+                    // --- CASE 3: CREATE / INSERT ---
+                    // Jika ID kosong (biasanya row baru)
+                    else {
+                        // Generate ID Manual (HeaderID + 'D' + Index)
+                        $suffix = str_pad($index + 1, 3, '0', STR_PAD_LEFT);
+                        $newId = $header->id . 'D' . $suffix;
+
+                        // PERBAIKAN DISINI: Tambahkan withTrashed()
+                        // Agar pengecekan mencakup ID yang aktif MAUPUN yang sudah dihapus (soft delete)
+                        while (AROSByVesselDetail::withTrashed()->where('id', $newId)->exists()) {
+                            $suffix = str_pad((int)$suffix + 1, 3, '0', STR_PAD_LEFT);
+                            $newId = $header->id . 'D' . $suffix;
+                        }
+
+                        // Buang flag dari payload create
+                        $createData = Arr::except($row, ['flag']);
+
+                        AROSByVesselDetail::create(array_merge($createData, [
+                            'id' => $newId,
+                            'id_hdr' => $header->id,
+                        ]));
                     }
                 }
             }
 
             DB::commit();
 
+
             return response()->json([
                 'success' => true,
-                'message' => 'AROS By Vessel updated successfully',
+                'message' => 'Data berhasil diperbarui',
+                // Gunakan fresh('details') agar frontend mendapat data terbaru 
+                // (Data yang di-soft delete otomatis hilang dari list ini)
                 'data' => $header->fresh('details'),
             ], 200);
         } catch (\Exception $e) {
@@ -517,7 +610,7 @@ class AROSByVesselController extends Controller
 
 
 
-   public function bulkApprove(Request $request)
+    public function bulkApprove(Request $request)
     {
         try {
             DB::beginTransaction();
@@ -548,7 +641,7 @@ class AROSByVesselController extends Controller
             } elseif ($prefix === 'approved') {
                 // MGR/ADM: Cari yang SUDAH di-prepared 'Approved', tapi BELUM di-approved
                 $query->where('prepared_status', 'Approved')
-                      ->whereNull('approved_status');
+                    ->whereNull('approved_status');
             }
 
             $reports = $query->get();
@@ -569,7 +662,6 @@ class AROSByVesselController extends Controller
             DB::commit();
 
             return back()->with('success', "Total {$count} tiket berhasil di-approve.");
-
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Terjadi kesalahan saat bulk approve: ' . $e->getMessage());
@@ -612,7 +704,7 @@ class AROSByVesselController extends Controller
             } elseif ($prefix === 'approved') {
                 // MGR: Reject yang sudah diprepare (biasanya approved), tapi belum diapprove manager
                 $query->where('prepared_status', 'Approved') // Asumsi yang direject manager adalah yang lolos dari lead
-                      ->whereNull('approved_status');
+                    ->whereNull('approved_status');
             }
 
             $reports = $query->get();
@@ -632,7 +724,6 @@ class AROSByVesselController extends Controller
             DB::commit();
 
             return back()->with('success', "Total {$count} tiket berhasil di-reject.");
-
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Terjadi kesalahan saat bulk reject: ' . $e->getMessage());
