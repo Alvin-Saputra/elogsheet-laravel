@@ -16,9 +16,11 @@ use Illuminate\Support\Facades\Validator;
 class ARIMByTruckController extends Controller
 {
 
-    private function findHeaderWithId($id)
+   private function findHeaderWithId($id)
     {
-        return ARIMByTruckHeader::with('details')->findOrFail($id);
+        return ARIMByTruckHeader::with(['details' => function ($query) {
+            $query->orderBy('no', 'asc');
+        }])->findOrFail($id);
     }
 
     private function processApprovalStatus($header, $status, $remark, $user_name, $user_roles)

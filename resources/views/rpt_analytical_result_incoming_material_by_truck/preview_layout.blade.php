@@ -49,7 +49,7 @@
                         <td class="w-2/5 pr-1">
                             <div class="flex mb-1">
                                 <strong class="w-28">Tanggal</strong>:
-                                {{ $header->arrival_date ? \Carbon\Carbon::parse($header->transaction_date)->format('d-m-Y') : '' }}
+                                {{ $header->arrival_date ? \Carbon\Carbon::parse($header->arrival_date)->format('d-m-Y') : '' }}
                             </div>
 
                             <div class="flex mb-1">
