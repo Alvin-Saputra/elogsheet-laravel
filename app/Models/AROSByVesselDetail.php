@@ -36,13 +36,13 @@ class AROSByVesselDetail extends Model
     ];
 
     protected $casts = [
-        'palka_s_palka' => 'decimal:4',
+        // 'palka_s_palka' => 'decimal:4',
         'palka_s_ffa' => 'decimal:4',
         'palka_s_iv' => 'decimal:4',
         'palka_s_colour' => 'decimal:4',
         'palka_s_pv' => 'decimal:4',
         'palka_s_mni' => 'decimal:4',
-        'palka_p_palka' => 'decimal:4',
+        // 'palka_p_palka' => 'decimal:4',
         'palka_p_ffa' => 'decimal:4',
         'palka_p_iv' => 'decimal:4',
         'palka_p_colour' => 'decimal:4',

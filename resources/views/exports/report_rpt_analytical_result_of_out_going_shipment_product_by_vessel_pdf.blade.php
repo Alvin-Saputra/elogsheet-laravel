@@ -310,7 +310,7 @@
                 </tr>
                 <tr>
                     <td class="text-left" style="padding-left: 15px;">SMP</td>
-                    <td>{{ $header->hasil_analisa_SMP ?? '-' }}</td>
+                    <td>{{ $header->hasil_analisa_smp ?? '-' }}</td>
                 </tr>
             </tbody>
         </table>

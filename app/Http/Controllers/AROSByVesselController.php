@@ -451,7 +451,7 @@ class AROSByVesselController extends Controller
 
         return match ($intention) {
             'show' => view(
-                'rpt_analytical_result_outgoing_shipment_by_vessel.show',
+                'rpt_analytical_result_of_out_going_shipment_product_by_vessel.show',
                 compact('header')
             ),
 
@@ -512,6 +512,130 @@ class AROSByVesselController extends Controller
         } catch (\Throwable $th) {
             DB::rollBack();
             return back()->with('error', $th->getMessage());
+        }
+    }
+
+
+
+   public function bulkApprove(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+
+            $status   = 'Approved';
+            $remark   = null; // Bulk approve biasanya tanpa remark, atau bisa diambil dari request jika ada
+            $user     = auth()->user();
+            $username = $user->username ?? $user->getDisplayNameAttribute();
+            $roles    = $user->roles;
+            $tanggal  = $request->input('tanggal') ?? now()->format('Y-m-d');
+            $count    = 0;
+
+            // 1. Tentukan user ini bertindak sebagai 'prepared' atau 'approved'
+            $decision = $this->decidePrefixFromRoles($roles);
+
+            if (!$decision) {
+                return back()->with('error', 'Anda tidak memiliki hak akses untuk melakukan approval.');
+            }
+
+            $prefix = $decision['prefix']; // 'prepared' atau 'approved'
+
+            // 2. Build Query berdasarkan Role
+            $query = AROSByVesselHeader::whereDate('sampling_date', $tanggal);
+
+            if ($prefix === 'prepared') {
+                // LEAD QC: Cari yang belum di-prepared
+                $query->whereNull('prepared_status');
+            } elseif ($prefix === 'approved') {
+                // MGR/ADM: Cari yang SUDAH di-prepared 'Approved', tapi BELUM di-approved
+                $query->where('prepared_status', 'Approved')
+                      ->whereNull('approved_status');
+            }
+
+            $reports = $query->get();
+
+            if ($reports->isEmpty()) {
+                return back()->with('error', "Tidak ada data yang perlu diapprove untuk tanggal $tanggal.");
+            }
+
+            // 3. Loop update
+            foreach ($reports as $report) {
+                // Gunakan helper processApprovalStatus agar logic update konsisten (termasuk update history log user)
+                $success = $this->processApprovalStatus($report, $status, $remark, $username, $roles);
+                if ($success) {
+                    $count++;
+                }
+            }
+
+            DB::commit();
+
+            return back()->with('success', "Total {$count} tiket berhasil di-approve.");
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Terjadi kesalahan saat bulk approve: ' . $e->getMessage());
+        }
+    }
+
+    public function bulkReject(Request $request)
+    {
+        $request->validate([
+            'remark' => 'required|string|max:255' // Remark wajib diisi jika reject
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $status   = 'Rejected';
+            $remark   = $request->remark;
+            $user     = auth()->user();
+            $username = $user->username ?? $user->getDisplayNameAttribute();
+            $roles    = $user->roles;
+            $tanggal  = $request->input('tanggal') ?? now()->format('Y-m-d');
+            $count    = 0;
+
+            // 1. Tentukan user ini bertindak sebagai 'prepared' atau 'approved'
+            $decision = $this->decidePrefixFromRoles($roles);
+
+            if (!$decision) {
+                return back()->with('error', 'Anda tidak memiliki hak akses untuk melakukan reject.');
+            }
+
+            $prefix = $decision['prefix'];
+
+            // 2. Build Query (Logic sama dengan Approve, bedanya nanti status yang di-update)
+            // PERBAIKAN: Menggunakan AROSByVesselHeader dan sampling_date
+            $query = AROSByVesselHeader::whereDate('sampling_date', $tanggal);
+
+            if ($prefix === 'prepared') {
+                // LEAD QC: Reject yang masih kosong statusnya
+                $query->whereNull('prepared_status');
+            } elseif ($prefix === 'approved') {
+                // MGR: Reject yang sudah diprepare (biasanya approved), tapi belum diapprove manager
+                $query->where('prepared_status', 'Approved') // Asumsi yang direject manager adalah yang lolos dari lead
+                      ->whereNull('approved_status');
+            }
+
+            $reports = $query->get();
+
+            if ($reports->isEmpty()) {
+                return back()->with('error', "Tidak ada data yang bisa di-reject untuk tanggal $tanggal.");
+            }
+
+            // 3. Loop update
+            foreach ($reports as $report) {
+                $success = $this->processApprovalStatus($report, $status, $remark, $username, $roles);
+                if ($success) {
+                    $count++;
+                }
+            }
+
+            DB::commit();
+
+            return back()->with('success', "Total {$count} tiket berhasil di-reject.");
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Terjadi kesalahan saat bulk reject: ' . $e->getMessage());
         }
     }
 }

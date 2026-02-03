@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('page_title', 'Analytical Result of Outgoing Shipment Product By Truck')
+@section('page_title', 'Analytical Result of Outgoing Shipment By Vessel')
 
 @section('content')
 
@@ -36,7 +36,7 @@
 
         {{-- Filter --}}
         <div class="bg-gray-50 p-4 rounded-md shadow-sm mb-6">
-            <form method="GET" action="{{ route('analytical-result-outgoing-shipment-product-by-vessel.index') }}"
+            <form method="GET" action="{{ route('analytical-result-outgoing-shipment-by-vessel.index') }}"
                   class="flex flex-wrap items-end gap-4">
 
                 <div class="w-full sm:w-44">
@@ -51,13 +51,93 @@
                     </button>
 
                     @if(request()->has('filter_tanggal'))
-                        <a href="{{ route('analytical-result-outgoing-shipment-product-by-truck.index') }}"
+                        <a href="{{ route('analytical-result-outgoing-shipment-by-vessel.index') }}"
                            class="px-4 py-2 bg-gray-300 text-sm rounded-lg">
                             Reset
                         </a>
                     @endif
                 </div>
             </form>
+        </div>
+
+
+         @php
+                $userRole = auth()->user()->roles; // Pastikan ini string atau sesuaikan jika array
+                $countToProcess = 0;
+                $isLead = in_array($userRole, ['LEAD', 'LEAD_QC']); 
+                $isMgr  = in_array($userRole, ['MGR', 'MGR_QC', 'ADM']);
+
+                if ($isLead) {
+                    // LEAD: Hitung yang prepared_status-nya masih NULL
+                    $countToProcess = $headers->whereNull('prepared_status')->count();
+                } elseif ($isMgr) {
+                    // MGR: Hitung yang prepared_status Approved DAN approved_status NULL
+                    $countToProcess = $headers->where('prepared_status', 'Approved')
+                                              ->whereNull('approved_status')
+                                              ->count();
+                }
+            @endphp
+
+            <div class="mb-4" x-data="{ bulkApproveAll: false, bulkRejectAll: false, bulkRemark: '' }">
+                @if ($isLead || $isMgr)
+                    <div class="flex gap-2">
+                        {{-- Tombol Approve --}}
+                        <button type="button" @click="bulkApproveAll = true"
+                            class="px-4 py-2 text-sm font-semibold rounded-lg {{ $countToProcess > 0 ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed' }}"
+                            {{ $countToProcess > 0 ? '' : 'disabled' }}>
+                            Approve All ({{ $countToProcess }})
+                        </button>
+
+                        {{-- Tombol Reject --}}
+                        <button type="button" @click="bulkRejectAll = true"
+                            class="px-4 py-2 text-sm font-semibold rounded-lg {{ $countToProcess > 0 ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed' }}"
+                            {{ $countToProcess > 0 ? '' : 'disabled' }}>
+                            Reject All ({{ $countToProcess }})
+                        </button>
+                    </div>
+
+                    {{-- Pesan Status --}}
+                    @if ($countToProcess === 0)
+                        @if ($headers->count() === 0)
+                            <small class="text-gray-500">*tidak ada data pada tanggal ini</small>
+                        @else
+                            <small class="text-gray-500">*semua data sudah di-proses</small>
+                        @endif
+                    @endif
+                @endif
+
+            {{-- Bulk Approve Modal --}}
+            <div x-show="bulkApproveAll" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" x-cloak>
+                <div class="bg-white p-6 rounded-lg shadow-xl">
+                    <h2 class="text-lg font-bold mb-4">Approve Semua</h2>
+                    <p>Apakah Anda yakin ingin approve semua laporan?</p>
+                    <div class="mt-6 flex justify-end gap-2">
+                        <button @click="bulkApproveAll = false" class="px-4 py-2 bg-gray-300 rounded">Batal</button>
+                        <form method="POST" action="{{ route('analytical-result-outgoing-shipment-by-vessel.bulk-approve') }}" class="inline">
+                            @csrf
+                            <input type="hidden" name="tanggal" value="{{ $selectedDate }}">
+                            <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded">Approve Semua</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Bulk Reject Modal --}}
+            <div x-show="bulkRejectAll" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" x-cloak>
+                <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
+                    <h2 class="text-lg font-bold mb-4">Reject Semua</h2>
+                    <form method="POST" action="{{ route('analytical-result-outgoing-shipment-by-vessel.bulk-reject') }}">
+                        @csrf
+                        <input type="hidden" name="tanggal" value="{{ $selectedDate }}">
+                        <label for="bulk-remark" class="block mb-2">Alasan Reject:</label>
+                        <textarea id="bulk-remark" name="remark" class="w-full border rounded p-2" rows="3" required x-model="bulkRemark"></textarea>
+                        <div class="mt-6 flex justify-end gap-2">
+                            <button type="button" @click="bulkRejectAll = false" class="px-4 py-2 bg-gray-300 rounded">Batal</button>
+                            <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded">Reject Semua</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
 
         {{-- Table --}}
@@ -69,8 +149,8 @@
                     <th class="px-4 py-2 border-b text-left">Report ID</th>
                     <th class="px-4 py-2 border-b text-left">Product</th>
                     <th class="px-4 py-2 border-b text-left">Quantity</th>
-                    <th class="px-4 py-2 border-b text-left">Ship / Destination</th>
-                    <th class="px-4 py-2 border-b text-center">Verified Status</th>
+                    <th class="px-4 py-2 border-b text-left">Shipper / Destination</th>
+                    <th class="px-4 py-2 border-b text-center">prepared Status</th>
                     <th class="px-4 py-2 border-b text-center">Approved Status</th>
                     <th class="px-4 py-2 border-b text-center">Action</th>
                     <th class="px-4 py-2 border-b text-center">Report</th>
@@ -86,15 +166,15 @@
                         <td class="px-4 py-2 border-b">{{ $doc->product_name }}</td>
                         <td class="px-4 py-2 border-b">{{ $doc->quantity }}</td>
                         <td class="px-4 py-2 border-b">
-                            <div class="text-xs text-gray-600">{{ $doc->ships_name ?? '-' }}</div>
-                            <div class="text-xs text-gray-400">{{ $doc->destination ?? $doc->load_port ?? '-' }}</div>
+                            <div class="text-xs text-gray-600">{{ $doc->shipper ?? '-' }}</div>
+                            <div class="text-xs text-gray-400">{{ $doc->destination ?? '-' }}</div>
                         </td>
 
                         {{-- Prepared / Verified --}}
                         <td class="px-4 py-2 border-b text-center">
-                            @if(isset($doc->corrected_status) && $doc->corrected_status === 'Approved')
+                            @if(isset($doc->prepared_status) && $doc->prepared_status === 'Approved')
                                 <span class="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded">Approved</span>
-                            @elseif(isset($doc->corrected_status) && $doc->corrected_status === 'Rejected')
+                            @elseif(isset($doc->prepared_status) && $doc->prepared_status === 'Rejected')
                                 <span class="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded">Rejected</span>
                             @else
                                 <span class="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">Pending</span>
@@ -117,10 +197,10 @@
                             <div class="flex justify-center gap-2">
 
                                 {{-- SHIFT LEADER (prepare) --}}
-                                @if (empty($doc->corrected_status))
+                                @if (empty($doc->prepared_status))
                                     @if (auth()->user()->roles === 'LEAD' || auth()->user()->roles === 'LEAD_QC')
                                         <form method="POST"
-                                              action="{{ route('analytical-result-outgoing-shipment-product-by-truck.approveReject', $doc->id) }}?status=Approved">
+                                              action="{{ route('analytical-result-outgoing-shipment-by-vessel.approveReject', $doc->id) }}?status=Approved">
                                             @csrf
                                             <button class="px-3 py-1 bg-green-600 text-white text-xs rounded shadow">
                                                 Approve
@@ -141,7 +221,7 @@
                                                     </h3>
 
                                                     <form method="POST"
-                                                          action="{{ route('analytical-result-outgoing-shipment-product-by-truck.approveReject', $doc->id) }}?status=Rejected">
+                                                          action="{{ route('analytical-result-outgoing-shipment-by-vessel.approveReject', $doc->id) }}?status=Rejected">
                                                         @csrf
 
                                                         <div class="mb-4">
@@ -174,10 +254,10 @@
                                     @endif
 
                                 {{-- MANAGER --}}
-                                @elseif ($doc->corrected_status === 'Approved' && empty($doc->approved_status))
+                                @elseif ($doc->prepared_status === 'Approved' && empty($doc->approved_status))
                                     @if (auth()->user()->roles === 'MGR' || auth()->user()->roles === 'MGR_QC' || auth()->user()->roles === 'ADM')
                                         <form method="POST"
-                                              action="{{ route('analytical-result-outgoing-shipment-product-by-truck.approveReject', $doc->id) }}?status=Approved">
+                                              action="{{ route('analytical-result-outgoing-shipment-by-vessel.approveReject', $doc->id) }}?status=Approved">
                                             @csrf
                                             <button class="px-3 py-1 bg-green-600 text-white text-xs rounded shadow">
                                                 Approve
@@ -198,7 +278,7 @@
                                                     </h3>
 
                                                     <form method="POST"
-                                                          action="{{ route('analytical-result-outgoing-shipment-product-by-truck.approveReject', $doc->id) }}?status=Rejected">
+                                                          action="{{ route('analytical-result-outgoing-shipment-by-vessel.approveReject', $doc->id) }}?status=Rejected">
                                                         @csrf
 
                                                         <div class="mb-4">
@@ -233,7 +313,7 @@
                                 {{-- Final --}}
                                 @else
                                     <span class="text-xs text-gray-500">
-                                        {{ $doc->approved_status ?? $doc->corrected_status }}
+                                        {{ $doc->approved_status ?? $doc->prepared_status }}
                                     </span>
                                 @endif
                             </div>
@@ -243,12 +323,12 @@
                         <td class="px-4 py-2 border-b">
                           <div class="flex items-center gap-2 justify-between">
                             <a target="_blank"
-                              href="{{ route('analytical-result-outgoing-shipment-product-by-vessel.export', $doc->id) }}?intention=preview"
+                              href="{{ route('analytical-result-outgoing-shipment-by-vessel.export', $doc->id) }}?intention=preview"
                               class="inline-flex items-center px-2 py-1 bg-blue-600 text-white text-xs rounded">
                               Preview
                             </a>
 
-                            <a href="{{ route('analytical-result-outgoing-shipment-product-by-vessel.export', $doc->id) }}?intention=export"
+                            <a href="{{ route('analytical-result-outgoing-shipment-by-vessel.export', $doc->id) }}?intention=export"
                               class="inline-flex items-center px-2 py-1 bg-red-600 text-white text-xs rounded">
                               Download
                             </a>
@@ -257,7 +337,7 @@
 
                         {{-- Detail --}}
                         <td class="px-4 py-2 border-b text-center">
-                            <a href="{{ route('analytical-result-outgoing-shipment-product-by-truck.show', $doc->id) }}?intention=show"
+                            <a href="{{ route('analytical-result-outgoing-shipment-by-vessel.show', $doc->id) }}?intention=show"
                                class="inline-flex items-center justify-center text-blue-600 hover:text-blue-800 transition-colors duration-200"
                                title="View Detail">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="w-5 h-5">

@@ -363,12 +363,14 @@ Route::middleware('auth')->group(function () {
         });
 
 
-    Route::prefix('analytical-result-outgoing-shipment-product-by-vessel')
-        ->name('analytical-result-outgoing-shipment-product-by-vessel.')
+    Route::prefix('analytical-result-outgoing-shipment-by-vessel')
+        ->name('analytical-result-outgoing-shipment-by-vessel.')
         ->group(function () {
             Route::get('/', [AROSByVesselController::class, 'index'])->name('index');
-            // Route::post('/{id}/approve-report', [AROSProductByTruckController::class, 'updateApprovalStatusWeb'])->name('approveReject');
-            // Route::get('/{id}', [AROSProductByTruckController::class, 'getById'])->name('show');
+            Route::post('/bulk/approve', [AROSByVesselController::class, 'bulkApprove'])->name('bulk-approve');
+            Route::post('/bulk/reject', [AROSByVesselController::class, 'bulkReject'])->name('bulk-reject');
+            Route::post('/{id}/approve-report', [AROSByVesselController::class, 'updateApprovalStatusWeb'])->name('approveReject');
+            Route::get('/{id}', [AROSByVesselController::class, 'getById'])->name('show');
             Route::get('/{id}/export/view', [AROSByVesselController::class, 'getById'])->name('preview');
             Route::get('/{id}/export/pdf', [AROSByVesselController::class, 'getById'])->name('export');
         });

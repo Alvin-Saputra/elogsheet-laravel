@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('page_title', 'Start Up Produksi Checklist - Layout Preview')
+@section('page_title', 'Layout Preview')
 
 @section('content')
     <div class="bg-white p-6 rounded shadow-md text-sm relative max-w-4xl mx-auto">
@@ -20,7 +20,7 @@
 
                     {{-- Column 2: Titles --}}
                     <td class="w-3/5 text-center pt-2">
-                        <h3 class="text-xl font-bold uppercase">Analytical Result Outgoing Shipment<br> Product By Vessel</h3>
+                        <h3 class="text-xl font-bold uppercase">Analytical Result Outgoing Shipment<br>By Vessel</h3>
                     </td>
 
                     {{-- Column 3: Form Info --}}
@@ -208,7 +208,7 @@
 
                 <tr>
                     <td class="px-3 py-1 border border-gray-400 text-center">SMP</td>
-                    <td class="px-3 py-1 border border-gray-400 text-center">{{ $header->hasil_analisa_SMP }}</td>
+                    <td class="px-3 py-1 border border-gray-400 text-center">{{ $header->hasil_analisa_smp }}</td>
                 </tr>
 
             </tbody>
