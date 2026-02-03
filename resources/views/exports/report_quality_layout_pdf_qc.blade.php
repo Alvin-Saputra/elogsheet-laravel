@@ -100,9 +100,9 @@
     <!-- Tabel utama -->
     @if ($groupedData->isNotEmpty())
         @foreach ($groupedData as $wc => $rows)
-            {{-- @php
+            @php
                 $isRef01 = $wc === 'REF-01';
-            @endphp --}}
+            @endphp
             <table style="margin-bottom: 20px;">
                 <thead>
                     <tr>
@@ -114,8 +114,7 @@
                         <th rowspan="2">Flow Rate</th>
                         <th colspan="10">RAW MATERIAL</th>
                         <th colspan="4">Bleaching Oil</th>
-                        {{-- <th colspan="{{ $isRef01 ? 9 : 10 }}">RRPO</th> --}}
-                        <th colspan="10">Finish Good</th>
+                        <th colspan="{{ $isRef01 ? 9 : 10 }}">Finish Good</th>
                         <th colspan="3">By Prodcut</th>
                         <th colspan="2">SPENT EARTH</th>
                         <th rowspan="2">REMARKS</th>
@@ -138,10 +137,10 @@
                         <th>Break Test</th>
 
                         <th>FFA</th>
-                        <th>Moist</th>
-                        {{-- @if (!$isRef01) --}}
+                        <th>{{ $isRef01 ? 'M&I' : 'Moist' }}</th>
+                        @if (!$isRef01)
                         <th>IMP</th>
-                        {{-- @endif --}}
+                        @endif
                         <th>IV</th>
                         <th>PV</th>
                         <th>Color R</th>
@@ -191,10 +190,10 @@
                             <td>{{ $row->bo_break_test }}</td>
 
                             <td>{{ $row->fg_ffa }}</td>
-                            <td>{{ $row->fg_moist }}</td>
-                            {{-- @if (!$isRef01) --}}
+                            <td>{{ $row->fg_moisture }}</td>
+                            @if (!$isRef01)
                             <td>{{ $row->fg_impurities }}</td>
-                            {{-- @endif --}}
+                            @endif
                             <td>{{ $row->fg_iv }}</td>
                             <td>{{ $row->fg_pv }}</td>
                             <td>{{ $row->fg_color_r }}</td>
