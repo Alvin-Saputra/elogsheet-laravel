@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AROIPChemicalController;
+use App\Http\Controllers\Api\FormTransferController;
 use App\Http\Controllers\ARIMByTruckController;
 use App\Http\Controllers\ARIMByVesselController;
 use App\Http\Controllers\AROIPFuelController;
@@ -116,4 +117,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('arosptruck/{id}', [AROSProductByTruckController::class, 'destroy']);
     Route::put('arosptruck/{id}', [AROSProductByTruckController::class, 'update']);
     Route::put('arosptruck/{id}/approve', [AROSProductByTruckController::class, 'updateApproval']);
+});
+
+Route::middleware('auth:sanctum')->group(function () {
+    // Form Transfer routes
+    Route::get('form-transfer', [FormTransferController::class, 'get']);
+    Route::get('form-transfer/pending', [FormTransferController::class, 'getPending']);
+    Route::post('form-transfer', [FormTransferController::class, 'create']);
+    Route::put('form-transfer/{id}', [FormTransferController::class, 'update']);
+    Route::delete('form-transfer/{id}', [FormTransferController::class, 'destroy']);
+    Route::put('form-transfer/{id}/approve', [FormTransferController::class, 'updateApproval']);
 });

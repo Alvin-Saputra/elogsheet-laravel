@@ -20,6 +20,7 @@ use App\Http\Controllers\RptDailyProductionController;
 use App\Http\Controllers\RptDailyQualityCompositeFractionation;
 use App\Http\Controllers\RptDailyStorageTankAnalyticalController;
 use App\Http\Controllers\RptDeodorizingController;
+use App\Http\Controllers\RptFormTransferController;
 use App\Http\Controllers\RptLampGlassController;
 use App\Http\Controllers\RptLogsheetDryFraController;
 use App\Http\Controllers\RptLogsheetPBFController;
@@ -360,5 +361,17 @@ Route::middleware('auth')->group(function () {
             Route::get('/{id}/export/view', [AROSProductByTruckController::class, 'getById'])->name('preview');
             Route::get('/{id}/export/pdf', [AROSProductByTruckController::class, 'getById'])->name('export');
         });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Report: Form Transfer
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('report/form-transfer')->group(function () {
+        Route::get('/', [RptFormTransferController::class, 'index'])->name('report.form-transfer.index');
+        Route::get('/{id}', [RptFormTransferController::class, 'getById'])->name('report.form-transfer.show');
+        Route::get('/{id}/export/view', [RptFormTransferController::class, 'getById'])->name('report.form-transfer.preview');
+        Route::get('/{id}/export/pdf', [RptFormTransferController::class, 'getById'])->name('report.form-transfer.export');
+    });
 
 });
