@@ -82,42 +82,102 @@
 
 
         {{-- Footer Box --}}
-        <div class="grid grid-cols-3 gap-6 mt-6 text-xs">
-            <div class="border p-2">
-                <strong>Daily Chemical Usage</strong>
-                <table class="w-full text-left mt-1">
-                    <tr>
-                        <td>Bleaching Earth</td>
-                        <td>-</td>
-                    </tr>
-                    <tr>
-                        <td>Phosphoric Acid</td>
-                        <td>-</td>
-                    </tr>
-                    <tr>
-                        <td>RPO Usage</td>
-                        <td>-</td>
-                    </tr>
-                </table>
+      {{-- Logic untuk mengambil Data Daily Production (Interlock) --}}
+        @php
+            $production = null;
+            // Cek sumber data, apakah single ($data) atau grouped ($groupedData)
+            if (!empty($data) && $data->count() > 0) {
+                $production = $data->first()->dailyProduction;
+            } elseif (!empty($groupedData) && $groupedData->count() > 0) {
+                // Ambil dari grup pertama, baris pertama
+                $production = $groupedData->first()->first()->dailyProduction;
+            }
+        @endphp
+
+      {{-- Logic untuk mengelompokkan Data Daily Production per Work Center --}}
+        @php
+            $productionList = [];
+
+            // Skenario 1: Jika User memfilter 1 Work Center spesifik
+            if (!empty($workCenter) && !empty($data) && $data->count() > 0) {
+                // Ambil data produksi dari row pertama
+                $prod = $data->first()->dailyProduction;
+                if ($prod) {
+                    $productionList[$workCenter] = $prod;
+                }
+            } 
+            // Skenario 2: Jika Laporan menampilkan banyak Work Center (Grouped Data)
+            elseif (!empty($groupedData)) {
+                foreach ($groupedData as $wc => $rows) {
+                    if ($rows->count() > 0) {
+                        $prod = $rows->first()->dailyProduction;
+                        // Masukkan ke list meskipun null (nanti di-handle di view dengan tanda '-')
+                        $productionList[$wc] = $prod;
+                    }
+                }
+            }
+        @endphp
+
+        {{-- Footer Box Loop --}}
+        @foreach ($productionList as $wcKey => $production)
+            <div class="mt-6">
+                {{-- Judul Kecil untuk membedakan Data Produksi milik siapa --}}
+                <div class="font-bold text-xs mb-1 underline">
+                    Refinery Data: {{ $wcKey }}
+                </div>
+
+                <div class="grid grid-cols-3 gap-6 text-xs">
+                    {{-- Box Kiri: Chemical Usage --}}
+                    <div class="border p-2">
+                        <strong>Daily Chemical Usage</strong>
+                        <table class="w-full text-left mt-1">
+                            <tr>
+                                <td class="w-1/2">Bleaching Earth</td>
+                                <td>: {{ $production->be_ref_qty ?? '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td>Phosphoric Acid</td>
+                                <td>: {{ $production->pa_ref_qty ?? '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td>RPO Usage</td>
+                                <td>: {{ $production->oil_type_rm_total ?? '-' }}</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    {{-- Box Tengah: Theoretical Yield --}}
+                    <div class="border p-2">
+                        <strong>Theoretical Yield</strong>
+                        <table class="w-full text-left mt-1">
+                            <tr>
+                                <td class="w-1/2">RPO</td>
+                                <td>: {{ $production->oil_type_fg_total ?? '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td>PFAD</td>
+                                <td>: {{ $production->bp_total ?? '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td>Losses</td>
+                                <td>: {{ $production->uu_yield_percent ?? '-' }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    {{-- Box Kanan (Opsional: Kosong atau Catatan lain) --}}
+                    {{-- Jika ingin layout 2 kolom saja, ubah grid-cols-3 jadi grid-cols-2 --}}
+                    <div></div> 
+                </div>
             </div>
-            <div class="border p-2">
-                <strong>Theoretical Yield</strong>
-                <table class="w-full text-left mt-1">
-                    <tr>
-                        <td>RPO</td>
-                        <td>-</td>
-                    </tr>
-                    <tr>
-                        <td>PFAD</td>
-                        <td>-</td>
-                    </tr>
-                    <tr>
-                        <td>Losses</td>
-                        <td>-</td>
-                    </tr>
-                </table>
+        @endforeach
+
+        {{-- Jika Data Produksi Kosong sama sekali (Opsional) --}}
+        @if (empty($productionList))
+            <div class="mt-6 text-xs text-center border p-2 text-gray-500">
+                Data Produksi (Interlock) belum tersedia.
             </div>
-        </div>
+        @endif
 
         @php
             $lastShift = collect($signaturesQc)

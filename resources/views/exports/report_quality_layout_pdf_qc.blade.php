@@ -316,63 +316,100 @@
 
     @endif
     <!-- Bagian bawah -->
-    {{-- <div style="margin-top:20px; display:flex; justify-content:space-between;">
-        <!-- Daily Chemical Usage -->
-        <table class="section-table">
-            <thead>
-                <tr>
-                    <th colspan="3">Daily Chemical Usage</th>
-                </tr>
-                <tr>
-                    <th>Chemical</th>
-                    <th>Amount</th>
-                    <th>%</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>Bleaching Earth</td>
-                    <td>{{ $dailyUsage['bleaching_earth_amount'] ?? '-' }}</td>
-                    <td>{{ $dailyUsage['bleaching_earth_percent'] ?? '-' }}</td>
-                </tr>
-                <tr>
-                    <td>Phosphoric Acid</td>
-                    <td>{{ $dailyUsage['phosphoric_acid_amount'] ?? '-' }}</td>
-                    <td>{{ $dailyUsage['phosphoric_acid_percent'] ?? '-' }}</td>
-                </tr>
-                <tr>
-                    <td>RPO Usage</td>
-                    <td colspan="2">{{ $dailyUsage['rpo_usage'] ?? '-' }}</td>
-                </tr>
-            </tbody>
-        </table> --}}
+    
+   
+    {{-- Logic untuk mengelompokkan Data Daily Production per Work Center --}}
+    @php
+        $productionList = [];
 
-    <!-- Theoretical Yield -->
-    {{-- <table class="section-table">
-            <thead>
-                <tr>
-                    <th colspan="2">Theoretical Yield</th>
-                </tr>
-                <tr>
-                    <th>Product</th>
-                    <th>%</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>RRPO</td>
-                    <td>{{ $yield['rrpo'] ?? '-' }}</td>
-                </tr>
-                <tr>
-                    <td>PFAD</td>
-                    <td>{{ $yield['pfad'] ?? '-' }}</td>
-                </tr>
-                <tr>
-                    <td>LOSES</td>
-                    <td>{{ $yield['loses'] ?? '-' }}</td>
-                </tr>
-            </tbody>
-        </table> --}}
+        // Skenario 1: Jika User memfilter 1 Work Center spesifik
+        if (!empty($workCenter) && !empty($data) && $data->count() > 0) {
+            $prod = $data->first()->dailyProduction;
+            if ($prod) {
+                $productionList[$workCenter] = $prod;
+            }
+        } 
+        // Skenario 2: Jika Laporan menampilkan banyak Work Center (Grouped Data)
+        elseif (!empty($groupedData)) {
+            foreach ($groupedData as $wc => $rows) {
+                if ($rows->count() > 0) {
+                    $prod = $rows->first()->dailyProduction;
+                    $productionList[$wc] = $prod;
+                }
+            }
+        }
+    @endphp
+
+    {{-- Footer Box Loop --}}
+    @foreach ($productionList as $wcKey => $production)
+        {{-- Container per Work Center --}}
+        <div style="margin-top: 20px; width: 100%;">
+            
+            {{-- Judul Kecil --}}
+            <div style="font-weight: bold; text-decoration: underline; margin-bottom: 5px;">
+                Refinery Data: {{ $wcKey }}
+            </div>
+
+            {{-- Wrapper untuk Float Layout (Pengganti Grid) --}}
+            <div style="width: 100%;">
+                
+                {{-- Box Kiri: Chemical Usage --}}
+                <div class="section-table" style="margin-top: 0; width: 48%; float: left; margin-right: 2%;">
+                    <div style="padding: 5px; font-weight: bold; background-color: #f3f3f3; border-bottom: 0.5px solid #444;">
+                        Daily Chemical Usage
+                    </div>
+                    <table style="width: 100%; border: none;">
+                        <tr>
+                            <td style="border: none; width: 50%; text-align: left;">Bleaching Earth</td>
+                            <td style="border: none; text-align: left;">: {{ $production->be_ref_qty ?? '-' }}</td>
+                        </tr>
+                        <tr>
+                            <td style="border: none; text-align: left;">Phosphoric Acid</td>
+                            <td style="border: none; text-align: left;">: {{ $production->pa_ref_qty ?? '-' }}</td>
+                        </tr>
+                        <tr>
+                            <td style="border: none; text-align: left;">RPO Usage</td>
+                            <td style="border: none; text-align: left;">: {{ $production->oil_type_rm_total ?? '-' }}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                {{-- Box Kanan: Theoretical Yield --}}
+                <div class="section-table" style="margin-top: 0; width: 48%; float: left;">
+                    <div style="padding: 5px; font-weight: bold; background-color: #f3f3f3; border-bottom: 0.5px solid #444;">
+                        Theoretical Yield
+                    </div>
+                    <table style="width: 100%; border: none;">
+                        <tr>
+                            <td style="border: none; width: 50%; text-align: left;">RPO</td>
+                            <td style="border: none; text-align: left;">: {{ $production->oil_type_fg_total ?? '-' }}</td>
+                        </tr>
+                        <tr>
+                            <td style="border: none; text-align: left;">PFAD</td>
+                            <td style="border: none; text-align: left;">: {{ $production->bp_total ?? '-' }}</td>
+                        </tr>
+                        <tr>
+                            <td style="border: none; text-align: left;">Losses</td>
+                            <td style="border: none; text-align: left;">: {{ $production->uu_yield_percent ?? '-' }}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                {{-- Clear Both (Penting untuk PDF agar layout tidak berantakan ke bawah) --}}
+                <div style="clear: both;"></div>
+            </div>
+        </div>
+    @endforeach
+
+    {{-- Pesan jika kosong --}}
+    @if (empty($productionList))
+        <div style="margin-top: 20px; text-align: center; border: 0.5px solid #444; padding: 10px; color: #666;">
+            Data Produksi (Interlock) belum tersedia.
+        </div>
+    @endif
+
+    {{-- Pemisah sebelum Tanda Tangan --}}
+    <div style="margin-top: 30px;"></div>
 
     <table class="signature-table">
         <tr>

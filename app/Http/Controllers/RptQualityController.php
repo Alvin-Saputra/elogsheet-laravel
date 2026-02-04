@@ -576,7 +576,8 @@ class RptQualityController extends Controller
 
         // $query = LSQualityReportQc::query()->whereDate('posting_date', $tanggal);
 
-        $query = LSQualityReportQc::join('m_product', 't_quality_report_qc.oil_type', '=', 'm_product.id')
+        $query = LSQualityReportQc::with('dailyProduction')
+            ->join('m_product', 't_quality_report_qc.oil_type', '=', 'm_product.id')
             ->whereDate('t_quality_report_qc.posting_date', $tanggal);
 
         if ($request->filled('filter_jam')) {
