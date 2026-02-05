@@ -107,13 +107,16 @@
                 <thead>
                     <tr>
                         <th rowspan="2">Time</th>
+                        <th rowspan="2">Oil Type</th>
+                        <th rowspan="2">Finish Good</th>
+                        <th rowspan="2">By Product</th>
                         <th rowspan="2">From Tank No.</th>
                         <th rowspan="2">Flow Rate</th>
                         <th colspan="10">RAW MATERIAL</th>
-                        <th colspan="4">BPO</th>
+                        <th colspan="4">Bleaching Oil</th>
                         {{-- <th colspan="{{ $isRef01 ? 9 : 10 }}">RRPO</th> --}}
-                        <th colspan="10">RRPO</th>
-                        <th colspan="3">PFAD</th>
+                        <th colspan="10">Finish Good</th>
+                        <th colspan="3">By Prodcut</th>
                         <th colspan="2">SPENT EARTH</th>
                         <th rowspan="2">REMARKS</th>
                     </tr>
@@ -137,7 +140,7 @@
                         <th>FFA</th>
                         <th>Moist</th>
                         {{-- @if (!$isRef01) --}}
-                            <th>IMP</th>
+                        <th>IMP</th>
                         {{-- @endif --}}
                         <th>IV</th>
                         <th>PV</th>
@@ -159,6 +162,16 @@
                     @foreach ($rows as $row)
                         <tr>
                             <td>{{ optional($row->time)->format('H:i') }}</td>
+                            <td>
+                                {{ $row->oil_type ?? '-' }}
+                            </td>
+                            <td>
+                                {{ $row->oil_type_fg ?? '-' }}
+                            </td>
+
+                            <td>
+                                {{ $row->oil_type_bp ?? '-' }}
+                            </td>
                             <td>{{ $row->rm_tank_source }}</td>
                             <td>{{ $row->rm_flowrate }}</td>
                             <td>{{ $row->rm_ffa }}</td>
@@ -180,7 +193,7 @@
                             <td>{{ $row->fg_ffa }}</td>
                             <td>{{ $row->fg_moist }}</td>
                             {{-- @if (!$isRef01) --}}
-                                <td>{{ $row->fg_impurities }}</td>
+                            <td>{{ $row->fg_impurities }}</td>
                             {{-- @endif --}}
                             <td>{{ $row->fg_iv }}</td>
                             <td>{{ $row->fg_pv }}</td>
@@ -239,7 +252,7 @@
                     <th>FFA</th>
                     <th>Moist</th>
                     {{-- @if (!$isRef01) --}}
-                        <th>IMP</th>
+                    <th>IMP</th>
                     {{-- @endif --}}
                     <th>IV</th>
                     <th>PV</th>
@@ -282,7 +295,7 @@
                         <td>{{ $row->fg_ffa }}</td>
                         <td>{{ $row->fg_moist }}</td>
                         {{-- @if (!$isRef01) --}}
-                            <td>{{ $row->fg_impurities }}</td>
+                        <td>{{ $row->fg_impurities }}</td>
                         {{-- @endif --}}
                         <td>{{ $row->fg_iv }}</td>
                         <td>{{ $row->fg_pv }}</td>

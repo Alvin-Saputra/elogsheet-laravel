@@ -60,6 +60,84 @@
             </form>
         </div>
 
+        {{-- Bulk Action Buttons --}}
+        <div class="mb-4" x-data="{ bulkApproveAll: false, bulkRejectAll: false, bulkRemark: '' }">
+            @if (auth()->user()->roles === 'LEAD' || auth()->user()->roles === 'LEAD_QC')
+                <div class="flex gap-2">
+                    <button type="button" @click="bulkApproveAll = true"
+                        class="px-4 py-2 text-sm font-semibold rounded-lg {{ $headers->whereNull('corrected_status')->count() > 0 ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed' }}"
+                        {{ $headers->whereNull('corrected_status')->count() > 0 ? '' : 'disabled' }}>
+                        Approve All
+                    </button>
+                    <button type="button" @click="bulkRejectAll = true"
+                        class="px-4 py-2 text-sm font-semibold rounded-lg {{ $headers->whereNull('corrected_status')->count() > 0 ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed' }}"
+                        {{ $headers->whereNull('corrected_status')->count() > 0 ? '' : 'disabled' }}>
+                        Reject All
+                    </button>
+                </div>
+                @if ($headers->whereNull('corrected_status')->count() === 0)
+                    @if ($headers->count() === 0)
+                        <small class="text-gray-500">*tidak ada data pada tanggal ini</small>
+                    @else
+                        <small class="text-gray-500">*semua data sudah di-approve</small>
+                    @endif
+                @endif
+            @elseif (auth()->user()->roles === 'MGR' || auth()->user()->roles === 'MGR_QC' || auth()->user()->roles === 'ADM')
+                <div class="flex gap-2">
+                    <button type="button" @click="bulkApproveAll = true"
+                        class="px-4 py-2 text-sm font-semibold rounded-lg {{ $headers->where('corrected_status', 'Approved')->whereNull('approved_status')->count() > 0 ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed' }}"
+                        {{ $headers->where('corrected_status', 'Approved')->whereNull('approved_status')->count() > 0 ? '' : 'disabled' }}>
+                        Approve All
+                    </button>
+                    <button type="button" @click="bulkRejectAll = true"
+                        class="px-4 py-2 text-sm font-semibold rounded-lg {{ $headers->where('corrected_status', 'Approved')->whereNull('approved_status')->count() > 0 ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed' }}"
+                        {{ $headers->where('corrected_status', 'Approved')->whereNull('approved_status')->count() > 0 ? '' : 'disabled' }}>
+                        Reject All
+                    </button>
+                </div>
+                @if ($headers->where('corrected_status', 'Approved')->whereNull('approved_status')->count() === 0)
+                    @if ($headers->where('corrected_status', 'Approved')->count() === 0)
+                        <small class="text-gray-500">*tidak ada data pada tanggal ini</small>
+                    @else
+                        <small class="text-gray-500">*semua data sudah di-approve</small>
+                    @endif
+                @endif
+            @endif
+
+            {{-- Bulk Approve Modal --}}
+            <div x-show="bulkApproveAll" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" x-cloak>
+                <div class="bg-white p-6 rounded-lg shadow-xl">
+                    <h2 class="text-lg font-bold mb-4">Approve Semua</h2>
+                    <p>Apakah Anda yakin ingin approve semua laporan?</p>
+                    <div class="mt-6 flex justify-end gap-2">
+                        <button @click="bulkApproveAll = false" class="px-4 py-2 bg-gray-300 rounded">Batal</button>
+                        <form method="POST" action="{{ route('analytical-result-outgoing-shipment-product-by-truck.bulk-approve') }}" class="inline">
+                            @csrf
+                            <input type="hidden" name="tanggal" value="{{ $selectedDate }}">
+                            <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded">Approve Semua</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Bulk Reject Modal --}}
+            <div x-show="bulkRejectAll" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" x-cloak>
+                <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
+                    <h2 class="text-lg font-bold mb-4">Reject Semua</h2>
+                    <form method="POST" action="{{ route('analytical-result-outgoing-shipment-product-by-truck.bulk-reject') }}">
+                        @csrf
+                        <input type="hidden" name="tanggal" value="{{ $selectedDate }}">
+                        <label for="bulk-remark" class="block mb-2">Alasan Reject:</label>
+                        <textarea id="bulk-remark" name="remark" class="w-full border rounded p-2" rows="3" required x-model="bulkRemark"></textarea>
+                        <div class="mt-6 flex justify-end gap-2">
+                            <button type="button" @click="bulkRejectAll = false" class="px-4 py-2 bg-gray-300 rounded">Batal</button>
+                            <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded">Reject Semua</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
         {{-- Table --}}
         <div class="overflow-x-auto">
             <table class="min-w-full bg-white border border-gray-200 rounded-lg">
@@ -114,58 +192,59 @@
 
                         {{-- Action --}}
                         <td class="px-4 py-2 border-b text-center">
-                            <div class="flex justify-center gap-2">
+                            <div class="flex justify-center gap-2" x-data="{ showApprove: false, showReject: false }">
 
                                 {{-- SHIFT LEADER (prepare) --}}
                                 @if (empty($doc->corrected_status))
                                     @if (auth()->user()->roles === 'LEAD' || auth()->user()->roles === 'LEAD_QC')
-                                        <form method="POST"
-                                              action="{{ route('analytical-result-outgoing-shipment-product-by-truck.approveReject', $doc->id) }}?status=Approved">
-                                            @csrf
-                                            <button class="px-3 py-1 bg-green-600 text-white text-xs rounded shadow">
-                                                Approve
-                                            </button>
-                                        </form>
+                                        <button @click="showApprove = true"
+                                            class="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 shadow">
+                                            Approve
+                                        </button>
+                                        <button @click="showReject = true"
+                                            class="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 shadow">
+                                            Reject
+                                        </button>
 
-                                        <div x-data="{ open: false }">
-                                            <button type="button" @click="open = true"
-                                                    class="px-3 py-1 bg-red-600 text-white text-xs rounded shadow hover:bg-red-700">
-                                                Reject
-                                            </button>
-
-                                            {{-- Modal --}}
-                                            <div x-show="open" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-                                                <div @click.outside="open = false" class="bg-white w-full max-w-md rounded-lg shadow-lg p-6">
-                                                    <h3 class="text-lg font-semibold text-gray-800 mb-4">
-                                                        Reject Report #{{ $doc->id }}
-                                                    </h3>
-
+                                        {{-- Approve Modal --}}
+                                        <div x-show="showApprove"
+                                            class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+                                            x-cloak>
+                                            <div class="bg-white p-6 rounded-lg shadow-xl">
+                                                <h2 class="text-lg font-bold mb-4">Confirm Verification</h2>
+                                                <p>Approve ticket #{{ $doc->id }}?</p>
+                                                <div class="mt-6 flex justify-end gap-2">
+                                                    <button @click="showApprove = false"
+                                                        class="px-4 py-2 bg-gray-300 rounded">Cancel</button>
                                                     <form method="POST"
-                                                          action="{{ route('analytical-result-outgoing-shipment-product-by-truck.approveReject', $doc->id) }}?status=Rejected">
+                                                        action="{{ route('analytical-result-outgoing-shipment-product-by-truck.approveReject', $doc->id) }}?status=Approved"
+                                                        class="inline">
                                                         @csrf
-
-                                                        <div class="mb-4">
-                                                            <label class="block text-sm font-medium text-gray-700 mb-1">
-                                                                Reject Reason <span class="text-red-500">*</span>
-                                                            </label>
-                                                            <textarea name="remark" required rows="3"
-                                                                      class="w-full border border-gray-300 rounded-md shadow-sm focus:ring focus:ring-red-200 text-sm"
-                                                                      placeholder="Enter rejection reason..."></textarea>
-                                                        </div>
-
-                                                        <div class="flex justify-end gap-2">
-                                                            <button type="button" @click="open = false"
-                                                                    class="px-4 py-2 text-sm bg-gray-300 rounded">
-                                                                Cancel
-                                                            </button>
-
-                                                            <button type="submit"
-                                                                    class="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700">
-                                                                Confirm Reject
-                                                            </button>
-                                                        </div>
+                                                        <button type="submit"
+                                                            class="px-4 py-2 bg-green-600 text-white rounded">Approve</button>
                                                     </form>
                                                 </div>
+                                            </div>
+                                        </div>
+
+                                        {{-- Reject Modal --}}
+                                        <div x-show="showReject"
+                                            class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+                                            x-cloak>
+                                            <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
+                                                <h2 class="text-lg font-bold mb-4">Confirm Rejection</h2>
+                                                <form method="POST"
+                                                    action="{{ route('analytical-result-outgoing-shipment-product-by-truck.approveReject', $doc->id) }}?status=Rejected">
+                                                    @csrf
+                                                    <label for="remark-{{ $doc->id }}" class="block mb-2">Reason for rejection:</label>
+                                                    <textarea id="remark-{{ $doc->id }}" name="remark" class="w-full border rounded p-2" rows="3" required></textarea>
+                                                    <div class="mt-6 flex justify-end gap-2">
+                                                        <button type="button" @click="showReject = false"
+                                                            class="px-4 py-2 bg-gray-300 rounded">Cancel</button>
+                                                        <button type="submit"
+                                                            class="px-4 py-2 bg-red-600 text-white rounded">Reject</button>
+                                                    </div>
+                                                </form>
                                             </div>
                                         </div>
                                     @else
@@ -176,53 +255,54 @@
                                 {{-- MANAGER --}}
                                 @elseif ($doc->corrected_status === 'Approved' && empty($doc->approved_status))
                                     @if (auth()->user()->roles === 'MGR' || auth()->user()->roles === 'MGR_QC' || auth()->user()->roles === 'ADM')
-                                        <form method="POST"
-                                              action="{{ route('analytical-result-outgoing-shipment-product-by-truck.approveReject', $doc->id) }}?status=Approved">
-                                            @csrf
-                                            <button class="px-3 py-1 bg-green-600 text-white text-xs rounded shadow">
-                                                Approve
-                                            </button>
-                                        </form>
+                                        <button @click="showApprove = true"
+                                            class="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 shadow">
+                                            Approve
+                                        </button>
+                                        <button @click="showReject = true"
+                                            class="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 shadow">
+                                            Reject
+                                        </button>
 
-                                        <div x-data="{ open: false }">
-                                            <button type="button" @click="open = true"
-                                                    class="px-3 py-1 bg-red-600 text-white text-xs rounded shadow hover:bg-red-700">
-                                                Reject
-                                            </button>
-
-                                            {{-- Modal --}}
-                                            <div x-show="open" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-                                                <div @click.outside="open = false" class="bg-white w-full max-w-md rounded-lg shadow-lg p-6">
-                                                    <h3 class="text-lg font-semibold text-gray-800 mb-4">
-                                                        Reject Report #{{ $doc->id }}
-                                                    </h3>
-
+                                        {{-- Approve Modal --}}
+                                        <div x-show="showApprove"
+                                            class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+                                            x-cloak>
+                                            <div class="bg-white p-6 rounded-lg shadow-xl">
+                                                <h2 class="text-lg font-bold mb-4">Confirm Approval</h2>
+                                                <p>Approve ticket #{{ $doc->id }}?</p>
+                                                <div class="mt-6 flex justify-end gap-2">
+                                                    <button @click="showApprove = false"
+                                                        class="px-4 py-2 bg-gray-300 rounded">Cancel</button>
                                                     <form method="POST"
-                                                          action="{{ route('analytical-result-outgoing-shipment-product-by-truck.approveReject', $doc->id) }}?status=Rejected">
+                                                        action="{{ route('analytical-result-outgoing-shipment-product-by-truck.approveReject', $doc->id) }}?status=Approved"
+                                                        class="inline">
                                                         @csrf
-
-                                                        <div class="mb-4">
-                                                            <label class="block text-sm font-medium text-gray-700 mb-1">
-                                                                Reject Reason <span class="text-red-500">*</span>
-                                                            </label>
-                                                            <textarea name="remark" required rows="3"
-                                                                      class="w-full border border-gray-300 rounded-md shadow-sm focus:ring focus:ring-red-200 text-sm"
-                                                                      placeholder="Enter rejection reason..."></textarea>
-                                                        </div>
-
-                                                        <div class="flex justify-end gap-2">
-                                                            <button type="button" @click="open = false"
-                                                                    class="px-4 py-2 text-sm bg-gray-300 rounded">
-                                                                Cancel
-                                                            </button>
-
-                                                            <button type="submit"
-                                                                    class="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700">
-                                                                Confirm Reject
-                                                            </button>
-                                                        </div>
+                                                        <button type="submit"
+                                                            class="px-4 py-2 bg-green-600 text-white rounded">Approve</button>
                                                     </form>
                                                 </div>
+                                            </div>
+                                        </div>
+
+                                        {{-- Reject Modal --}}
+                                        <div x-show="showReject"
+                                            class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+                                            x-cloak>
+                                            <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
+                                                <h2 class="text-lg font-bold mb-4">Confirm Rejection</h2>
+                                                <form method="POST"
+                                                    action="{{ route('analytical-result-outgoing-shipment-product-by-truck.approveReject', $doc->id) }}?status=Rejected">
+                                                    @csrf
+                                                    <label for="remark-{{ $doc->id }}" class="block mb-2">Reason for rejection:</label>
+                                                    <textarea id="remark-{{ $doc->id }}" name="remark" class="w-full border rounded p-2" rows="3" required></textarea>
+                                                    <div class="mt-6 flex justify-end gap-2">
+                                                        <button type="button" @click="showReject = false"
+                                                            class="px-4 py-2 bg-gray-300 rounded">Cancel</button>
+                                                        <button type="submit"
+                                                            class="px-4 py-2 bg-red-600 text-white rounded">Reject</button>
+                                                    </div>
+                                                </form>
                                             </div>
                                         </div>
                                     @else

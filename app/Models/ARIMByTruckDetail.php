@@ -49,7 +49,7 @@ class ARIMByTruckDetail extends Model
         'palka_p_iv' => 'float',
         'palka_p_dobi' => 'float',
         'palka_p_mni' => 'float',
-        "sampling_date" => "datetime",
+        // "sampling_date" => "datetime",
     ];
 
     /**
@@ -60,10 +60,10 @@ class ARIMByTruckDetail extends Model
         return $this->belongsTo(ARIMByVesselHeader::class, 'id_hdr', 'id');
     }
 
-    public function getSamplingDateAttribute($value)
-    {
-        return $value
-            ? Carbon::parse($value)->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')
-            : null;
-    }
+    // public function getSamplingDateAttribute($value)
+    // {
+    //     return $value
+    //         ? Carbon::parse($value)->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')
+    //         : null;
+    // }
 }

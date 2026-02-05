@@ -86,8 +86,37 @@ class RptQualityController extends Controller
         // $report = LSQualityReportQc::findOrFail($id);
         // return view('rpt_quality.QC.show', compact('report'));
 
+        // $report = LSQualityReportQc::join('m_product', 't_quality_report_qc.oil_type', '=', 'm_product.id')
+        //     ->select('t_quality_report_qc.*', 't_quality_report_qc.oil_type AS oil_type_id', 'm_product.raw_material AS oil_type')
+        //     ->where('t_quality_report_qc.id', $id)
+        //     ->firstOrFail();
+
+        // return view('rpt_quality.QC.show', compact('report'));
+
         $report = LSQualityReportQc::join('m_product', 't_quality_report_qc.oil_type', '=', 'm_product.id')
-            ->select('t_quality_report_qc.*', 't_quality_report_qc.oil_type AS oil_type_id', 'm_product.raw_material AS oil_type')
+            // Join untuk Prepared By
+            ->leftJoin('m_user as u_prep', 't_quality_report_qc.prepared_by', '=', 'u_prep.username')
+            // Join untuk Checked By
+            ->leftJoin('m_user as u_check', 't_quality_report_qc.checked_by', '=', 'u_check.username')
+            ->leftJoin('m_user as u_update', 't_quality_report_qc.updated_by', '=', 'u_update.username')
+            ->leftJoin('m_user as u_entry', 't_quality_report_qc.entry_by', '=', 'u_entry.username')
+            ->select(
+                't_quality_report_qc.*',
+                't_quality_report_qc.oil_type AS oil_type_id',
+                'm_product.raw_material AS oil_type',
+                // Ambil data user prepared
+                'u_prep.fullname as prepared_fullname',
+                'u_prep.roles as prepared_role',
+                // Ambil data user checked
+                'u_check.fullname as checked_fullname',
+                'u_check.roles as checked_role',
+
+                'u_update.fullname as updated_fullname',
+                'u_update.roles as updated_role',
+
+                'u_entry.fullname as entry_fullname',
+                'u_entry.roles as entry_role'
+            )
             ->where('t_quality_report_qc.id', $id)
             ->firstOrFail();
 
@@ -232,7 +261,6 @@ class RptQualityController extends Controller
                 ]);
 
             $message = "All reports for your assigned shifts on {$date} have been rejected.";
-
         } elseif ($role === 'MGR_PROD' || $role === 'MGR') {
             // This logic for Managers remains the same
             LSQualityReport::whereDate('posting_date', $date)
@@ -355,7 +383,6 @@ class RptQualityController extends Controller
                 ]);
 
             $message = "All reports for your assigned shifts on {$date} have been rejected.";
-
         } elseif ($role === 'MGR_QC' || $role === 'MGR') {
             // This logic for Managers remains the same
             LSQualityReportQc::whereDate('posting_date', $date)
@@ -690,7 +717,7 @@ class RptQualityController extends Controller
         // }
         return $query->select($baseSelect)
             ->orderBy('time')
-            ->collect();
+            ->get();
     }
 
     private function getMainDataQc(string $tanggal, ?string $workCenter)
@@ -709,6 +736,8 @@ class RptQualityController extends Controller
                 't_quality_report_qc.*',
                 't_quality_report_qc.oil_type AS oil_type_id',
                 'm_product.raw_material AS oil_type',
+                'm_product.finish_good AS oil_type_fg',
+                'm_product.by_product AS oil_type_bp',
                 'm_mastervalue.name as refinery_name'
             )
             ->orderByRaw("CASE WHEN time BETWEEN '08:00:00' AND '15:59:59' THEN 1 WHEN time BETWEEN '16:00:00' AND '23:59:59' THEN 2 WHEN time BETWEEN '00:00:00' AND '07:59:59' THEN 3 ELSE 4 END")
@@ -737,22 +766,77 @@ class RptQualityController extends Controller
         ];
     }
 
+    // private function getSignaturesQc(string $tanggal, ?string $workCenter): array
+    // {
+    //     $get = function ($start, $end) use ($tanggal, $workCenter) {
+    //         $q = LSQualityReportQc::whereDate('posting_date', $tanggal)
+    //             ->whereBetween('time', [$start, $end]);
+
+    //         if ($workCenter) {
+    //             $q->where('work_center', $workCenter);
+    //         }
+
+    //         $prepared = (clone $q)->orderByDesc('time')->first(['prepared_by', 'prepared_date']);
+    //         $ack = (clone $q)->orderByDesc('time')->first(['checked_by', 'checked_date']);
+
+    //         return [
+    //             'prepared' => $prepared ? ['name' => $prepared->prepared_by, 'date' => $prepared->prepared_date] : null,
+    //             'acknowledge' => $ack ? ['name' => $ack->checked_by, 'date' => $ack->checked_date] : null,
+    //         ];
+    //     };
+
+    //     return [
+    //         'shift1' => $get('08:00:00', '15:59:59'),
+    //         'shift2' => $get('16:00:00', '23:59:59'),
+    //         'shift3' => $get('00:00:00', '07:59:59'),
+    //     ];
+    // }
+
+
     private function getSignaturesQc(string $tanggal, ?string $workCenter): array
     {
         $get = function ($start, $end) use ($tanggal, $workCenter) {
-            $q = LSQualityReportQc::whereDate('posting_date', $tanggal)
-                ->whereBetween('time', [$start, $end]);
+            // Mulai Query dengan Join ke tabel User
+            // Kita join 2 kali: satu untuk u_prep (Prepared), satu untuk u_check (Checked)
+            $q = LSQualityReportQc::query()
+                ->leftJoin('m_user as u_prep', 't_quality_report_qc.prepared_by', '=', 'u_prep.username')
+                ->leftJoin('m_user as u_check', 't_quality_report_qc.checked_by', '=', 'u_check.username')
+                ->whereDate('t_quality_report_qc.posting_date', $tanggal)
+                ->whereBetween('t_quality_report_qc.time', [$start, $end]);
 
             if ($workCenter) {
-                $q->where('work_center', $workCenter);
+                $q->where('t_quality_report_qc.work_center', $workCenter);
             }
 
-            $prepared = (clone $q)->orderByDesc('time')->first(['prepared_by', 'prepared_date']);
-            $ack = (clone $q)->orderByDesc('time')->first(['checked_by', 'checked_date']);
+            // Pilih kolom spesifik agar tidak tertimpa
+            $selectCols = [
+                't_quality_report_qc.prepared_by',
+                't_quality_report_qc.prepared_date',
+                't_quality_report_qc.checked_by',
+                't_quality_report_qc.checked_date',
+                // Ambil data dari tabel user alias
+                'u_prep.fullname as prepared_fullname',
+                'u_prep.roles as prepared_role',
+                'u_check.fullname as checked_fullname',
+                'u_check.roles as checked_role',
+            ];
+
+            // Ambil data terakhir di shift tersebut untuk tanda tangan
+            $prepared = (clone $q)->orderByDesc('t_quality_report_qc.time')->first($selectCols);
+            $ack = (clone $q)->orderByDesc('t_quality_report_qc.time')->first($selectCols);
 
             return [
-                'prepared' => $prepared ? ['name' => $prepared->prepared_by, 'date' => $prepared->prepared_date] : null,
-                'acknowledge' => $ack ? ['name' => $ack->checked_by, 'date' => $ack->checked_date] : null,
+                'prepared' => $prepared ? [
+                    // Logic: Pakai fullname, kalau null pakai username, kalau null lagi strip
+                    'name' => $prepared->prepared_fullname ?? ($prepared->prepared_by ?? '-'),
+                    'role' => $prepared->prepared_role ?? 'Shift Leader',
+                    'date' => $prepared->prepared_date
+                ] : null,
+                'acknowledge' => $ack ? [
+                    'name' => $ack->checked_fullname ?? ($ack->checked_by ?? '-'),
+                    'role' => $ack->checked_role ?? 'SPV / Manager',
+                    'date' => $ack->checked_date
+                ] : null,
             ];
         };
 
@@ -911,7 +995,6 @@ class RptQualityController extends Controller
                         $canApproveReject = true; // All conditions met!
                     }
                 }
-
             } elseif ($userRole === "MGR_PROD" or $userRole === "MGR") {
                 if ($reports->contains(fn($r) => is_null($r->prepared_status))) {
                     $statusMessage = 'Belum dilakukan prepared oleh shift leader.';

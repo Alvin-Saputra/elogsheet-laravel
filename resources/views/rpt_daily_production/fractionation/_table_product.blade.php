@@ -55,7 +55,7 @@
                     <td class="border p-1 text-center font-bold">{{ $row->shift }}</td>
 
                     {{-- Raw Material --}}
-                    <td class="border p-1">{{ $row->oil_type_rm_no }}</td>
+                    <td class="border p-1">{{ $row->no }}</td>
                     <td class="border p-1">{{ $row->oil_type_rm_cr }}</td>
                     <td class="border p-1">{{ $row->oil_type_rm }}</td>
                     <td class="border p-1 text-center">{{ $row->oil_type_rm_from_tank }}</td>
@@ -66,7 +66,7 @@
                     <td class="border p-1 text-right font-semibold">{{ number_format($row->oil_type_rm_total) }}</td>
 
                     {{-- Finished Goods Stearin --}}
-                    <td class="border p-1">{{ $row->oil_type_fgs_no }}</td>
+                    <td class="border p-1">{{ $row->no }}</td>
                     <td class="border p-1">{{ $row->oil_type_fgs_cr }}</td>
                     <td class="border p-1">{{ $row->oil_type_fgs }}</td>
                     <td class="border p-1 text-right">{{ $row->oil_type_fgs_awal_jam }}</td>
@@ -76,7 +76,7 @@
                     <td class="border p-1 text-right">{{ $row->oil_type_fgs_total }}</td>
                     <td class="border p-1 text-center">{{ $row->oil_type_fgs_to_tank }}</td>
 
-                    <td class="border p-1 text-right">{{ number_format($row->oil_type_fgh_no) }}</td>
+                    <td class="border p-1 text-right">{{ $row->no }}</td>
                     <td class="border p-1 text-right">{{ $row->oil_type_fgh }}</td>
                     <td class="border p-1 text-right">{{ $row->oil_type_fgh_awal_jam }}</td>
                     <td class="border p-1 text-right">{{ $row->oil_type_fgh_awal_flowmeter }}</td>

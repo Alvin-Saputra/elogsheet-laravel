@@ -8,6 +8,7 @@ use App\Http\Controllers\AROIPFuelController;
 use App\Http\Controllers\AROSProductByTruckController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\COAController;
+use App\Http\Controllers\DryFraController;
 use App\Http\Controllers\MstBusinessUnitController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -118,6 +119,20 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('arosptruck/{id}', [AROSProductByTruckController::class, 'update']);
     Route::put('arosptruck/{id}/approve', [AROSProductByTruckController::class, 'updateApproval']);
 });
+
+
+Route::middleware('auth:sanctum')->group(function () {
+
+    // new single api route
+    Route::post('dryfrac', [DryFraController::class, 'create']);
+    Route::get('dryfrac', [DryFraController::class, 'get']);
+    Route::delete('dryfrac/{id}', [DryFraController::class, 'destroy']);
+    Route::put('dryfrac/approve-reject', [DryFraController::class, 'updateApprovalStatusApi']);
+    Route::put('dryfrac/approve-reject-perdate', [DryFraController::class, 'updateApprovalStatusPerDateApi']);
+    Route::put('dryfrac/{id}', [DryFraController::class, 'update']);
+
+});
+
 
 Route::middleware('auth:sanctum')->group(function () {
     // Form Transfer routes

@@ -671,4 +671,77 @@ class AROIPFuelController extends Controller
             return back()->with('error', $th->getMessage());
         }
     }
+
+    public function bulkApprove(Request $request)
+    {
+        $status = 'Approved';
+        $remark = null;
+        $username = auth()->user()?->username ?? auth()->user()?->getDisplayNameAttribute();
+        $role = auth()->user()?->roles;
+        $count = 0;
+        $tanggal = $request->input('tanggal') ?? now()->format('Y-m-d');
+
+        // Get reports based on role
+        $decision = $this->decidePrefixFromRoles($role);
+        if (!$decision) {
+            return back()->with('error', 'You do not have permission to approve');
+        }
+
+        $prefix = $decision['prefix'];
+
+        if ($prefix === 'prepared') {
+            $reports = AROIPFuelHeader::whereNull('prepared_status')
+                ->whereDate('entry_date', $tanggal)
+                ->get();
+        } else {
+            $reports = AROIPFuelHeader::where('prepared_status', 'Approved')
+                ->whereNull('approved_status')
+                ->whereDate('entry_date', $tanggal)
+                ->get();
+        }
+
+        foreach ($reports as $report) {
+            $this->processApprovalStatus($report, $status, $remark, $username, $role);
+            $count++;
+        }
+
+        return back()->with('success', "Total {$count} tiket berhasil di-approve.");
+    }
+
+    public function bulkReject(Request $request)
+    {
+        $request->validate(['remark' => 'nullable|string|max:255']);
+        $status = 'Rejected';
+        $remark = $request->remark;
+        $username = auth()->user()?->username ?? auth()->user()?->getDisplayNameAttribute();
+        $role = auth()->user()?->roles;
+        $count = 0;
+        $tanggal = $request->input('tanggal') ?? now()->format('Y-m-d');
+
+        // Get reports based on role
+        $decision = $this->decidePrefixFromRoles($role);
+        if (!$decision) {
+            return back()->with('error', 'You do not have permission to reject');
+        }
+
+        $prefix = $decision['prefix'];
+
+        if ($prefix === 'prepared') {
+            $reports = AROIPFuelHeader::whereNull('prepared_status')
+                ->whereDate('entry_date', $tanggal)
+                ->get();
+        } else {
+            $reports = AROIPFuelHeader::where('prepared_status', 'Approved')
+                ->whereNull('approved_status')
+                ->whereDate('entry_date', $tanggal)
+                ->get();
+        }
+
+        foreach ($reports as $report) {
+            $this->processApprovalStatus($report, $status, $remark, $username, $role);
+            $count++;
+        }
+
+        return back()->with('success', "Total {$count} tiket berhasil di-reject.");
+    }
 }

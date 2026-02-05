@@ -117,7 +117,7 @@
                             {{ $detail->no ?? '-' }}
                         </td>
                         <td class="px-3 py-1 border border-gray-400 text-center">
-                            {{ $detail->sampling_date?->format('Y-m-d') ?? '-' }}
+                            {{ $detail->sampling_date ? \Carbon\Carbon::parse($detail->sampling_date)->format('Y-m-d') : '-' }}
                         </td>
                         <td class="px-3 py-1 border border-gray-400 text-center">
                             {{ $detail->police_no ?? '-' }}

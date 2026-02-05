@@ -59,7 +59,7 @@
                 <td style="text-align: center; font-weight: bold;">{{ $row->shift }}</td>
 
                 {{-- Raw Material --}}
-                <td>{{ $row->oil_type_rm_no }}</td>
+                <td>{{ $row->no }}</td>
                 <td>{{ $row->oil_type_rm_cr }}</td>
                 <td>{{ $row->oil_type_rm }}</td>
                 <td style="text-align: center;">{{ $row->oil_type_rm_from_tank }}</td>
@@ -72,7 +72,7 @@
                 <td style="text-align: right; font-weight: bold;">{{ number_format($row->oil_type_rm_total, 0) }}</td>
 
                 {{-- Finished Goods Stearin (FGS) --}}
-                <td>{{ $row->oil_type_fgs_no }}</td>
+                <td>{{ $row->no }}</td>
                 <td>{{ $row->oil_type_fgs_cr }}</td>
                 <td>{{ $row->oil_type_fgs }}</td>
                 <td style="text-align: center;">
@@ -85,7 +85,7 @@
                 <td style="text-align: center;">{{ $row->oil_type_fgs_to_tank }}</td>
 
                 {{-- By Product Olein (FGH) --}}
-                <td>{{ $row->oil_type_fgh_no }}</td>
+                <td>{{ $row->no }}</td>
                 <td>{{ $row->oil_type_fgh }}</td>
                 <td style="text-align: center;">
                     {{ optional($row->oil_type_fgh_awal_jam)->format('H:i') ?? $row->oil_type_fgh_awal_jam }}</td>
