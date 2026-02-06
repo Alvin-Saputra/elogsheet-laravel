@@ -215,7 +215,7 @@
 
                             {{-- MANAGER --}}
                             @if (
-                                in_array(auth()->user()->roles, ['MGR','MGR_PROD','ADM'])
+                                in_array(auth()->user()->roles, ['MGR','MGR_QC','ADM'])
                                 && $item->prepared_status === 'Approved'
                                 && is_null($item->checked_status)
                             )

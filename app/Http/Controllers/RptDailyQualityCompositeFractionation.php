@@ -113,8 +113,21 @@ class RptDailyQualityCompositeFractionation extends Controller
             END
         ")->get();
 
-        $workCenters = LSDailyQualityCompositeFractionation::select('work_center')
-            ->distinct()->get();
+        // $workCenters = LSDailyQualityCompositeFractionation::select('work_center')
+        //     ->distinct()->get();
+        $workCenters = LSDailyQualityCompositeFractionation::distinct()
+            ->select('work_center')
+            ->whereNotNull('work_center')
+            ->get()
+            ->map(function ($wc) {
+                $kapasitas = [
+                    'FRAC-01' => '500 MT',
+                    'FRAC-02' => '400 MT',
+                ];
+
+                $wc->label = $wc->work_center . ' ' . ($kapasitas[$wc->work_center] ?? '');
+                return $wc;
+            });
 
         return view('rpt_daily_quality_composite_fractionation.index', [
             'tanggal' => $filterTanggal,
@@ -137,7 +150,7 @@ class RptDailyQualityCompositeFractionation extends Controller
                 'prepared_by' => auth()->user()->username ?? auth()->user()->name,
                 'prepared_date' => now(),
             ]);
-        } elseif (in_array($role, ['MGR', 'MGR_PROD', 'ADM'])) {
+        } elseif (in_array($role, ['MGR', 'MGR_QC', 'ADM'])) {
             $report->update([
                 'checked_status' => 'Approved',
                 'checked_by' => auth()->user()->username ?? auth()->user()->name,

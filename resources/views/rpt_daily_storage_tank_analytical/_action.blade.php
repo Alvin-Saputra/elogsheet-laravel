@@ -10,7 +10,7 @@
 
     // Tombol Mgr hanya muncul jika Lead sudah Approve DAN approved_status masih KOSONG (null)
     $canApproved =
-        in_array($role, ['MGR','MGR_PROD','ADM']) &&
+        in_array($role, ['MGR','MGR_QC','ADM']) &&
         $item->prepared_status === 'Approved' &&
         $item->approved_status === null; 
 @endphp
@@ -94,7 +94,7 @@
     <span class="text-gray-400 text-xs italic">
         @if($role == 'LEAD' || $role == 'LEAD_QC')
             {{ $item->prepared_status ?? '-' }}
-        @elseif(in_array($role, ['MGR','MGR_PROD','ADM']))
+        @elseif(in_array($role, ['MGR','MGR_QC','ADM']))
             {{ $item->approved_status ?? '-' }}
         @else
             -

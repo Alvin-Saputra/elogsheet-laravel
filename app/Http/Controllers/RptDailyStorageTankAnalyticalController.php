@@ -66,7 +66,7 @@ class RptDailyStorageTankAnalyticalController extends Controller
             ]);
         }
 
-        if (in_array($role, ['MGR', 'MGR_PROD', 'ADM'])) {
+        if (in_array($role, ['MGR', 'MGR_QC', 'ADM'])) {
             $report->update([
                 'approved_status' => 'Approved',
                 'approved_status_remarks' => null,
@@ -97,7 +97,7 @@ class RptDailyStorageTankAnalyticalController extends Controller
             ]);
         }
 
-        if (in_array($role, ['MGR', 'MGR_PROD', 'ADM'])) {
+        if (in_array($role, ['MGR', 'MGR_QC', 'ADM'])) {
             $report->update([
                 'approved_status' => 'Rejected',
                 'approved_status_remarks' => $request->remark,

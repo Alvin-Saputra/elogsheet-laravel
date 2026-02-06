@@ -351,16 +351,20 @@
                                         {{-- Approve Checked --}}
                                         <button @click="showApprove = true"
                                             class="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 shadow
-                                            {{ !is_null($isDisabled) ? 'opacity-50 cursor-not-allowed' : '' }}"
-                                            {{ !is_null($isDisabled) ? 'disabled' : '' }}>
+                                            {{-- {{ !is_null($isDisabled) ? 'opacity-50 cursor-not-allowed' : '' }}"
+                                            {{ !is_null($isDisabled) ? 'disabled' : '' }}> --}}
+                                            {{ $isDisabled ? 'opacity-50 cursor-not-allowed' : '' }}"
+                                            {{ $isDisabled ? 'disabled' : '' }}>
                                             Approve
                                         </button>
 
                                         {{-- Reject Checked --}}
                                         <button @click="showReject = true"
                                             class="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 shadow
-                                            {{ !is_null($isDisabled) ? 'opacity-50 cursor-not-allowed' : '' }}"
-                                            {{ !is_null($isDisabled) ? 'disabled' : '' }}>
+                                            {{ $isDisabled ? 'opacity-50 cursor-not-allowed' : '' }}"
+                                            {{ $isDisabled ? 'disabled' : '' }}>
+                                            {{-- {{ !is_null($isDisabled) ? 'opacity-50 cursor-not-allowed' : '' }}"
+                                            {{ !is_null($isDisabled) ? 'disabled' : '' }}> --}}
                                             Reject
                                         </button>
                                     @endif
