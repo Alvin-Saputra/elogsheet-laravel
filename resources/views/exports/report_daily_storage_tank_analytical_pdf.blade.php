@@ -3,11 +3,13 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>PT.PRISCOLIN Deodorizing & Filtration Report</title>
+    <title>Daily Storage Tank Analytical - {{ $tanggal }}</title>
     <style>
         body {
             font-size: 9px;
             font-family: sans-serif;
+            margin: 0;
+            padding: 10px;
         }
 
         table {
@@ -21,158 +23,171 @@
             border: 1px solid #444;
             padding: 3px;
             text-align: center;
+            word-wrap: break-word;
         }
 
         th {
-            background-color: #f3f3f3;
+            background: #f3f3f3;
+            font-weight: bold;
         }
 
-        .text-center {
+        /* Signature Styles */
+        .signature-container {
+            width: 100%;
+            margin-top: 30px;
+        }
+
+        .sig-box {
+            float: left;
+            width: 25%;
             text-align: center;
         }
 
-        .mt-8 {
+        .sig-spacer {
+            float: left;
+            width: 50%;
+        }
+
+        .clear {
+            clear: both;
+        }
+
+        .footer-note {
             margin-top: 40px;
-        }
-
-        .signature-table td {
-            border: none;
             text-align: center;
-            padding-top: 30px;
+            font-size: 8px;
+            font-style: italic;
+            color: #666;
         }
 
-        .header-meta {
+        .header-info {
             text-align: right;
             font-size: 10px;
-            line-height: 1.3;
-        }
-
-        .note {
-            margin-top: 20px;
-            text-align: center;
-            font-size: 9px;
-            font-style: italic;
-            color: #555;
-        }
-
-        .page-break {
-            page-break-after: always;
+            margin-bottom: 10px;
         }
     </style>
 </head>
 
 <body>
-    <div class="header-meta">
-        <div><strong>Form No.</strong> : {{ $formInfoFirst->form_no ?? 'F/RFA-010' }}</div>
-        <div><strong>Date Issued</strong> :
-            {{ $formInfoFirst ? \Carbon\Carbon::parse($formInfoFirst->date_issued)->format('d-m-Y') : '210101' }}</div>
-        <div><strong>Revision</strong> : {{ $formInfoLast->revision_no ?? '01' }}</div>
-        <div><strong>Rev. Date</strong> :
-            {{ $formInfoLast ? \Carbon\Carbon::parse($formInfoLast->revision_date)->format('d-m-Y') : '210901' }}</div>
+
+    <div class="header-info">
+        <div><strong>Form No.</strong> : F/QCO-001</div>
+        <div><strong>Revision</strong> : 00</div>
     </div>
 
-    <div class="text-center" style="margin-bottom:15px;">
-        <h2 style="text-transform:uppercase; font-weight:bold;">PT.PRISCOLIN</h2>
-        <h3 style="text-transform:uppercase; font-weight:bold;">LOGSHEET DAILY STORAGE TANK ANALYTICAL</h3>
-        <p>Date: {{ \Carbon\Carbon::parse($tanggal)->format('d-m-Y') }}</p>
-    </div>
+    <h3 style="text-align:center; margin-bottom: 5px;">PT. PRISCOLIN</h3>
+    <h4 style="text-align:center; margin-top: 0;">LOGSHEET DAILY STORAGE TANK ANALYTICAL</h4>
+    <p style="text-align:center;">
+        Date: {{ \Carbon\Carbon::parse($tanggal)->format('d-m-Y') }}
+    </p>
 
-
-    {{-- This block runs if a specific machine is selected --}}
     <table>
         <thead>
             <tr>
-                <th class="border p-1">Tank No.</th>
-                <th class="border p-1">Oil Type</th>
-                <th class="border p-1">Analysis Date</th>
-                <th class="border p-1">Kapasitas Tanki</th>
-                <th class="border p-1">Quantity</th>
-                <th class="border p-1">Empty Space</th>
-                <th class="border p-1">Suhu</th>
-                <th class="border p-1">FFA</th>
-                <th class="border p-1">Moisture</th>
-                <th class="border p-1">Lovibond Color R</th>
-                <th class="border p-1">Lovibond Color Y</th>
-                <th class="border p-1">IV</th>
-                <th class="border p-1">PV</th>
-                <th class="border p-1">Slip Melting Point</th>
-                <th class="border p-1">Cloud Point</th>
-                <th class="border p-1">AnV</th>
-                <th class="border p-1">B-Carotene</th>
-                <th class="border p-1">P</th>
-                <th class="border p-1">DOBI</th>
-                <th class="border p-1">Totox</th>
-                <th class="border p-1">Odor</th>
-                <th class="border p-1">Remark</th>
+                <th>Tank No.</th>
+                <th>Oil Type</th>
+                <th>Analysis Date</th>
+                <th>Kapasitas tanki</th>
+                <th>Quantity</th>
+                <th>Empty Space</th>
+                <th>Suhu</th>
+                <th>FFA</th>
+                <th>Moisture</th>
+                <th>Color R</th>
+                <th>Color Y</th>
+                <th>IV</th>
+                <th>PV</th>
+                <th>SMP</th>
+                <th>Cloud</th>
+                <th>AnV</th>
+                <th>B-Carotene</th>
+                <th>P</th>
+                <th>DOBI</th>
+                <th>Totox</th>
+                <th>Odor</th>
+                <th>Remark</th>
             </tr>
         </thead>
         <tbody>
-            @foreach ($data as $row)
-                <tr>
-                    <td class="border p-1">{{ $row->tank_no }}</td>
-                    <td class="border p-1">{{ $row->oil_type }}</td>
-                    <td class="border p-1">{{ $row->transaction_date }}</td>
-                    <td class="border p-1">{{ $row->kapasitas_tanki }}</td>
-                    <td class="border p-1">{{ $row->quantity }}</td>
-                    <td class="border p-1">{{ $row->empty_space }}</td>
-                    <td class="border p-1">{{ $row->suhu }}</td>
-                    <td class="border p-1">{{ $row->qp_ffa }}</td>
-                    <td class="border p-1">{{ $row->qp_moisture }}</td>
-                    <td class="border p-1">{{ $row->qp_lovibond_color_r }}</td>
-                    <td class="border p-1">{{ $row->qp_lovibond_color_y }}</td>
-                    <td class="border p-1">{{ $row->qp_iv }}</td>
-                    <td class="border p-1">{{ $row->qp_pv }}</td>
-                    <td class="border p-1">{{ $row->qp_slip_melting_point }}</td>
-                    <td class="border p-1">{{ $row->qp_cloud_point }}</td>
-                    <td class="border p-1">{{ $row->qp_anv }}</td>
-                    <td class="border p-1">{{ $row->qp_beta_carotene }}</td>
-                    <td class="border p-1">{{ $row->qp_p }}</td>
-                    <td class="border p-1">{{ $row->qp_dobi }}</td>
-                    <td class="border p-1">{{ $row->qp_totox }}</td>
-                    <td class="border p-1">{{ $row->qp_odor }}</td>
-                    <td class="border p-1">{{ $row->qp_remark }}</td>
+            @forelse ($rows as $row)
+                @php
+                    $isHighlighted = false;
+
+                    if ($row->analysis_date && $tanggal) {
+                        $trxDate = \Carbon\Carbon::parse($row->analysis_date)->toDateString();
+                        $filterDate = \Carbon\Carbon::parse($tanggal)->toDateString();
+
+                        $isHighlighted = $trxDate === $filterDate;
+                    }
+                @endphp
+                <tr style=" {{ $isHighlighted ? 'background: yellow' : '' }} ">
+                    <td>{{ $row->tank_no }}</td>
+                    <td>{{ $row->oil_type ?? '-' }}</td>
+                    <td>
+                        {{ $row->analysis_date ? \Carbon\Carbon::parse($row->analysis_date)->format('d-m-Y H:i') : '-' }}
+                    </td>
+                    <td>{{ number_format($row->capacity ?? 0) }}</td>
+                    <td>{{ $row->quantity ?? '-' }}</td>
+                    <td>{{ $row->empty_space ?? '-' }}</td>
+                    <td>{{ $row->suhu ?? '-' }}</td>
+                    <td>{{ $row->ffa ?? '-' }}</td>
+                    <td>{{ $row->moisture ?? '-' }}</td>
+                    <td>{{ $row->r ?? '-' }}</td>
+                    <td>{{ $row->y ?? '-' }}</td>
+                    <td>{{ $row->iv ?? '-' }}</td>
+                    <td>{{ $row->pv ?? '-' }}</td>
+                    <td>{{ $row->smp ?? '-' }}</td>
+                    <td>{{ $row->cloud ?? '-' }}</td>
+                    <td>{{ $row->anv ?? '-' }}</td>
+                    <td>{{ $row->bcar ?? '-' }}</td>
+                    <td>{{ $row->p ?? '-' }}</td>
+                    <td>{{ $row->dobi ?? '-' }}</td>
+                    <td>{{ $row->totox ?? '-' }}</td>
+                    <td>{{ $row->odor ?? '-' }}</td>
+                    <td>{{ $row->remark ?? '-' }}</td>
                 </tr>
-            @endforeach
+            @empty
+                <tr>
+                    <td colspan="22" style="text-align:center;">No data available</td>
+                </tr>
+            @endforelse
         </tbody>
     </table>
 
+    <div class="signature-container">
+        <div class="sig-box">
+            <strong>Prepared By,</strong>
+            <br><br><br><br>
+            <div style="text-decoration: underline;">
+                {{ optional($sign->preparedByUser)->fullname ?? ($sign->prepared_by ?? '________________') }}
+            </div>
+            <div style="font-size: 8px;">
+                {{ optional($sign->preparedByUser)->roles ?? 'QC Operator' }}
+            </div>
+            <small>{{ $sign->prepared_date ? \Carbon\Carbon::parse($sign->prepared_date)->format('d M Y H:i') : '' }}</small>
+        </div>
 
-    {{-- Signature section remains the same --}}
-    <div class="mt-8">
-        <table class="signature-table" width="100%">
-            <tr>
-                <td>
-                    Prepared by<br>Leader Shift<br><br><br>
-                    @php $first = $data->first(); @endphp
-                    @if ($first && $first->prepared_by)
-                        <strong>({{ $first->prepared_by }})</strong><br>
-                        {{ \Carbon\Carbon::parse($first->prepared_date)->format('d-m-Y H:i') }}
-                    @else
-                        (_________________)
-                        <br>
-                        -
-                    @endif
-                </td>
-                <td>
-                    Acknowledge by,<br>SPV<br><br><br>
-                    @php $first = $data->first(); @endphp
-                    @if ($first && $first->approved_by)
-                        <strong>({{ $first->approved_by }})</strong><br>
-                        {{ \Carbon\Carbon::parse($first->approved_date)->format('d-m-Y H:i') }}
-                    @else
-                        (_________________)
-                        <br>
-                        -
-                    @endif
-                </td>
-            </tr>
-        </table>
+        <div class="sig-spacer"></div>
+
+        <div class="sig-box">
+            <strong>Approved By,</strong>
+            <br><br><br><br>
+            <div style="text-decoration: underline;">
+                {{ optional($sign->approvedByUser)->fullname ?? ($sign->approved_by ?? '________________') }}
+            </div>
+            <div style="font-size: 8px;">
+                {{ optional($sign->approvedByUser)->roles ?? 'QC Supervisor' }}
+            </div>
+            <small>{{ $sign->approved_date ? \Carbon\Carbon::parse($sign->approved_date)->format('d M Y H:i') : '' }}</small>
+        </div>
+
+        <div class="clear"></div>
     </div>
 
-    <div class="note">
-        Dokumen ini telah disetujui secara elektronik melalui sistem [E-Form],<br>
-        sehingga tidak memerlukan tanda tangan asli.
+    <div class="footer-note">
+        Dokumen ini telah disetujui secara elektronik melalui sistem E-Logsheet.
     </div>
+
 </body>
 
 </html>

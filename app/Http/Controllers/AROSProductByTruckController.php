@@ -25,7 +25,7 @@ class AROSProductByTruckController extends Controller
 
     private function findHeaderWithId($id)
     {
-        return AROSProductByTruckHeader::with(['details'])->findOrFail($id);
+        return AROSProductByTruckHeader::with(['details', 'correctedByUser', 'approvedByUser'])->findOrFail($id);
     }
 
     /**
@@ -245,7 +245,6 @@ class AROSProductByTruckController extends Controller
                 'message' => 'AROS Product By Truck updated successfully',
                 'data' => $header->fresh('details'),
             ], 200);
-
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -468,12 +467,71 @@ class AROSProductByTruckController extends Controller
             'show' => view('rpt_analytical_result_of_out_going_shipment_product_by_truck.show', ['header' => $data]),
             'preview' => view('rpt_analytical_result_of_out_going_shipment_product_by_truck.preview_layout', ['header' => $data]),
             'export' => (function () use ($data) {
-                    $pdf = Pdf::loadView('exports.report_rpt_analytical_result_of_out_going_shipment_product_by_truck_pdf', ['header' => $data]);
-                    $pdf->setPaper('a4', 'landscape');
-                    $fileName = 'aros-product-by-truck-' . $data->id . '.pdf';
-                    return $pdf->stream($fileName);
-                })(),
+                $pdf = Pdf::loadView('exports.report_rpt_analytical_result_of_out_going_shipment_product_by_truck_pdf', ['header' => $data]);
+                $pdf->setPaper('a4', 'landscape');
+                $fileName = 'aros-product-by-truck-' . $data->id . '.pdf';
+                return $pdf->stream($fileName);
+            })(),
             default => abort(400, 'Invalid intention'),
         };
+    }
+
+    public function bulkApprove(Request $request)
+    {
+        $status = 'Approved';
+        $remark = null;
+        $username = auth()->user()?->username ?? auth()->user()?->getDisplayNameAttribute();
+        $role = auth()->user()?->roles;
+        $count = 0;
+        $tanggal = $request->input('tanggal') ?? now()->format('Y-m-d');
+
+        // Get reports based on role
+        if (in_array($role, ['LEAD', 'LEAD_QC'])) {
+            $reports = AROSProductByTruckHeader::whereNull('corrected_status')
+                ->whereDate('loading_date', $tanggal)
+                ->get();
+        } else {
+            $reports = AROSProductByTruckHeader::where('corrected_status', 'Approved')
+                ->whereNull('approved_status')
+                ->whereDate('loading_date', $tanggal)
+                ->get();
+        }
+
+        foreach ($reports as $report) {
+            $this->processApprovalStatus($report, $status, $remark, $username, $role);
+            $count++;
+        }
+
+        return back()->with('success', "Total {$count} tiket berhasil di-approve.");
+    }
+
+    public function bulkReject(Request $request)
+    {
+        $request->validate(['remark' => 'nullable|string|max:255']);
+        $status = 'Rejected';
+        $remark = $request->remark;
+        $username = auth()->user()?->username ?? auth()->user()?->getDisplayNameAttribute();
+        $role = auth()->user()?->roles;
+        $count = 0;
+        $tanggal = $request->input('tanggal') ?? now()->format('Y-m-d');
+
+        // Get reports based on role
+        if (in_array($role, ['LEAD', 'LEAD_QC'])) {
+            $reports = AROSProductByTruckHeader::whereNull('corrected_status')
+                ->whereDate('loading_date', $tanggal)
+                ->get();
+        } else {
+            $reports = AROSProductByTruckHeader::where('corrected_status', 'Approved')
+                ->whereNull('approved_status')
+                ->whereDate('loading_date', $tanggal)
+                ->get();
+        }
+
+        foreach ($reports as $report) {
+            $this->processApprovalStatus($report, $status, $remark, $username, $role);
+            $count++;
+        }
+
+        return back()->with('success', "Total {$count} tiket berhasil di-reject.");
     }
 }

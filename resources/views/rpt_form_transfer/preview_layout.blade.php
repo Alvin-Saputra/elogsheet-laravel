@@ -1,0 +1,96 @@
+@extends('layouts.app')
+
+@section('page_title', 'Form Transfer - Layout Preview')
+
+@section('content')
+    <div class="bg-white p-6 rounded shadow-md text-sm relative max-w-6xl mx-auto">
+        <table class="w-full mb-4">
+            <tbody>
+                <tr class="align-top">
+                    <td class="w-1/5 text-center">
+                        <img src="{{ asset('images/KPN Corp.jpg') }}" alt="Logo" class="h-12 mx-auto mb-1">
+                        <span class="font-bold">Bekasi</span>
+                    </td>
+                    <td class="w-3/5 text-center pt-2">
+                        <h3 class="text-xl font-bold uppercase">Form Transfer</h3>
+                        <div class="mt-1">PT. PRISCOLIN</div>
+                    </td>
+                    <td class="w-1/5">
+                        <div class="text-xs leading-tight text-left border border-gray-400 p-2 rounded-md">
+                            <div><strong>Form No.</strong> : {{ $transfer->form_no ?? 'F/QCO-018' }}</div>
+                            <div><strong>Date Issued</strong> :
+                                {{ $transfer->date_issued ? \Carbon\Carbon::parse($transfer->date_issued)->format('ymd') : '' }}
+                            </div>
+                            <div><strong>Revision</strong> : {{ $transfer->revision_no ?? '00' }}</div>
+                            <div><strong>Rev. Date</strong> :
+                                {{ $transfer->revision_date ? \Carbon\Carbon::parse($transfer->revision_date)->format('ymd') : '' }}
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="border border-gray-400 p-2 rounded-md mb-4">
+            <table class="w-full">
+                <tbody>
+                    <tr class="align-top">
+                        <td class="w-1/2 pr-2">
+                            <div class="flex mb-1">
+                                <strong class="w-32">From Dept</strong>:
+                                {{ $transfer->from_dept ?? '-' }}
+                            </div>
+                            <div class="flex mb-1">
+                                <strong class="w-32">To Dept</strong>:
+                                {{ $transfer->to_dept ?? '-' }}
+                            </div>
+                        </td>
+                        <td class="w-1/2">
+                            <div class="flex mb-1">
+                                <strong class="w-32">Transaction Date</strong>:
+                                {{ $transfer->transaction_date ? \Carbon\Carbon::parse($transfer->transaction_date)->format('d-m-Y') : '-' }}
+                            </div>
+                            <div class="flex mb-1">
+                                <strong class="w-32">Company</strong>: {{ $transfer->company ?? '-' }}
+                            </div>
+                            <div class="flex mb-1">
+                                <strong class="w-32">Plant</strong>: {{ $transfer->plant ?? '-' }}
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="overflow-x-auto">
+            @include('rpt_form_transfer._table', ['details' => $transfer->details])
+        </div>
+
+        <div class="grid grid-cols-4 gap-6 mt-10 text-xs text-center">
+            <div>
+                <strong>PRO / CPC / OPS (Tank Farm / Pump House) Dept.</strong><br><br>
+                {{ $transfer->prepared_by ?? '________________' }}<br>
+                <small>{{ $transfer->prepared_date ? \Carbon\Carbon::parse($transfer->prepared_date)->format('d M Y H:i') : '' }}</small>
+            </div>
+            <div>
+                <strong>Quality Control Dept.</strong><br><br>
+                {{ $transfer->checked_by ?? '________________' }}<br>
+                <small>{{ $transfer->checked_date ? \Carbon\Carbon::parse($transfer->checked_date)->format('d M Y H:i') : '' }}</small>
+            </div>
+            <div>
+                <strong>OPS (Tank Farm / Pump House)</strong><br><br>
+                {{ $transfer->approved_by ?? '________________' }}<br>
+                <small>{{ $transfer->approved_date ? \Carbon\Carbon::parse($transfer->approved_date)->format('d M Y H:i') : '' }}</small>
+            </div>
+            <div>
+                <strong>PPIC Dept.</strong><br><br>
+                {{ $transfer->acknowledged_by ?? '________________' }}<br>
+                <small>{{ $transfer->acknowledged_date ? \Carbon\Carbon::parse($transfer->acknowledged_date)->format('d M Y H:i') : '' }}</small>
+            </div>
+        </div>
+
+        <div class="mt-6 text-center text-xs text-gray-600 italic">
+            Dokumen ini telah disetujui secara elektronik melalui sistem [E-Logsheet], sehingga tidak memerlukan tanda tangan asli.
+        </div>
+    </div>
+@endsection

@@ -13,7 +13,14 @@ class AROIPChemicalController extends Controller
 {
     private function findHeaderWithId($id)
     {
-        return AROIPChemicalHeader::with(['details', 'coa.details'])->findOrFail($id);
+        return AROIPChemicalHeader::with([
+            'details',
+            'coa.details',
+            'coa.issuedByUser',
+            'preparedByUser', // Load relasi yang baru dibuat
+            'approvedByUser'  // Load relasi yang baru dibuat
+
+        ])->findOrFail($id);
     }
     /**
      * Normalize roles value to an array and decide which prefix to use.
@@ -136,13 +143,13 @@ class AROIPChemicalController extends Controller
             'show' => view('rpt_analytical_result_of_incoming_plant_chemical.show', ['header' => $data]),
             'preview' => view('rpt_analytical_result_of_incoming_plant_chemical.preview_layout', ['header' => $data]),
             'export' => (function () use ($data) {
-                    $pdf = Pdf::loadView('exports.report_rpt_analytical_result_of_incoming_plant_chemical_pdf', [
+                $pdf = Pdf::loadView('exports.report_rpt_analytical_result_of_incoming_plant_chemical_pdf', [
                     'header' => $data,
-                    ]);
-                    $pdf->setPaper('a4', 'landscape');
-                    $fileName = 'aroip-chemical-' . $data->id . '.pdf';
-                    return $pdf->stream($fileName);
-                })(),
+                ]);
+                $pdf->setPaper('a4', 'landscape');
+                $fileName = 'aroip-chemical-' . $data->id . '.pdf';
+                return $pdf->stream($fileName);
+            })(),
             default => abort(400, 'Invalid intention'),
         };
     }
@@ -183,5 +190,81 @@ class AROIPChemicalController extends Controller
             DB::rollBack();
             return back()->with('error', $th->getMessage());
         }
+    }
+
+    public function bulkApprove(Request $request)
+    {
+        $status = 'Approved';
+        $remark = null;
+        $username = auth()->user()?->username ?? auth()->user()?->getDisplayNameAttribute();
+        $role = auth()->user()?->roles;
+        $count = 0;
+        $tanggal = $request->input('tanggal') ?? now()->format('Y-m-d');
+
+        // Get reports based on role
+        $decision = $this->decidePrefixFromRoles($role);
+        if (!$decision) {
+            return back()->with('error', 'You do not have permission to approve');
+        }
+
+        $prefix = $decision['prefix'];
+        $statusColumn = $prefix . '_status';
+        $dateColumn = $prefix . '_date';
+        $byColumn = $prefix . '_by';
+
+        if ($prefix === 'prepared') {
+            $reports = AROIPChemicalHeader::whereNull('prepared_status')
+                ->whereDate('entry_date', $tanggal)
+                ->get();
+        } else {
+            $reports = AROIPChemicalHeader::where('prepared_status', 'Approved')
+                ->whereNull('approved_status')
+                ->whereDate('entry_date', $tanggal)
+                ->get();
+        }
+
+        foreach ($reports as $report) {
+            $this->processApprovalStatus($report, $status, $remark, $username, $role);
+            $count++;
+        }
+
+        return back()->with('success', "Total {$count} tiket berhasil di-approve.");
+    }
+
+    public function bulkReject(Request $request)
+    {
+        $request->validate(['remark' => 'nullable|string|max:255']);
+        $status = 'Rejected';
+        $remark = $request->remark;
+        $username = auth()->user()?->username ?? auth()->user()?->getDisplayNameAttribute();
+        $role = auth()->user()?->roles;
+        $count = 0;
+        $tanggal = $request->input('tanggal') ?? now()->format('Y-m-d');
+
+        // Get reports based on role
+        $decision = $this->decidePrefixFromRoles($role);
+        if (!$decision) {
+            return back()->with('error', 'You do not have permission to reject');
+        }
+
+        $prefix = $decision['prefix'];
+
+        if ($prefix === 'prepared') {
+            $reports = AROIPChemicalHeader::whereNull('prepared_status')
+                ->whereDate('entry_date', $tanggal)
+                ->get();
+        } else {
+            $reports = AROIPChemicalHeader::where('prepared_status', 'Approved')
+                ->whereNull('approved_status')
+                ->whereDate('entry_date', $tanggal)
+                ->get();
+        }
+
+        foreach ($reports as $report) {
+            $this->processApprovalStatus($report, $status, $remark, $username, $role);
+            $count++;
+        }
+
+        return back()->with('success', "Total {$count} tiket berhasil di-reject.");
     }
 }

@@ -152,7 +152,8 @@
             <tr>
                 <td>
                     <span class="info-label">Arrival Date:</span>
-                    <span class="info-value">{{ $header->arrival->format('Y-m-d H:i') }}</span>
+                    <span
+                        class="info-value">{{ $header->arrival ? \Carbon\Carbon::parse($header->arrival)->format('Y-m-d H:i') : 'N/A' }}</span>
                 </td>
 
                 <td>
@@ -301,10 +302,10 @@
             <tr>
                 <td>
                     <div class="approval-role">Done by</div>
-                    <div>(Operator)</div>
+                    <div>{{  optional($header->entriedByUser)->roles }}</div>
 
                     <div class="approval-sign">
-                        ( {{ $header->entry_by ?? '_______________________' }} )
+                        ( {{ optional($header->entriedByUser)->fullname??$header->entry_by ?? '_______________________' }} )
                     </div>
 
                     <div class="approval-date">
@@ -315,10 +316,12 @@
 
                 <td>
                     <div class="approval-role">Prepared by</div>
-                    <div>(Shift Leader)</div>
+                    <div>{{ optional($header->preparedByUser)->roles }}</div>
 
                     <div class="approval-sign">
-                        ( {{ $header->prepared_by ?? '_______________________' }} )
+                        (
+                        {{ optional($header->preparedByUser)->fullname ?? ($header->prepared_by ?? '_______________________') }}
+                        )
                     </div>
 
                     <div class="approval-date">
@@ -329,10 +332,12 @@
 
                 <td>
                     <div class="approval-role">Approved by</div>
-                    <div>(Section Head)</div>
+                    <div>{{ optional($header->approvedByUser)->roles }}</div>
 
                     <div class="approval-sign">
-                        ( {{ $header->approved_by ?? '_______________________' }} )
+                        (
+                        {{ optional($header->approvedByUser)->fullname ?? ($header->approved_by ?? '_______________________') }}
+                        )
                     </div>
 
                     <div class="approval-date">

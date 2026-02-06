@@ -55,4 +55,16 @@ class AROSProductByTruckHeader extends Model
             'id'
         );
     }
+
+
+      public function correctedByUser()
+    {
+        return $this->belongsTo(MUser::class, 'corrected_by', 'username');
+    }
+
+    public function approvedByUser()
+    {
+        return $this->belongsTo(MUser::class, 'approved_by', 'username');
+    }
+
 }

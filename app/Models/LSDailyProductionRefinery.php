@@ -127,4 +127,9 @@ class LSDailyProductionRefinery extends Model
         'revision_date' => 'datetime',
     ];
 
+    public function qualityReports()
+    {
+        // Parameter: (Model Child, Foreign Key di tabel child, Local Key di tabel ini)
+        return $this->hasMany(LSQualityReportQc::class, 'daily_production_refinery_id', 'id');
+    }
 }

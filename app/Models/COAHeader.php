@@ -60,4 +60,9 @@ class COAHeader extends Model
             }
         });
     }
+
+        public function issuedByUser()
+    {
+        return $this->belongsTo(MUser::class, 'issue_by', 'username');
+    }
 }

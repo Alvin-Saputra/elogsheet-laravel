@@ -15,11 +15,11 @@
 
         <x-section title="Informasi Umum">
             <x-info label="Tanggal" :value="optional($data->transaction_date)->format('d M Y')" />
-            <x-info label="Company" :value="$data->company"/>
+            <x-info label="Company" :value="$data->company" />
         </x-section>
 
         <x-section title="Daily Storage Tank Analytical">
-            <x-info label="Tank No" :value="$data->tank_no"/>
+            <x-info label="Tank No" :value="$data->tank_no" />
             <x-info label="Oil Type" :value="$data->oil_type" />
             <x-info label="Kapasitas Tanki" :value="$data->kapasitas_tanki" />
             <x-info label="Quantity" :value="$data->quantity" />
@@ -27,21 +27,21 @@
             <x-info label="Suhu" :value="$data->suhu" />
         </x-section>
 
-         <x-section title="Quality Parameter">
-            <x-info label="FFA" :value="$data->qp_ffa"/>
+        <x-section title="Quality Parameter">
+            <x-info label="FFA" :value="$data->qp_ffa" />
             <x-info label="Moisture" :value="$data->qp_moisture" />
-            <x-info label="LoviBondColorR" :value="$data->qp_lovibond_color_r"/>
-            <x-info label="LoviBondColorY" :value="$data->qp_lovibond_color_y"/>
+            <x-info label="LoviBondColorR" :value="$data->qp_lovibond_color_r" />
+            <x-info label="LoviBondColorY" :value="$data->qp_lovibond_color_y" />
             <x-info label="IV" :value="$data->qp_iv" />
             <x-info label="PV" :value="$data->qp_pv" />
-            <x-info label="Slip Melting Point" :value="$data->qp_slip_melting_point"/>
-            <x-info label="Cloud Point" :value="$data->qp_cloud_point"/>
-            <x-info label="AnV" :value="$data->qp_anv"/>
-            <x-info label="B-Carotene" :value="$data->qp_anv"/>
-            <x-info label="P" :value="$data->qp_anv"/>
-            <x-info label="Dobi" :value="$data->qp_dobi"/>
-            <x-info label="Totox" :value="$data->qp_totox"/>
-            <x-info label="Odor" :value="$data->qp_odor"/>
+            <x-info label="Slip Melting Point" :value="$data->qp_slip_melting_point" />
+            <x-info label="Cloud Point" :value="$data->qp_cloud_point" />
+            <x-info label="AnV" :value="$data->qp_anv" />
+            <x-info label="B-Carotene" :value="$data->qp_anv" />
+            <x-info label="P" :value="$data->qp_anv" />
+            <x-info label="Dobi" :value="$data->qp_dobi" />
+            <x-info label="Totox" :value="$data->qp_totox" />
+            <x-info label="Odor" :value="$data->qp_odor" />
 
         </x-section>
 
@@ -49,20 +49,25 @@
             <x-info label="Remarks" :value="$data->remarks" />
         </x-section>
 
-        
-          <x-section title="Validasi & Approval">
-            <x-info label="Prepared By" :value="$data->prepared_by" />
-            <x-info label="Prepared Date" :value="optional($data->prepared_date)->format('d M Y H:i')" />
+
+        <x-section title="Validasi & Approval">
+            <x-info label="Entry By" :value="optional($data->entriedByUser)->fullname ?? $data->prepared_by" />
+            <x-info label="Entry By Roles" :value="optional($data->entriedByUser)->roles" />
+            <x-info label="Entry Date" :value="$data->entry_date ? \Carbon\Carbon::parse($data->entry_date)->format('d M Y H:i') : ''" />
+            <x-info label="Prepared By" :value="optional($data->preparedByUser)->fullname ?? $data->prepared_by" />
+            <x-info label="Prepared By Roles" :value="optional($data->preparedByUser)->roles" />
+            <x-info label="Prepared Date" :value="$data->prepared_date ? \Carbon\Carbon::parse($data->prepared_date)->format('d M Y H:i') : ''" />
             <x-info label="Prepared Status" :value="$data->prepared_status" />
             <x-info label="Prepared Status Remarks" :value="$data->prepared_status_remarks" />
-            <x-info label="approved By" :value="$data->approved_by" />
-            <x-info label="approved Date" :value="optional($data->approved_date)->format('d M Y H:i')" />
-            <x-info label="approved Status" :value="$data->approved_status" />
-            <x-info label="approved Status Remarks" :value="$data->approved_status_remarks" />
-            <x-info label="Updated Date" :value="optional($data->updated_date)->format('d M Y H:i')" />
+            <x-info label="Approved By" :value="optional($data->approvedByUser)->fullname ?? $data->approved_by" />
+            <x-info label="Approved By Roles" :value="optional($data->approvedByUser)->roles" />
+            <x-info label="Approved Date" :value="$data->approved_date ? \Carbon\Carbon::parse($data->approved_date)->format('d M Y H:i') : ''" />
+            <x-info label="Approved Status" :value="$data->approved_status" />
+            <x-info label="Approved Status Remarks" :value="$data->approved_status_remarks" />
+            <x-info label="Updated Date" :value="$data->updated_date ? \Carbon\Carbon::parse($data->updated_date)->format('d M Y H:i') : ''" />
             <x-info label="Updated Status" :value="$data->updated_status" />
         </x-section>
-        
+
 
         <div class="mt-6 text-right">
             <a href="{{ url()->previous() }}"

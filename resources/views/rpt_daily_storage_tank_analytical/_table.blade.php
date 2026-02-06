@@ -31,7 +31,13 @@
                 <tr>
                     <td class="border p-1">{{ $row->tank_no}}</td>
                     <td class="border p-1">{{ $row->oil_type}}</td>
-                    <td class="border p-1">{{ $row->transaction_date}}</td>
+                    <td>
+                        @if($row->status === 'USED TODAY')
+                            {{ optional($row->today_date)->format('d-m-Y H:i') }}
+                        @else
+                            {{ optional($row->last_used_date)->format('d-m-Y H:i') }}
+                        @endif
+                    </td>
                     <td class="border p-1">{{ $row->kapasitas_tanki }}</td>
                     <td class="border p-1">{{ $row->quantity}}</td>
                     <td class="border p-1">{{ $row->empty_space}}</td>
