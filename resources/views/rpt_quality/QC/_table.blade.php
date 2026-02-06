@@ -1,7 +1,7 @@
 {{-- Tabel --}}
-{{-- @php
+@php
     $isRef01 = $workCenter === 'REF-01';
-@endphp --}}
+@endphp
 
 <div class="overflow-x-auto">
     <table class="min-w-full border border-gray-400 text-center text-xs">
@@ -16,11 +16,11 @@
 
                 <th colspan="10" class="border px-2 py-1 bg-green-100">Raw Material</th>
                 <th colspan="4" class="border px-2 py-1 bg-teal-100">Bleaching Oil</th>
-                {{-- @if ($isRef01) --}}
-                {{-- <th colspan="9" class="border px-2 py-1 bg-purple-100">RBDPO</th> --}}
-                {{-- @else --}}
+                @if ($isRef01)
+                <th colspan="9" class="border px-2 py-1 bg-purple-100">Finish Good</th>
+                @else
                 <th colspan="10" class="border px-2 py-1 bg-purple-100">Finish Good</th>
-                {{-- @endif --}}
+                @endif
                 <th colspan="3" class="border px-2 py-1 bg-yellow-100">By Product</th>
                 <th colspan="2" class="border px-2 py-1 bg-orange-100">Spent Earth</th>
                 <th rowspan="2" class="border px-2 py-1">Remarks</th>
@@ -46,12 +46,10 @@
 
                 {{-- RBDPO --}}
                 <th class="border px-1 py-1">FFA</th>
-                <th class="border px-1 py-1">Moist</th>
-                {{-- @if ($isRef01) --}}
-                {{-- <th class="border px-1 py-1 bg-gray-50 text-gray-400"></th> --}}
-                {{-- @else --}}
+                <th class="border px-1 py-1">{{ $isRef01 ? 'M&I' : 'Moist' }}</th>
+                @if ($isRef01 == false)
                 <th class="border px-1 py-1">IMP</th>
-                {{-- @endif --}}
+                @endif
                 <th class="border px-1 py-1">IV</th>
                 <th class="border px-1 py-1">PV</th>
                 <th class="border px-1 py-1">R</th>
@@ -112,8 +110,9 @@
                     {{-- @if ($isRef01) --}}
                     {{-- <td class="border px-1 py-1 bg-gray-50 text-gray-400"></td> --}}
                     {{-- @else --}}
+                       @if (!$isRef01)
                     <td class="border px-1 py-1">{{ $row->fg_impurities }}</td>
-                    {{-- @endif --}}
+                    @endif
                     <td class="border px-1 py-1">{{ $row->fg_iv }}</td>
                     <td class="border px-1 py-1">{{ $row->fg_pv }}</td>
                     <td class="border px-1 py-1">{{ $row->fg_color_r }}</td>

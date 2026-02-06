@@ -75,16 +75,21 @@
         </x-section>
 
 
-        <x-section title="Validasi & Approval">
-            <x-info label="Prepared By" :value="$data->prepared_by" />
-            <x-info label="Prepared Date" :value="optional($data->prepared_date)->format('d M Y H:i')" />
+         <x-section title="Validasi & Approval">
+            <x-info label="Entry By" :value="optional($data->entriedByUser)->fullname ?? $data->prepared_by" />
+            <x-info label="Entry By Roles" :value="optional($data->entriedByUser)->roles" />
+            <x-info label="Entry Date" :value="$data->entry_date ? \Carbon\Carbon::parse($data->entry_date)->format('d M Y H:i') : ''" />
+            <x-info label="Prepared By" :value="optional($data->preparedByUser)->fullname ?? $data->prepared_by" />
+            <x-info label="Prepared By Roles" :value="optional($data->preparedByUser)->roles" />
+            <x-info label="Prepared Date" :value="$data->prepared_date ? \Carbon\Carbon::parse($data->prepared_date)->format('d M Y H:i') : ''" />
             <x-info label="Prepared Status" :value="$data->prepared_status" />
             <x-info label="Prepared Status Remarks" :value="$data->prepared_status_remarks" />
-            <x-info label="checked By" :value="$data->checked_by" />
-            <x-info label="checked Date" :value="optional($data->checked_date)->format('d M Y H:i')" />
-            <x-info label="checked Status" :value="$data->checked_status" />
-            <x-info label="checked Status Remarks" :value="$data->checked_status_remarks" />
-            <x-info label="Updated Date" :value="optional($data->updated_date)->format('d M Y H:i')" />
+            <x-info label="Approved By" :value="optional($data->approvedByUser)->fullname ?? $data->approved_by" />
+            <x-info label="Approved By Roles" :value="optional($data->approvedByUser)->roles" />
+            <x-info label="Approved Date" :value="$data->approved_date ? \Carbon\Carbon::parse($data->approved_date)->format('d M Y H:i') : ''" />
+            <x-info label="Approved Status" :value="$data->approved_status" />
+            <x-info label="Approved Status Remarks" :value="$data->approved_status_remarks" />
+            <x-info label="Updated Date" :value="$data->updated_date ? \Carbon\Carbon::parse($data->updated_date)->format('d M Y H:i') : ''" />
             <x-info label="Updated Status" :value="$data->updated_status" />
         </x-section>
 

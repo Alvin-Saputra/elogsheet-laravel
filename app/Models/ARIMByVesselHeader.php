@@ -60,15 +60,15 @@ class ARIMByVesselHeader extends Model
         "revision_date"
     ];
 
-    protected $casts = [
-        'arrival' => "datetime",
-        "entry_date" => "datetime",
-        "prepared_date" => "datetime",
-        "approved_date" => "datetime",
-        "updated_date" => "datetime",
-        "date_issued" => "datetime",
-        "revision_date" => "datetime",
-    ];
+    // protected $casts = [
+    //     'arrival' => "datetime",
+    //     "entry_date" => "datetime",
+    //     "prepared_date" => "datetime",
+    //     "approved_date" => "datetime",
+    //     "updated_date" => "datetime",
+    //     "date_issued" => "datetime",
+    //     "revision_date" => "datetime",
+    // ];
 
     /**
      * Detail rows for this header
@@ -78,52 +78,68 @@ class ARIMByVesselHeader extends Model
         return $this->hasMany(ARIMByVesselDetail::class, 'id_hdr', 'id');
     }
 
-    public function getTransactionDateAttribute($value)
+
+       public function preparedByUser()
     {
-        return $value
-            ? Carbon::parse($value)->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')
-            : null;
+        return $this->belongsTo(MUser::class, 'prepared_by', 'username');
     }
 
-    public function getArrivalAttribute($value)
+    public function approvedByUser()
     {
-        return $value
-            ? Carbon::parse($value)->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')
-            : null;
+        return $this->belongsTo(MUser::class, 'approved_by', 'username');
     }
 
-    public function getEntryDateAttribute($value)
+    public function entriedByUser()
     {
-        return $value
-            ? Carbon::parse($value)->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')
-            : null;
+        return $this->belongsTo(MUser::class, 'entry_by', 'username');
     }
 
-    public function getPreparedDateAttribute($value)
-    {
-        return $value
-            ? Carbon::parse($value)->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')
-            : null;
-    }
+    // public function getTransactionDateAttribute($value)
+    // {
+    //     return $value
+    //         ? Carbon::parse($value)->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')
+    //         : null;
+    // }
 
-    public function getApprovedDateAttribute($value)
-    {
-        return $value
-            ? Carbon::parse($value)->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')
-            : null;
-    }
+    // public function getArrivalAttribute($value)
+    // {
+    //     return $value
+    //         ? Carbon::parse($value)->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')
+    //         : null;
+    // }
 
-    public function getUpdatedDateAttribute($value)
-    {
-        return $value
-            ? Carbon::parse($value)->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')
-            : null;
-    }
+    // public function getEntryDateAttribute($value)
+    // {
+    //     return $value
+    //         ? Carbon::parse($value)->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')
+    //         : null;
+    // }
 
-    public function getDateIssuedAttribute($value)
-    {
-        return $value
-            ? Carbon::parse($value)->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')
-            : null;
-    }
+    // public function getPreparedDateAttribute($value)
+    // {
+    //     return $value
+    //         ? Carbon::parse($value)->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')
+    //         : null;
+    // }
+
+    // public function getApprovedDateAttribute($value)
+    // {
+    //     return $value
+    //         ? Carbon::parse($value)->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')
+    //         : null;
+    // }
+
+    // public function getUpdatedDateAttribute($value)
+    // {
+    //     return $value
+    //         ? Carbon::parse($value)->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')
+    //         : null;
+    // }
+
+    // public function getDateIssuedAttribute($value)
+    // {
+    //     return $value
+    //         ? Carbon::parse($value)->timezone('Asia/Jakarta')->format('Y-m-d H:i:s')
+    //         : null;
+    // }
 }

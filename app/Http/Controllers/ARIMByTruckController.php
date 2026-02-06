@@ -16,9 +16,11 @@ use Illuminate\Support\Facades\Validator;
 class ARIMByTruckController extends Controller
 {
 
-    private function findHeaderWithId($id)
+   private function findHeaderWithId($id)
     {
-        return ARIMByTruckHeader::with('details')->findOrFail($id);
+        return ARIMByTruckHeader::with(['details' => function ($query) {
+            $query->orderBy('no', 'asc');
+        }])->findOrFail($id);
     }
 
     private function processApprovalStatus($header, $status, $remark, $user_name, $user_roles)
@@ -504,7 +506,7 @@ class ARIMByTruckController extends Controller
                 $pdf = Pdf::loadView('exports.report_analytical_result_incoming_material_by_truck_pdf', [
                     'header' => $data,
                 ]);
-                $pdf->setPaper('a4', 'portrait');
+                $pdf->setPaper('a4', 'landscape');
                 $fileName = 'startup-produksi-checklist-' . $data->id . '.pdf';
                 return $pdf->stream($fileName);
             })(),

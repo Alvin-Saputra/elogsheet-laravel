@@ -74,25 +74,30 @@
         @endif
 
         {{-- ================= SIGNATURE ================= --}}
-        <div class="flex justify-center gap-16 mt-10 text-xs text-center">
+      <div class="flex justify-center gap-16 mt-10 text-xs text-center">
+            
+            {{-- PREPARED BY --}}
             <div>
                 <strong>Prepared By:</strong><br><br><br>
-                {{ $sign->prepared_by ?? '________________' }}<br>
-                (Leader Shift)<br>
+                {{-- FIX: Use ?-> to safely access properties even if $sign is null --}}
+                {{ $sign?->preparedByUser?->fullname ?? $sign?->prepared_by ?? '________________' }}<br>
+                {{  $sign?->preparedByUser?->roles }}<br>
                 <small>
-                    {{ !empty($sign->prepared_date)
-                        ? \Carbon\Carbon::parse($sign->prepared_date)->format('d M Y H:i')
+                    {{ !empty($sign?->prepared_date) 
+                        ? \Carbon\Carbon::parse($sign->prepared_date)->format('d M Y H:i') 
                         : '' }}
                 </small>
             </div>
 
+            {{-- APPROVED BY --}}
             <div>
                 <strong>Approved By:</strong><br><br><br>
-                {{ $sign->checked_by ?? '________________' }}<br>
-                (QC Section Head)<br>
+                {{-- FIX: Use ?-> to safely access properties even if $sign is null --}}
+                {{ $sign?->checkedByUser?->fullname ?? $sign?->checked_by ?? '________________' }}<br>
+                {{ $sign?->checkedByUser?->roles }}<br>
                 <small>
-                    {{ !empty($sign->checked_date)
-                        ? \Carbon\Carbon::parse($sign->checked_date)->format('d M Y H:i')
+                    {{ !empty($sign?->checked_date) 
+                        ? \Carbon\Carbon::parse($sign->checked_date)->format('d M Y H:i') 
                         : '' }}
                 </small>
             </div>

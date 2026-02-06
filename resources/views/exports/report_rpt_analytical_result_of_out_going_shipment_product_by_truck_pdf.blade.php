@@ -193,18 +193,18 @@
         <tr>
             <td style="width:50%; text-align:center;">
                 <div class="font-bold">Corrected by</div>
-                <div class="small">(QC Leader)</div>
+                <div class="small">{{ optional($header->correctedByUser)->roles }}</div>
                 <div class="sig-space"></div>
-                <div class="font-bold">{{ $header->prepared_by ?? $header->corrected_by ?? '____________________' }}</div>
+                <div class="font-bold">{{ optional($header->correctedByUser)->fullname ??$header->prepared_by ?? $header->corrected_by ?? '____________________' }}</div>
                 <div class="muted small">
                     {{ $header->prepared_date ? \Carbon\Carbon::parse($header->prepared_date)->format('d-m-Y H:i') : ($header->corrected_date ? \Carbon\Carbon::parse($header->corrected_date)->format('d-m-Y H:i') : '') }}
                 </div>
             </td>
             <td style="width:50%; text-align:center;">
                 <div class="font-bold">Approved by</div>
-                <div class="small">(QC Head)</div>
+                <div class="small">{{ optional($header->approvedByUser)->roles }}</div>
                 <div class="sig-space"></div>
-                <div class="font-bold">{{ $header->approved_by ?? '____________________' }}</div>
+                <div class="font-bold">{{ optional($header->approvedByUser)->fullname ??$header->approved_by ?? '____________________' }}</div>
                 <div class="muted small">
                     {{ $header->approved_date ? \Carbon\Carbon::parse($header->approved_date)->format('d-m-Y H:i') : '' }}
                 </div>

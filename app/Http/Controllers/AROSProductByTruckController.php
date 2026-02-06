@@ -25,7 +25,7 @@ class AROSProductByTruckController extends Controller
 
     private function findHeaderWithId($id)
     {
-        return AROSProductByTruckHeader::with(['details'])->findOrFail($id);
+        return AROSProductByTruckHeader::with(['details', 'correctedByUser', 'approvedByUser'])->findOrFail($id);
     }
 
     /**
@@ -245,7 +245,6 @@ class AROSProductByTruckController extends Controller
                 'message' => 'AROS Product By Truck updated successfully',
                 'data' => $header->fresh('details'),
             ], 200);
-
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -468,11 +467,11 @@ class AROSProductByTruckController extends Controller
             'show' => view('rpt_analytical_result_of_out_going_shipment_product_by_truck.show', ['header' => $data]),
             'preview' => view('rpt_analytical_result_of_out_going_shipment_product_by_truck.preview_layout', ['header' => $data]),
             'export' => (function () use ($data) {
-                    $pdf = Pdf::loadView('exports.report_rpt_analytical_result_of_out_going_shipment_product_by_truck_pdf', ['header' => $data]);
-                    $pdf->setPaper('a4', 'landscape');
-                    $fileName = 'aros-product-by-truck-' . $data->id . '.pdf';
-                    return $pdf->stream($fileName);
-                })(),
+                $pdf = Pdf::loadView('exports.report_rpt_analytical_result_of_out_going_shipment_product_by_truck_pdf', ['header' => $data]);
+                $pdf->setPaper('a4', 'landscape');
+                $fileName = 'aros-product-by-truck-' . $data->id . '.pdf';
+                return $pdf->stream($fileName);
+            })(),
             default => abort(400, 'Invalid intention'),
         };
     }

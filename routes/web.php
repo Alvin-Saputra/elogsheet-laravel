@@ -410,4 +410,18 @@ Route::middleware('auth')->group(function () {
         Route::get('/export', [DryFraController::class, 'export'])->name('export');
         Route::get('/{id}', [DryFraController::class, 'show'])->name('show');
     });
+
+
+
+      Route::prefix('analytical-result-outgoing-shipment-product-by-vessel')
+        ->name('analytical-result-outgoing-shipment-product-by-vessel.')
+        ->group(function () {
+            Route::get('/', [AROSProductByTruckController::class, 'index'])->name('index');
+            // Route::post('/bulk/approve', [AROSProductByTruckController::class, 'bulkApprove'])->name('bulk-approve');
+            // Route::post('/bulk/reject', [AROSProductByTruckController::class, 'bulkReject'])->name('bulk-reject');
+            // Route::post('/{id}/approve-report', [AROSProductByTruckController::class, 'updateApprovalStatusWeb'])->name('approveReject');
+            // Route::get('/{id}', [AROSProductByTruckController::class, 'getById'])->name('show');
+            // Route::get('/{id}/export/view', [AROSProductByTruckController::class, 'getById'])->name('preview');
+            // Route::get('/{id}/export/pdf', [AROSProductByTruckController::class, 'getById'])->name('export');
+        });
 });

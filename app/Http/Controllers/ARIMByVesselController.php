@@ -18,7 +18,7 @@ class ARIMByVesselController extends Controller
     // ---private function----
     private function findHeaderWithId($id)
     {
-        return ARIMByVesselHeader::with('details')->findOrFail($id);
+        return ARIMByVesselHeader::with('details', 'preparedByUser', 'approvedByUser', 'entriedByUser')->findOrFail($id);
     }
 
     private function processApprovalStatus($header, $status, $remark, $user_name, $user_roles)

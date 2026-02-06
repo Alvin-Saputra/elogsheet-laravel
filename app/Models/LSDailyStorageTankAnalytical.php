@@ -66,4 +66,20 @@ class LSDailyStorageTankAnalytical extends Model
   protected $casts = [
     'transaction_date' => 'datetime',
   ];
+
+
+  public function preparedByUser()
+    {
+        return $this->belongsTo(MUser::class, 'prepared_by', 'username');
+    }
+
+    public function approvedByUser()
+    {
+        return $this->belongsTo(MUser::class, 'approved_by', 'username');
+    }
+
+    public function entriedByUser()
+    {
+        return $this->belongsTo(MUser::class, 'entry_by', 'username');
+    }
 }

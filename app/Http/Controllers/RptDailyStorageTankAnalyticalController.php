@@ -11,7 +11,7 @@ use App\Models\LSDailyStorageTankAnalytical;
 
 class RptDailyStorageTankAnalyticalController extends Controller
 {
- 
+
     public function index(Request $request)
     {
         $tanggal = $request->input('filter_tanggal', now()->toDateString());
@@ -36,7 +36,7 @@ class RptDailyStorageTankAnalyticalController extends Controller
             $tank->report_id        = $last->id ?? null;
             $tank->plant            = $last->plant ?? null;
             $tank->oil_type         = $last->oil_type ?? null;
-            
+
             $tank->transaction_date = $last->posting_date ?? null;
 
             $tank->transaction_date = $last->posting_date ?? null;
@@ -50,7 +50,6 @@ class RptDailyStorageTankAnalyticalController extends Controller
             'rpt_daily_storage_tank_analytical.index',
             compact('tanggal', 'data')
         );
-
     }
 
     public function approveReport($id)
@@ -79,7 +78,7 @@ class RptDailyStorageTankAnalyticalController extends Controller
         return back()->with('success', "Report {$report->id} berhasil di-approve.");
     }
 
-  
+
     public function rejectReport(Request $request, $id)
     {
         $request->validate([
@@ -112,11 +111,12 @@ class RptDailyStorageTankAnalyticalController extends Controller
 
     public function show($id)
     {
-        $data = LSDailyStorageTankAnalytical::findOrFail($id);
+        $data = LSDailyStorageTankAnalytical::with(['preparedByUser', 'approvedByUser', 'entriedByUser'])
+            ->findOrFail($id);
         return view('rpt_daily_storage_tank_analytical.show', compact('data'));
     }
 
-    
+
     public function exportLayoutPreview(Request $request)
     {
         return $this->renderPreview($request, 'rpt_daily_storage_tank_analytical.preview');
@@ -133,7 +133,8 @@ class RptDailyStorageTankAnalyticalController extends Controller
             ->get();
 
         // 2. Ambil ANALYTICAL TERAKHIR <= tanggal (per tank)
-        $analytical = LSDailyStorageTankAnalytical::whereDate('posting_date', '<=', $tanggal)
+        $analytical = LSDailyStorageTankAnalytical::with(['preparedByUser', 'approvedByUser', 'entriedByUser'])
+            ->whereDate('posting_date', '<=', $tanggal)
             ->orderBy('posting_date', 'desc')
             ->get()
             ->groupBy('tank_no');
@@ -166,11 +167,17 @@ class RptDailyStorageTankAnalyticalController extends Controller
             $tank->totox            = $last->qp_totox ?? null;
             $tank->odor             = $last->qp_odor ?? null;
 
+
+            $tank->preparedByUser = $last->preparedByUser ?? null;
+            $tank->approvedByUser = $last->approvedByUser ?? null;
+            $tank->entriedByUser  = $last->entriedByUser ?? null;
+
             return $tank;
         });
 
         // tanda tangan
-        $sign = LSDailyStorageTankAnalytical::whereDate('posting_date', '<=', $tanggal)
+        $sign = LSDailyStorageTankAnalytical::with(['preparedByUser', 'approvedByUser'])
+            ->whereDate('posting_date', '<=', $tanggal)
             ->orderBy('posting_date', 'desc')
             ->first();
 
@@ -178,7 +185,7 @@ class RptDailyStorageTankAnalyticalController extends Controller
     }
 
 
-   
+
     public function exportPdf(Request $request)
     {
         $tanggal = $request->input('filter_tanggal', now()->toDateString());
@@ -190,7 +197,8 @@ class RptDailyStorageTankAnalyticalController extends Controller
             ->get();
 
         // 2. Ambil analytical <= tanggal, terbaru dulu
-        $analytical = LSDailyStorageTankAnalytical::whereDate('posting_date', '<=', $tanggal)
+        $analytical = LSDailyStorageTankAnalytical::with(['preparedByUser', 'approvedByUser', 'entriedByUser'])
+            ->whereDate('posting_date', '<=', $tanggal)
             ->orderBy('posting_date', 'desc')
             ->get()
             ->groupBy('tank_no');
@@ -221,12 +229,25 @@ class RptDailyStorageTankAnalyticalController extends Controller
                 'dobi' => $last->qp_dobi ?? null,
                 'totox' => $last->qp_totox ?? null,
                 'odor' => $last->qp_odor ?? null,
+
+                'preparedByUser' => $last->preparedByUser ?? null,
+                'approvedByUser' => $last->approvedByUser ?? null,
+                'entriedByUser'  => $last->entriedByUser ?? null,
             ];
         });
 
-        $sign = LSDailyStorageTankAnalytical
-            ::whereDate('posting_date', '<=', $tanggal)
+        // $sign = LSDailyStorageTankAnalytical::with(['preparedByUser', 'approvedByUser'])
+        //     ->whereDate('posting_date', '<=', $tanggal)
+        //     ->orderBy('posting_date', 'desc')
+        //     ->first();
+
+
+        $sign = LSDailyStorageTankAnalytical::with(['preparedByUser', 'approvedByUser'])
+            ->whereDate('posting_date', '<=', $tanggal)
+            // Optional: Only grab records that have been at least prepared
+            ->whereNotNull('prepared_by')
             ->orderBy('posting_date', 'desc')
+            ->orderBy('id', 'desc') // Second order to get the absolute latest
             ->first();
 
         $pdf = Pdf::loadView(

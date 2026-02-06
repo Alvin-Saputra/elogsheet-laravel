@@ -117,9 +117,9 @@
       <div class="grid grid-cols-2 text-center text-xs mt-6 gap-4">
         <div class="space-y-1">
           <div class="font-semibold">Corrected by</div>
-          <div class="text-[12px]">(QC Leader)</div>
+          <div class="text-[12px]">{{ optional($header->preparedByUser)->roles  }}</div>
           <div class="h-6"></div>
-          <div class="font-medium">{{ $header->prepared_by ?? '_________________' }}</div>
+          <div class="font-medium">{{ optional($header->preparedByUser)->fullname ?? $header->prepared_by ?? '_________________' }}</div>
           <div class="text-xs text-gray-600">
             {{ $header->prepared_date ? \Carbon\Carbon::parse($header->prepared_date)->format('d-m-Y H:i') : '' }}
           </div>
@@ -131,9 +131,9 @@
 
         <div class="space-y-1">
           <div class="font-semibold">Approved by</div>
-          <div class="text-[12px]">(QC Head)</div>
+          <div class="text-[12px]">{{ optional($header->approvedByUser)->roles  }}</div>
           <div class="h-6"></div>
-          <div class="font-medium">{{ $header->approved_by ?? '_________________' }}</div>
+          <div class="font-medium">{{ optional($header->approvedByUser)->fullname ?? $header->approved_by ?? '_________________' }}</div>
           <div class="text-xs text-gray-600">
             {{ $header->approved_date ? \Carbon\Carbon::parse($header->approved_date)->format('d-m-Y H:i') : '' }}
           </div>
@@ -262,7 +262,7 @@
       <div class="flex justify-end mt-12 mr-4">
         <div class="text-center w-48">
           <div class="font-bold mb-12">Authorized By</div>
-          <div class="font-bold">{{ $roa->authorized_by ?? '_____________________' }}</div>
+          <div class="font-bold">{{optional($roa->authorizedByUser)->fullname ?? $roa->authorized_by ?? '_________________' }}</div>
         </div>
       </div>
 
