@@ -11,7 +11,7 @@
             @forelse ($rows as $row)
                 <tr class="hover:bg-gray-50">
                     <td class="border p-1 text-center font-bold">{{ $row->shift }}</td>
-                    <td class="border p-1">{{ $row->remarks }}</td>
+                    <td class="border p-1 whitespace-pre-line">{{ $row->remarks }}</td>
                 </tr>
             @empty
                 <tr>

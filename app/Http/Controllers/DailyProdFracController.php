@@ -330,27 +330,42 @@ class DailyProdFracController extends Controller
     // }
 
 
-    public function show($id)
+    public function show(Request $request, $id)
     {
-        // Kita gunakan logika join yang sama dengan getMainData agar nama produk muncul
-        $report = LSDailyProdFrac::query()
+        $selectedShift = $request->input('shift');
+
+        $rows = LSDailyProdFrac::query()
             ->select([
                 't_daily_production_fractionation.*',
                 'p_rm.raw_material AS oil_type_rm_name',
-                'p_fgs.finish_good AS oil_type_fgs_name', 
-                'p_fgh.raw_material AS oil_type_fgh_name',
+                'p_fgs.finish_good AS oil_type_fgs_name',
+                'p_fgh.finish_good AS oil_type_fgh_name',
             ])
-            // Join untuk mengambil nama produk (Raw Material)
             ->leftJoin('m_product as p_rm', 't_daily_production_fractionation.oil_type_rm', '=', 'p_rm.id')
-            // Join untuk Finish Good Stearin
             ->leftJoin('m_product as p_fgs', 't_daily_production_fractionation.oil_type_fgs', '=', 'p_fgs.id')
-            // Join untuk Finish Good Olein (FGH)
             ->leftJoin('m_product as p_fgh', 't_daily_production_fractionation.oil_type_fgh', '=', 'p_fgh.id')
-            
             ->where('t_daily_production_fractionation.id', $id)
-            ->firstOrFail();
+            ->where('t_daily_production_fractionation.flag', 'T')
+            ->when($selectedShift, fn($query) => $query->where('t_daily_production_fractionation.shift', $selectedShift))
+            ->orderBy('t_daily_production_fractionation.shift')
+            ->orderBy('t_daily_production_fractionation.no')
+            ->get();
 
-        return view('rpt_daily_production.fractionation.show', compact('report'));
+        if ($rows->isEmpty()) {
+            abort(404);
+        }
+
+        $rowsByShift = $rows->groupBy('shift');
+        $firstReport = $rows->first();
+        $ticketId = $id;
+
+        return view('rpt_daily_production.fractionation.show', compact(
+            'ticketId',
+            'selectedShift',
+            'rows',
+            'rowsByShift',
+            'firstReport'
+        ));
     }
 
 
@@ -389,7 +404,7 @@ class DailyProdFracController extends Controller
             't_daily_production_fractionation.oil_type_fgs AS oil_type_fg_id', // ID asli
 
             // Ambil Nama FGH dari alias p_fgh
-            'p_fgh.raw_material AS oil_type_fgh', 
+            'p_fgh.finish_good AS oil_type_fgh',
             't_daily_production_fractionation.oil_type_fgh AS oil_type_fgh_id', // ID asli
         ];
 
@@ -397,10 +412,8 @@ class DailyProdFracController extends Controller
     }
 
 
-     private function getMainDataForShow(string $tanggal, ?string $workCenter, ?string $shift)
+    private function getMainDataForShow(string $tanggal, ?string $workCenter, ?string $shift)
     {
-        $user = Auth::user();
-        
         // Mulai Query dari tabel transaksi
         $query = LSDailyProdFrac::query()
             // 1. JOIN untuk Raw Material (Alias: p_rm)
@@ -419,8 +432,8 @@ class DailyProdFracController extends Controller
             $query->where('t_daily_production_fractionation.work_center', $workCenter);
         }
 
-        if($shift){
-            $query->where('t_daily_production_fractionation.work_center', $shift);
+        if ($shift) {
+            $query->where('t_daily_production_fractionation.shift', $shift);
         }
 
         $baseSelect = [
@@ -436,7 +449,7 @@ class DailyProdFracController extends Controller
             't_daily_production_fractionation.oil_type_fgs AS oil_type_fg_id', // ID asli
 
             // Ambil Nama FGH dari alias p_fgh
-            'p_fgh.raw_material AS oil_type_fgh', 
+            'p_fgh.finish_good AS oil_type_fgh',
             't_daily_production_fractionation.oil_type_fgh AS oil_type_fgh_id', // ID asli
         ];
 

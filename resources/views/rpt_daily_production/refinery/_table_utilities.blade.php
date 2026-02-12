@@ -14,10 +14,10 @@
             @forelse ($rows as $row)
                 <tr class="hover:bg-gray-50">
                     <td class="border p-1 text-center font-bold">{{ $row->shift }}</td>
-                    <td class="border p-1">{{ $row->uu_item }}</td>
-                    <td class="border p-1 text-right">{{ $row->uu_total_cpo }}</td>
-                    <td class="border p-1 text-right">{{ $row->uu_total_steam }}</td>
-                    <td class="border p-1 text-right">{{ $row->uu_steam_cpo }}</td>
+                    <td class="border p-1">{{ $row->uu_item ?? '-' }}</td>
+                    <td class="border p-1 text-right">{{ number_format((float) ($row->uu_total_cpo ?? 0), 0) }}</td>
+                    <td class="border p-1 text-right">{{ number_format((float) ($row->uu_total_steam ?? 0), 0) }}</td>
+                    <td class="border p-1 text-right">{{ number_format((float) ($row->uu_steam_cpo ?? 0), 2) }}</td>
                 </tr>
             @empty
                 <tr>

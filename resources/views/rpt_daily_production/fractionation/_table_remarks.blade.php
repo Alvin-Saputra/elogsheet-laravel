@@ -1,4 +1,3 @@
-{{-- File: rpt_daily_production/fractionation/_table_remarks.blade.php --}}
 <h5 class="text-sm font-bold mt-4 mb-2">Remarks</h5>
 <div class="overflow-x-auto">
     <table class="min-w-full border border-gray-300 text-xs">
@@ -11,8 +10,8 @@
         <tbody>
             @forelse ($rows as $row)
                 <tr class="hover:bg-gray-50">
-                    <td class="border p-1 text-center font-bold">{{ $row->shift }}</td>
-                    <td class="border p-1">{{ $row->remarks }}</td>
+                    <td class="border p-1 text-center font-bold">{{ $row->shift ?? '-' }}</td>
+                    <td class="border p-1 whitespace-pre-line">{{ $row->remarks ?? '-' }}</td>
                 </tr>
             @empty
                 <tr>

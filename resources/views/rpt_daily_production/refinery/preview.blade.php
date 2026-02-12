@@ -22,12 +22,15 @@
 
         {{-- Dynamic Content: Single Work Center or Grouped --}}
         @if (!empty($workCenter))
+            @php
+                $summaryRows = $shiftSummaries instanceof \Illuminate\Support\Collection ? $shiftSummaries : collect();
+            @endphp
             <h4 class="text-md font-bold mb-2">Work Center: {{ $workCenter }}</h4>
             {{-- Include the dedicated table for the single work center --}}
             @include('rpt_daily_production.refinery._table_product', ['rows' => $data])
-            @include('rpt_daily_production.refinery._table_chemicals', ['rows' => $data])
-            @include('rpt_daily_production.refinery._table_utilities', ['rows' => $data])
-            @include('rpt_daily_production.refinery._table_remarks', ['rows' => $data])
+            @include('rpt_daily_production.refinery._table_chemicals', ['rows' => $summaryRows])
+            @include('rpt_daily_production.refinery._table_utilities', ['rows' => $summaryRows])
+            @include('rpt_daily_production.refinery._table_remarks', ['rows' => $summaryRows])
         @else
             {{-- Loop through grouped data if no specific work center is selected --}}
 

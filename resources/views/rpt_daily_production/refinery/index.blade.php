@@ -137,11 +137,8 @@
                         <th class="px-2 py-2 border-b text-left">No</th>
                         <th class="px-2 py-2 border-b text-left">Ticket No</th>
                         <th class="px-2 py-2 border-b text-left">Date</th>
-                        <th class="px-2 py-2 border-b text-left">Shift</th>
+                        <th class="px-2 py-2 border-b text-left">Shift(s)</th>
                         <th class="px-2 py-2 border-b text-left">Work Center</th>
-                        <th class="px-2 py-2 border-b text-left">Total RM</th>
-                        <th class="px-2 py-2 border-b text-left">Total FG</th>
-                        <th class="px-2 py-2 border-b text-left">Total BP</th>
                         <th class="px-2 py-2 border-b text-left">Entry By</th>
                         <th class="px-2 py-2 border-b text-center">Leader Status</th>
                         <th class="px-2 py-2 border-b text-center">Manager Status</th>
@@ -155,16 +152,13 @@
                             <td class="px-2 py-2 border-b">{{ $reports->firstItem() + $index }}</td>
                             <td class="px-2 py-2 border-b">{{ $report->id }}</td>
                             <td class="px-2 py-2 border-b">
-                                {{ \Carbon\Carbon::parse($report->transaction_date)->format('y-m-d') }}</td>
-                            <td class="px-2 py-2 border-b">{{ $report->shift }}</td>
-                            <td class="px-2 py-2 border-b"><span
-                                    class="inline-block px-2 py-1 text-xs font-semibold rounded bg-green-100 text-green-800">{{ $report->work_center }}</span>
+                                {{ $report->transaction_date ? \Carbon\Carbon::parse($report->transaction_date)->format('d/m/Y') : '-' }}
                             </td>
-                            <td class="px-2 py-2 border-b text-right font-medium">
-                                {{ number_format($report->oil_type_rm_total) }}</td>
-                            <td class="px-2 py-2 border-b text-right font-medium">
-                                {{ number_format($report->oil_type_fg_total) }}</td>
-                            <td class="px-2 py-2 border-b text-right font-medium">{{ number_format($report->bp_total) }}
+                            <td class="px-2 py-2 border-b">{{ $report->shifts ?: '-' }}</td>
+                            <td class="px-2 py-2 border-b">
+                                <span class="inline-block px-2 py-1 text-xs font-semibold rounded bg-green-100 text-green-800">
+                                    {{ $report->work_center ?: '-' }}
+                                </span>
                             </td>
                             <td class="px-2 py-2 border-b">{{ $report->entry_by }}</td>
                             <td class="px-2 py-2 border-b text-center">
@@ -245,7 +239,7 @@
                                 </div>
                             </td>
                             <td class="px-2 py-2 border-b text-center">
-                                <a href="{{ route('report-daily-production.refinery.show', $report->id) }}"
+                                <a href="{{ route('report-daily-production.refinery.show', ['id' => $report->id]) }}"
                                     class="text-blue-600 hover:text-blue-800"><svg xmlns="http://www.w3.org/2000/svg"
                                         viewBox="0 0 512 512" class="w-5 h-5 inline-block">
                                         <path fill="currentColor"
@@ -255,7 +249,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="13" class="px-4 py-4 text-center text-gray-500">Data tidak tersedia.</td>
+                            <td colspan="10" class="px-4 py-4 text-center text-gray-500">Data tidak tersedia.</td>
                         </tr>
                     @endforelse
                 </tbody>
