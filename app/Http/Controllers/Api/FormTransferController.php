@@ -45,7 +45,7 @@ class FormTransferController extends Controller
             $query->where('to_dept', $request->to_dept);
         }
 
-        // Filter by status (match QC-style status labels)
+        // Filter by status (2-Step Approval Workflow)
         if ($request->filled('status')) {
             $status = strtolower(trim($request->status));
             $normalized = str_replace([' ', '_'], '', $status);
@@ -53,33 +53,23 @@ class FormTransferController extends Controller
             if ($normalized === 'approved') {
                 $query->where(function ($q) {
                     $q->whereRaw('LOWER(prepared_status) = ?', ['approved'])
-                        ->orWhereRaw('LOWER(checked_status) = ?', ['approved'])
-                        ->orWhereRaw('LOWER(approved_status) = ?', ['approved'])
-                        ->orWhereRaw('LOWER(acknowledged_status) = ?', ['approved']);
+                        ->orWhereRaw('LOWER(approved_status) = ?', ['approved']);
                 });
             } elseif ($normalized === 'rejected') {
                 $query->where(function ($q) {
                     $q->whereRaw('LOWER(prepared_status) = ?', ['rejected'])
-                        ->orWhereRaw('LOWER(checked_status) = ?', ['rejected'])
-                        ->orWhereRaw('LOWER(approved_status) = ?', ['rejected'])
-                        ->orWhereRaw('LOWER(acknowledged_status) = ?', ['rejected']);
+                        ->orWhereRaw('LOWER(approved_status) = ?', ['rejected']);
                 });
             } elseif ($normalized === 'inprogress') {
                 $query->where(function ($q) {
                     $q->whereRaw('LOWER(prepared_status) = ?', ['submitted'])
-                        ->orWhereRaw('LOWER(checked_status) = ?', ['submitted'])
-                        ->orWhereRaw('LOWER(approved_status) = ?', ['submitted'])
-                        ->orWhereRaw('LOWER(acknowledged_status) = ?', ['submitted']);
+                        ->orWhereRaw('LOWER(approved_status) = ?', ['submitted']);
                 });
             } elseif ($normalized === 'submitted') {
                 $query->where(function ($q) {
                     $q->whereNull('prepared_status')->orWhere('prepared_status', '');
                 })->where(function ($q) {
-                    $q->whereNull('checked_status')->orWhere('checked_status', '');
-                })->where(function ($q) {
                     $q->whereNull('approved_status')->orWhere('approved_status', '');
-                })->where(function ($q) {
-                    $q->whereNull('acknowledged_status')->orWhere('acknowledged_status', '');
                 });
             } else {
                 $query->where('approved_status', $request->status);
@@ -107,6 +97,7 @@ class FormTransferController extends Controller
     /**
      * GET /api/form-transfer/pending
      * Get pending approvals filtered by level.
+     * 2-Step Workflow: prepared (Lead) → approved (Manager)
      */
     public function getPending(Request $request)
     {
@@ -124,28 +115,20 @@ class FormTransferController extends Controller
         };
 
         if ($level === 'prepared') {
+            // Lead level: prepared_status is null/pending
             $query->where(function ($q) use ($pendingClause) {
                 $pendingClause($q, 'prepared_status');
             });
-        } elseif ($level === 'checked') {
+        } elseif ($level === 'approved') {
+            // Manager level: prepared_status = 'approved' AND approved_status is null/pending
             $query->whereRaw('LOWER(prepared_status) = ?', ['approved'])
                 ->where(function ($q) use ($pendingClause) {
-                    $pendingClause($q, 'checked_status');
-                });
-        } elseif ($level === 'approved') {
-            $query->whereRaw('LOWER(checked_status) = ?', ['approved'])
-                ->where(function ($q) use ($pendingClause) {
                     $pendingClause($q, 'approved_status');
-                });
-        } elseif ($level === 'acknowledged') {
-            $query->whereRaw('LOWER(approved_status) = ?', ['approved'])
-                ->where(function ($q) use ($pendingClause) {
-                    $pendingClause($q, 'acknowledged_status');
                 });
         } else {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid level parameter.',
+                'message' => 'Invalid level parameter. Must be: prepared or approved',
             ], 400);
         }
 
@@ -547,11 +530,9 @@ class FormTransferController extends Controller
      * PUT /api/formtransfer/{id}/approval
      * Update approval status of Form Transfer record
      *
-     * 4-Level Approval Workflow:
-     * - prepared_status: PRO/CPC/OPS roles
-     * - checked_status: QC Dept roles
-     * - approved_status: OPS roles
-     * - acknowledged_status: PPIC roles
+     * 2-Step Approval Workflow:
+     * - prepared_status: Lead roles (LEAD, LEAD_QC)
+     * - approved_status: Manager roles (MGR, MGR_QC, ADM)
      */
     public function updateApproval(Request $request, $id)
     {
@@ -562,12 +543,12 @@ class FormTransferController extends Controller
             $user = Auth::user();
             $status = Str::ucfirst(strtolower($request->input('status')));
             $remark = $request->input('remarks');
-            $level = $request->input('level'); // prepared, checked, approved, acknowledged
+            $level = $request->input('level'); // prepared, approved
 
-            if (!$level || !in_array($level, ['prepared', 'checked', 'approved', 'acknowledged'])) {
+            if (!$level || !in_array($level, ['prepared', 'approved'])) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Invalid approval level. Must be: prepared, checked, approved, or acknowledged',
+                    'message' => 'Invalid approval level. Must be: prepared or approved',
                 ], 400);
             }
 
@@ -612,9 +593,10 @@ class FormTransferController extends Controller
 
     /**
      * Process approval status update (helper method)
+     * 2-Step Approval: prepared (Lead) → approved (Manager)
      *
      * @param LSFormTransferHeader $header
-     * @param string $level - prepared, checked, approved, acknowledged
+     * @param string $level - prepared, approved
      * @param string $status
      * @param string|null $remark
      * @param string $username
@@ -623,44 +605,32 @@ class FormTransferController extends Controller
      */
     private function processApprovalStatus($header, $level, $status, $remark, $username, $userRoles)
     {
-        // Define role permissions for each approval level
-        $rolePermissions = [
-            'prepared' => ['PRO', 'CPC', 'OPS', 'LEAD_PROD', 'STAFF_PROD'],
-            'checked' => ['QC', 'LEAD_QC', 'MGR_QC', 'STAFF_QC'],
-            'approved' => ['OPS', 'MGR_OPS', 'LEAD_OPS', 'ADM'],
-            'acknowledged' => ['PPIC', 'MGR_PPIC', 'LEAD_PPIC', 'STAFF_PPIC'],
-        ];
+        $LEAD_QC = ['LEAD', 'LEAD_QC'];
+        $QC_Control_MGR = ['MGR', 'MGR_QC', 'ADM'];
 
-        // Check if user has permission for this level
-        $allowedRoles = $rolePermissions[$level] ?? [];
-        $hasPermission = false;
+        $fieldPrefix = '';
 
-        foreach ($allowedRoles as $role) {
-            if (str_contains($userRoles, $role)) {
-                $hasPermission = true;
-                break;
-            }
-        }
-
-        if (!$hasPermission) {
+        if (in_array($userRoles, $QC_Control_MGR, true)) {
+            $fieldPrefix = 'approved';
+        } elseif (in_array($userRoles, $LEAD_QC, true)) {
+            $fieldPrefix = 'prepared';
+        } else {
             return false;
         }
 
-        // Build update fields
-        $updates = [
-            "{$level}_status" => $status,
-            "{$level}_by" => $username,
-            "{$level}_date" => now(),
-            "{$level}_status_remarks" => $remark,
-            'updated_by' => $username,
-            'updated_date' => now(),
-        ];
-
-        // Update main status field for final approval level
-        if ($level === 'approved') {
-            $updates['status'] = $status;
+        // Verify the level matches the role
+        if ($level !== $fieldPrefix) {
+            return false;
         }
 
-        return $header->update($updates);
+        $header->update([
+            "{$fieldPrefix}_status"         => $status,
+            "{$fieldPrefix}_by"             => $username,
+            "{$fieldPrefix}_role"           => json_encode($userRoles),
+            "{$fieldPrefix}_date"           => now(),
+            "{$fieldPrefix}_status_remarks" => $remark,
+        ]);
+
+        return true;
     }
 }

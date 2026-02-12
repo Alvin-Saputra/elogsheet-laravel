@@ -34,18 +34,10 @@ class LSFormTransferHeader extends Model
         'prepared_date',
         'prepared_status',
         'prepared_status_remarks',
-        'checked_by',
-        'checked_date',
-        'checked_status',
-        'checked_status_remarks',
         'approved_by',
         'approved_date',
         'approved_status',
         'approved_status_remarks',
-        'acknowledged_by',
-        'acknowledged_date',
-        'acknowledged_status',
-        'acknowledged_status_remarks',
         'updated_by',
         'updated_date',
     ];
@@ -57,9 +49,7 @@ class LSFormTransferHeader extends Model
         'revision_date' => 'date',
         'entry_date' => 'datetime',
         'prepared_date' => 'datetime',
-        'checked_date' => 'datetime',
         'approved_date' => 'datetime',
-        'acknowledged_date' => 'datetime',
         'updated_date' => 'datetime',
     ];
 

@@ -54,22 +54,14 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 text-sm">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 text-sm">
             <div>
-                <strong class="text-gray-600 block mb-1">Prepared Status:</strong>
+                <strong class="text-gray-600 block mb-1">Verified Status (Lead):</strong>
                 @include('partials.status-badge', ['status' => $transfer->prepared_status])
             </div>
             <div>
-                <strong class="text-gray-600 block mb-1">Checked Status:</strong>
-                @include('partials.status-badge', ['status' => $transfer->checked_status])
-            </div>
-            <div>
-                <strong class="text-gray-600 block mb-1">Approved Status:</strong>
+                <strong class="text-gray-600 block mb-1">Approved Status (Manager):</strong>
                 @include('partials.status-badge', ['status' => $transfer->approved_status])
-            </div>
-            <div>
-                <strong class="text-gray-600 block mb-1">Acknowledged Status:</strong>
-                @include('partials.status-badge', ['status' => $transfer->acknowledged_status])
             </div>
         </div>
 

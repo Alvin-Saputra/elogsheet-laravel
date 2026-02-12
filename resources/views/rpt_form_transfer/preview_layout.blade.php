@@ -66,26 +66,18 @@
             @include('rpt_form_transfer._table', ['details' => $transfer->details])
         </div>
 
-        <div class="grid grid-cols-4 gap-6 mt-10 text-xs text-center">
+        <div class="grid grid-cols-2 gap-12 mt-10 text-xs text-center">
             <div>
-                <strong>PRO / CPC / OPS (Tank Farm / Pump House) Dept.</strong><br><br>
+                <strong>Prepared By</strong><br>
+                <small class="text-gray-500">Lead / Lead QC</small><br><br>
                 {{ $transfer->prepared_by ?? '________________' }}<br>
                 <small>{{ $transfer->prepared_date ? \Carbon\Carbon::parse($transfer->prepared_date)->format('d M Y H:i') : '' }}</small>
             </div>
             <div>
-                <strong>Quality Control Dept.</strong><br><br>
-                {{ $transfer->checked_by ?? '________________' }}<br>
-                <small>{{ $transfer->checked_date ? \Carbon\Carbon::parse($transfer->checked_date)->format('d M Y H:i') : '' }}</small>
-            </div>
-            <div>
-                <strong>OPS (Tank Farm / Pump House)</strong><br><br>
+                <strong>Approved By</strong><br>
+                <small class="text-gray-500">Manager / Admin</small><br><br>
                 {{ $transfer->approved_by ?? '________________' }}<br>
                 <small>{{ $transfer->approved_date ? \Carbon\Carbon::parse($transfer->approved_date)->format('d M Y H:i') : '' }}</small>
-            </div>
-            <div>
-                <strong>PPIC Dept.</strong><br><br>
-                {{ $transfer->acknowledged_by ?? '________________' }}<br>
-                <small>{{ $transfer->acknowledged_date ? \Carbon\Carbon::parse($transfer->acknowledged_date)->format('d M Y H:i') : '' }}</small>
             </div>
         </div>
 

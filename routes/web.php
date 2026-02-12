@@ -396,9 +396,12 @@ Route::middleware('auth')->group(function () {
     */
     Route::prefix('report/form-transfer')->group(function () {
         Route::get('/', [RptFormTransferController::class, 'index'])->name('report.form-transfer.index');
+        Route::get('/export/view', [RptFormTransferController::class, 'exportView'])->name('report.form-transfer.export.view');
+        Route::get('/export/pdf', [RptFormTransferController::class, 'exportPdf'])->name('report.form-transfer.export.pdf');
         Route::get('/{id}', [RptFormTransferController::class, 'getById'])->name('report.form-transfer.show');
         Route::get('/{id}/export/view', [RptFormTransferController::class, 'getById'])->name('report.form-transfer.preview');
         Route::get('/{id}/export/pdf', [RptFormTransferController::class, 'getById'])->name('report.form-transfer.export');
+        Route::post('/{id}/approve', [RptFormTransferController::class, 'approve'])->name('report.form-transfer.approve');
     });
 
 
