@@ -22,23 +22,26 @@
 
         {{-- Dynamic Content: Single Work Center or Grouped --}}
         @if (!empty($workCenter))
+            @php $rows = $data; @endphp
             <h4 class="text-md font-bold mb-2">Work Center: {{ $workCenter }}</h4>
-            {{-- Include the dedicated tables for the single work center --}}
-            @include('rpt_daily_production.fractionation._table_product', ['rows' => $data])
-            @include('rpt_daily_production.fractionation._table_utilities', ['rows' => $data])
-            @include('rpt_daily_production.fractionation._table_remarks', ['rows' => $data])
+            @include('rpt_daily_production.fractionation._table_product', ['rows' => $rows])
+            @if (!$rows->isEmpty())
+                @include('rpt_daily_production.fractionation._table_utilities', ['rows' => $rows])
+                @include('rpt_daily_production.fractionation._table_remarks', ['rows' => $rows])
+            @else
+                <p class="mt-4 text-center text-gray-500 italic">No shift summary data available for Work Center:
+                    {{ $workCenter }} on this date.</p>
+            @endif
         @else
-            {{-- Loop through grouped data if no specific work center is selected --}}
             @foreach ($groupedData as $wc => $rows)
                 <h4 class="text-md font-bold mt-6 mb-2">Work Center: {{ $wc }}</h4>
-                {{-- 1. Product Table --}}
                 @include('rpt_daily_production.fractionation._table_product', ['rows' => $rows])
-                {{-- 2. Utilities Table --}}
-                @include('rpt_daily_production.fractionation._table_utilities', ['rows' => $rows])
-                {{-- 3. Remarks Table --}}
-                @include('rpt_daily_production.fractionation._table_remarks', ['rows' => $rows])
-                @if (!$loop->last)
-                    <div class="mt-8"></div>
+                @if (!$rows->isEmpty())
+                    @include('rpt_daily_production.fractionation._table_utilities', ['rows' => $rows])
+                    @include('rpt_daily_production.fractionation._table_remarks', ['rows' => $rows])
+                @else
+                    <p class="mt-4 text-center text-gray-500 italic">No shift summary data available for Work Center:
+                        {{ $wc }} on this date.</p>
                 @endif
             @endforeach
         @endif

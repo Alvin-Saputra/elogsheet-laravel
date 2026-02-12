@@ -121,6 +121,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('arosptruck/{id}/approve', [AROSProductByTruckController::class, 'updateApproval']);
 });
 
+Route::middleware('auth:sanctum')->group(function () {
+    // new single api route
+    Route::post('arosvess', [AROSByVesselController::class, 'create']);
+    Route::get('arosvess', [AROSByVesselController::class, 'get']);
+    Route::put('arosvess/{id}', [AROSByVesselController::class, 'update']);
+    Route::delete('arosvess/{id}', [AROSByVesselController::class, 'destroy']);
+    Route::put('arosvess/{id}/approve', [AROSByVesselController::class, 'updateApproval']);
+});
 
 Route::middleware('auth:sanctum')->group(function () {
 

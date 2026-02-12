@@ -37,20 +37,20 @@
                     <td class="border p-1 text-center font-bold">{{ $row->shift }}</td>
 
                     {{-- Bleaching Earth Data (Total Bag) --}}
-                    <td class="border p-1 text-right">{{ number_format($row->be_total_bag, 0) }}</td>
-                    <td class="border p-1 text-right">{{ $row->be_total_jenis }}</td>
+                    <td class="border p-1 text-right">{{ number_format((float) ($row->be_total_bag ?? 0), 0) }}</td>
+                    <td class="border p-1 text-right">{{ $row->be_total_jenis ?? '-' }}</td>
                     <td class="border p-1 text-center">{{ $row->be_lot_batch_number ?? 'N/A' }}</td>
-                    <td class="border p-1 text-center">{{ $row->be_lot_batch_number ?? 'N/A' }}</td>
+                    <td class="border p-1 text-center">{{ number_format((float) ($row->be_yield_percent ?? 0), 2) }}</td>
 
                     {{-- Phosphoric Acid Data (Total KG) --}}
-                    <td class="border p-1 text-right">{{ number_format($row->pa_total, 0) }}</td>
+                    <td class="border p-1 text-right">{{ number_format((float) ($row->pa_total ?? 0), 0) }}</td>
                     <td class="border p-1 text-center">{{ $row->pa_lot_batch_number ?? 'N/A' }}</td>
-                    <td class="border p-1 text-right">{{ number_format($row->pa_yield_percent, 2) }}</td>
+                    <td class="border p-1 text-right">{{ number_format((float) ($row->pa_yield_percent ?? 0), 2) }}</td>
                 </tr>
             @empty
                 <tr>
-                    {{-- Updated colspan to match the 7 columns (1 Shift + 3 BE + 3 PA) --}}
-                    <td colspan="7" class="border p-4 text-center text-gray-500">
+                    {{-- 8 columns (1 Shift + 4 BE + 3 PA) --}}
+                    <td colspan="8" class="border p-4 text-center text-gray-500">
                         Tidak ada data Pemakaian Bahan Penolong untuk hari ini.
                     </td>
                 </tr>

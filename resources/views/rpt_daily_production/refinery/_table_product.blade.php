@@ -50,34 +50,34 @@
                     <td class="border p-1 text-center font-bold">{{ $row->shift }}</td>
 
                     {{-- Raw Material --}}
-                    <td class="border p-1 text-center font-bold">{{ $row->oil_type_rm }}</td>
-                    <td class="border p-1 text-center">{{ $row->cpo_tank }}</td>
-                    <td class="border p-1 text-center">{{ $row->oil_type_rm_awal_jam }}</td>
-                    <td class="border p-1 text-right">{{ $row->oil_type_rm_awal_flowmeter }}</td>
-                    <td class="border p-1 text-center">{{ $row->oil_type_rm_akhir_jam }}</td>
-                    <td class="border p-1 text-right">{{ $row->oil_type_rm_akhir_flowmeter }}</td>
-                    <td class="border p-1 text-right font-semibold">{{ $row->oil_type_rm_total }}</td>
+                    <td class="border p-1 text-center font-bold">{{ $row->oil_type_rm ?? '-' }}</td>
+                    <td class="border p-1 text-center">{{ $row->cpo_tank ?? '-' }}</td>
+                    <td class="border p-1 text-center">{{ $row->oil_type_rm_awal_jam ? \Carbon\Carbon::parse($row->oil_type_rm_awal_jam)->format('H:i') : '-' }}</td>
+                    <td class="border p-1 text-right">{{ is_null($row->oil_type_rm_awal_flowmeter) ? '-' : number_format((float) $row->oil_type_rm_awal_flowmeter, 0) }}</td>
+                    <td class="border p-1 text-center">{{ $row->oil_type_rm_akhir_jam ? \Carbon\Carbon::parse($row->oil_type_rm_akhir_jam)->format('H:i') : '-' }}</td>
+                    <td class="border p-1 text-right">{{ is_null($row->oil_type_rm_akhir_flowmeter) ? '-' : number_format((float) $row->oil_type_rm_akhir_flowmeter, 0) }}</td>
+                    <td class="border p-1 text-right font-semibold">{{ is_null($row->oil_type_rm_total) ? '-' : number_format((float) $row->oil_type_rm_total, 0) }}</td>
                     {{-- Finished Goods --}}
-                    <td class="border p-1 text-center font-bold">{{ $row->oil_type_fg }}</td>
-                    <td class="border p-1 text-center">{{ $row->oil_type_fg_awal_jam }}</td>
-                    <td class="border p-1 text-right">{{ $row->oil_type_fg_awal_flowmeter }}</td>
-                    <td class="border p-1 text-center">{{ $row->oil_type_fg_akhir_jam }}</td>
-                    <td class="border p-1 text-right">{{ $row->oil_type_fg_akhir_flowmeter }}</td>
-                    <td class="border p-1 text-right font-semibold">{{ $row->oil_type_fg_total }}</td>
-                    <td class="border p-1 text-right font-semibold">{{ $row->oil_type_fg_to_tank }}</td>
+                    <td class="border p-1 text-center font-bold">{{ $row->oil_type_fg ?? '-' }}</td>
+                    <td class="border p-1 text-center">{{ $row->oil_type_fg_awal_jam ? \Carbon\Carbon::parse($row->oil_type_fg_awal_jam)->format('H:i') : '-' }}</td>
+                    <td class="border p-1 text-right">{{ is_null($row->oil_type_fg_awal_flowmeter) ? '-' : number_format((float) $row->oil_type_fg_awal_flowmeter, 0) }}</td>
+                    <td class="border p-1 text-center">{{ $row->oil_type_fg_akhir_jam ? \Carbon\Carbon::parse($row->oil_type_fg_akhir_jam)->format('H:i') : '-' }}</td>
+                    <td class="border p-1 text-right">{{ is_null($row->oil_type_fg_akhir_flowmeter) ? '-' : number_format((float) $row->oil_type_fg_akhir_flowmeter, 0) }}</td>
+                    <td class="border p-1 text-right font-semibold">{{ is_null($row->oil_type_fg_total) ? '-' : number_format((float) $row->oil_type_fg_total, 0) }}</td>
+                    <td class="border p-1 text-right font-semibold">{{ $row->oil_type_fg_to_tank ?? '-' }}</td>
 
                     {{-- By Product --}}
-                    <td class="border p-1 text-center">{{ $row->bp_awal_jam }}</td>
-                    <td class="border p-1 text-right">{{ $row->bp_awal_flowmeter }}</td>
-                    <td class="border p-1 text-center">{{ $row->bp_akhir_jam }}</td>
-                    <td class="border p-1 text-right">{{ $row->bp_akhir_flowmeter }}</td>
-                    <td class="border p-1 text-right font-semibold">{{ $row->bp_total }}</td>
-                    <td class="border p-1 text-right font-semibold">{{ $row->bp_to_tank }}</td>
+                    <td class="border p-1 text-center">{{ $row->bp_awal_jam ? \Carbon\Carbon::parse($row->bp_awal_jam)->format('H:i') : '-' }}</td>
+                    <td class="border p-1 text-right">{{ is_null($row->bp_awal_flowmeter) ? '-' : number_format((float) $row->bp_awal_flowmeter, 0) }}</td>
+                    <td class="border p-1 text-center">{{ $row->bp_akhir_jam ? \Carbon\Carbon::parse($row->bp_akhir_jam)->format('H:i') : '-' }}</td>
+                    <td class="border p-1 text-right">{{ is_null($row->bp_akhir_flowmeter) ? '-' : number_format((float) $row->bp_akhir_flowmeter, 0) }}</td>
+                    <td class="border p-1 text-right font-semibold">{{ is_null($row->bp_total) ? '-' : number_format((float) $row->bp_total, 0) }}</td>
+                    <td class="border p-1 text-right font-semibold">{{ $row->bp_to_tank ?? '-' }}</td>
 
                 </tr>
             @empty
                 <tr>
-                    <td colspan="13" class="border p-4 text-center text-gray-500">
+                    <td colspan="21" class="border p-4 text-center text-gray-500">
                         Tidak ada data Raw Material, Finished Goods, atau By Product untuk shift ini.
                     </td>
                 </tr>

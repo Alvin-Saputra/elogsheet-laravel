@@ -10,6 +10,7 @@ use App\Models\MRolesShiftPrepared;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class RptDailyPRefController extends Controller
 {
@@ -36,23 +37,33 @@ class RptDailyPRefController extends Controller
     /**
      * SHOW detail report - Display the specified resource.
      */
-    public function show($id)
+    public function show(Request $request, $id)
     {
-        $baseSelect = [
-            't_daily_production_refinery.*',
-            't_daily_production_refinery.oil_type_rm AS oil_type_rm_id',
-            'm_product.raw_material AS oil_type_rm',
-            't_daily_production_refinery.oil_type_fg AS oil_type_fg_id',
-            'm_product.finish_good AS oil_type_fg',
-            't_daily_production_refinery.bp_oil_type AS bp_oil_type_id',
-            'm_product.by_product AS bp_oil_type',
-        ];
-        // $report = LSDailyProductionRefinery::findOrFail($id);
-        $report = LSDailyProductionRefinery::join('m_product', 't_daily_production_refinery.oil_type_rm', '=', 'm_product.id')
-            ->select($baseSelect)
+        $selectedShift = $request->input('shift');
+
+        $rows = $this->buildDetailQuery()
             ->where('t_daily_production_refinery.id', $id)
-            ->firstOrFail();
-        return view('rpt_daily_production.refinery.show', compact('report'));
+            ->where('t_daily_production_refinery.flag', 'T')
+            ->when($selectedShift, fn($q) => $q->where('t_daily_production_refinery.shift', $selectedShift))
+            ->orderBy('t_daily_production_refinery.shift')
+            ->orderBy('t_daily_production_refinery.no')
+            ->get();
+
+        if ($rows->isEmpty()) {
+            abort(404);
+        }
+
+        $rowsByShift = $rows->groupBy('shift');
+        $firstReport = $rows->first();
+        $ticketId = $id;
+
+        return view('rpt_daily_production.refinery.show', compact(
+            'ticketId',
+            'selectedShift',
+            'rows',
+            'rowsByShift',
+            'firstReport'
+        ));
     }
 
     /**
@@ -177,17 +188,37 @@ class RptDailyPRefController extends Controller
     /**
      * APPROVE by ticket id
      */
-    public function approveTicket($id)
+    public function approveTicket(Request $request, $id)
     {
-        $report = LSDailyProductionRefinery::findOrFail($id);
         $userRole = Auth::user()->roles;
+        $shift = $request->input('shift');
+
+        $ticketQuery = LSDailyProductionRefinery::where('id', $id)
+            ->where('flag', 'T')
+            ->when($shift, fn($q) => $q->where('shift', $shift));
+
+        if (!$ticketQuery->exists()) {
+            return back()->with('error', "Data ticket {$id} tidak ditemukan.");
+        }
 
         if ($userRole === "LEAD" or $userRole === "LEAD_PROD") {
-            $report->update(['prepared_status' => 'Approved', 'prepared_status_remarks' => null, 'prepared_date' => now(), 'prepared_by' => auth()->user()->username ?? auth()->user()->name]);
+            $ticketQuery->update([
+                'prepared_status' => 'Approved',
+                'prepared_status_remarks' => null,
+                'prepared_date' => now(),
+                'prepared_by' => auth()->user()->username ?? auth()->user()->name
+            ]);
         } elseif ($userRole === "MGR" or $userRole === "MGR_PROD") {
-            $report->update(['checked_status' => 'Approved', 'checked_status_remarks' => null, 'checked_date' => now(), 'checked_by' => auth()->user()->username ?? auth()->user()->name]);
+            $ticketQuery->update([
+                'checked_status' => 'Approved',
+                'checked_status_remarks' => null,
+                'checked_date' => now(),
+                'checked_by' => auth()->user()->username ?? auth()->user()->name
+            ]);
         }
-        return back()->with('success', "Tiket {$report->id} berhasil di-approve.");
+
+        $ticketScope = $shift ? " shift {$shift}" : '';
+        return back()->with('success', "Tiket {$id}{$ticketScope} berhasil di-approve.");
     }
 
     /**
@@ -196,15 +227,35 @@ class RptDailyPRefController extends Controller
     public function rejectTicket(Request $request, $id)
     {
         $request->validate(['remark' => 'nullable|string|max:255']);
-        $report = LSDailyProductionRefinery::findOrFail($id);
         $userRole = Auth::user()->roles;
+        $shift = $request->input('shift');
+
+        $ticketQuery = LSDailyProductionRefinery::where('id', $id)
+            ->where('flag', 'T')
+            ->when($shift, fn($q) => $q->where('shift', $shift));
+
+        if (!$ticketQuery->exists()) {
+            return back()->with('error', "Data ticket {$id} tidak ditemukan.");
+        }
 
         if ($userRole === "LEAD" or $userRole === "LEAD_PROD") {
-            $report->update(['prepared_status' => 'Rejected', 'prepared_status_remarks' => $request->remark, 'prepared_date' => now(), 'prepared_by' => auth()->user()->username ?? auth()->user()->name]);
+            $ticketQuery->update([
+                'prepared_status' => 'Rejected',
+                'prepared_status_remarks' => $request->remark,
+                'prepared_date' => now(),
+                'prepared_by' => auth()->user()->username ?? auth()->user()->name
+            ]);
         } elseif ($userRole === "MGR" or $userRole === "MGR_PROD") {
-            $report->update(['checked_status' => 'Rejected', 'checked_status_remarks' => $request->remark, 'checked_date' => now(), 'checked_by' => auth()->user()->username ?? auth()->user()->name]);
+            $ticketQuery->update([
+                'checked_status' => 'Rejected',
+                'checked_status_remarks' => $request->remark,
+                'checked_date' => now(),
+                'checked_by' => auth()->user()->username ?? auth()->user()->name
+            ]);
         }
-        return back()->with('success', "Tiket {$report->id} berhasil di-reject.");
+
+        $ticketScope = $shift ? " shift {$shift}" : '';
+        return back()->with('success', "Tiket {$id}{$ticketScope} berhasil di-reject.");
     }
 
     /* ==========================================================================
@@ -219,37 +270,57 @@ class RptDailyPRefController extends Controller
      */
     private function buildBaseQuery(Request $request, string $tanggal)
     {
-        $user = Auth::user();
-        $userRole = $user->roles;
-        // $query = LSDailyProductionRefinery::query()->whereDate('posting_date', $tanggal);
-        $query = LSDailyProductionRefinery::join('m_product', 't_daily_production_refinery.oil_type_rm', '=', 'm_product.id')
-            ->whereDate('t_daily_production_refinery.posting_date', $tanggal);
-
+        $query = LSDailyProductionRefinery::from('t_daily_production_refinery as t')
+            ->whereDate('t.posting_date', $tanggal)
+            ->where('t.flag', 'T');
 
         if ($request->filled('filter_work_center')) {
-            $query->where('t_daily_production_refinery.work_center', $request->filter_work_center);
+            $query->where('t.work_center', $request->filter_work_center);
         }
 
-        $query->where('t_daily_production_refinery.flag', 'T');
+        return $query
+            ->select([
+                't.id',
+                DB::raw("GROUP_CONCAT(DISTINCT t.shift ORDER BY t.shift SEPARATOR ', ') as shifts"),
+                DB::raw('MIN(t.work_center) as work_center'),
+                DB::raw('MIN(t.transaction_date) as transaction_date'),
+                DB::raw('MAX(t.entry_by) as entry_by'),
+                DB::raw('SUM(COALESCE(t.oil_type_rm_total, 0)) as oil_type_rm_total'),
+                DB::raw('SUM(COALESCE(t.oil_type_fg_total, 0)) as oil_type_fg_total'),
+                DB::raw('SUM(COALESCE(t.bp_total, 0)) as bp_total'),
+                DB::raw('COUNT(*) as row_count'),
+                DB::raw('COUNT(DISTINCT t.shift) as shift_count'),
+                DB::raw("CASE
+                    WHEN SUM(CASE WHEN t.prepared_status = 'Rejected' THEN 1 ELSE 0 END) > 0 THEN 'Rejected'
+                    WHEN SUM(CASE WHEN t.prepared_status = 'Approved' THEN 1 ELSE 0 END) = COUNT(*) THEN 'Approved'
+                    ELSE NULL
+                END as prepared_status"),
+                DB::raw("CASE
+                    WHEN SUM(CASE WHEN t.checked_status = 'Rejected' THEN 1 ELSE 0 END) > 0 THEN 'Rejected'
+                    WHEN SUM(CASE WHEN t.checked_status = 'Approved' THEN 1 ELSE 0 END) = COUNT(*) THEN 'Approved'
+                    ELSE NULL
+                END as checked_status"),
+            ])
+            ->groupBy('t.id')
+            ->orderByRaw('MIN(t.transaction_date) DESC')
+            ->orderBy('t.id');
+    }
 
-        // if ($userRole === "LEAD" || $userRole === "LEAD_PROD") {
-        //     // Join with m_roles_shift_prepared for shift filtering
-        //     $query->join('m_roles_shift_prepared', 't_daily_production_refinery.shift', '=', 'm_roles_shift_prepared.shift_code')
-        //         ->where('m_roles_shift_prepared.username', $user->username)->where('m_roles_shift_prepared.isactive', 'T')
-        //         ->select('t_daily_production_refinery.*');
-        // }
-        $baseSelect = [
-            't_daily_production_refinery.*',
-            't_daily_production_refinery.oil_type_rm AS oil_type_rm_id',
-            'm_product.raw_material AS oil_type_rm',
-            't_daily_production_refinery.oil_type_fg AS oil_type_fg_id',
-            'm_product.finish_good AS oil_type_fg',
-            't_daily_production_refinery.bp_oil_type AS bp_oil_type_id',
-            'm_product.by_product AS bp_oil_type',
-        ];
-
-
-        return $query->select($baseSelect);
+    private function buildDetailQuery()
+    {
+        return LSDailyProductionRefinery::query()
+            ->leftJoin('m_product as p_rm', 't_daily_production_refinery.oil_type_rm', '=', 'p_rm.id')
+            ->leftJoin('m_product as p_fg', 't_daily_production_refinery.oil_type_fg', '=', 'p_fg.id')
+            ->leftJoin('m_product as p_bp', 't_daily_production_refinery.bp_oil_type', '=', 'p_bp.id')
+            ->select([
+                't_daily_production_refinery.*',
+                't_daily_production_refinery.oil_type_rm AS oil_type_rm_id',
+                'p_rm.raw_material AS oil_type_rm',
+                't_daily_production_refinery.oil_type_fg AS oil_type_fg_id',
+                'p_fg.finish_good AS oil_type_fg',
+                't_daily_production_refinery.bp_oil_type AS bp_oil_type_id',
+                'p_bp.by_product AS bp_oil_type',
+            ]);
     }
 
     /**
@@ -260,10 +331,7 @@ class RptDailyPRefController extends Controller
      */
     private function getMainData(string $tanggal, ?string $workCenter)
     {
-        $user = Auth::user();
-        $userRole = $user->roles;
-        // $query = LSDailyProductionRefinery::whereDate('posting_date', $tanggal);
-        $query = LSDailyProductionRefinery::join('m_product', 't_daily_production_refinery.oil_type_rm', '=', 'm_product.id')
+        $query = $this->buildDetailQuery()
             ->whereDate('t_daily_production_refinery.posting_date', $tanggal);
 
         if ($workCenter)
@@ -271,24 +339,12 @@ class RptDailyPRefController extends Controller
 
         $query->where('t_daily_production_refinery.flag', 'T');
 
-        // if ($userRole === "MGR" or $userRole === "MGR_PROD") {
-        //     return $query->select('t_daily_production_refinery.*')->orderBy('shift')->get();
-        // } elseif ($userRole === "LEAD" or $userRole === "LEAD_PROD") {
-        //     return $query->join('m_roles_shift_prepared', 't_daily_production_refinery.shift', '=', 'm_roles_shift_prepared.shift_code')
-        //         ->where('m_roles_shift_prepared.username', $user->username)->where('m_roles_shift_prepared.isactive', 'T')
-        //         ->select('t_daily_production_refinery.*')->orderBy('shift')->get();
-        // }
-
-        $baseSelect = [
-            't_daily_production_refinery.*',
-            't_daily_production_refinery.oil_type_rm AS oil_type_rm_id',
-            'm_product.raw_material AS oil_type_rm',
-            't_daily_production_refinery.oil_type_fg AS oil_type_fg_id',
-            'm_product.finish_good AS oil_type_fg',
-            't_daily_production_refinery.bp_oil_type AS bp_oil_type_id',
-            'm_product.by_product AS bp_oil_type',
-        ];
-        return $query->select($baseSelect)->orderBy('t_daily_production_refinery.shift')->get();
+        return $query
+            ->orderBy('t_daily_production_refinery.work_center')
+            ->orderBy('t_daily_production_refinery.shift')
+            ->orderBy('t_daily_production_refinery.id')
+            ->orderBy('t_daily_production_refinery.no')
+            ->get();
     }
 
     /**
@@ -457,15 +513,24 @@ class RptDailyPRefController extends Controller
 
         // 2. Aggregate the data for each shift
         $shiftSummaries = $groupedByShift->map(function ($shiftReports, $shift) {
-            $lastReport = $shiftReports->last();
-            $budgetQty = optional($lastReport)->uu_budget_qty;
-            $totalCPO = $shiftReports->sum(fn($report) => (float) $report->uu_total_cpo);
-            $totalSteam = $shiftReports->sum(fn($report) => (float) $report->uu_total_steam);
-            $steamCpo = $shiftReports->sum(fn($report) => (float) $report->uu_steam_cpo);
-            $yieldPercent = $shiftReports->sum(fn($report) => (float) $report->uu_yield_percent);
+            $ticketLevelRows = $shiftReports
+                ->groupBy(fn($report) => $report->id ?? '')
+                ->map(function ($ticketRows) {
+                    return $ticketRows
+                        ->sortBy('no')
+                        ->first();
+                })
+                ->values();
 
-            $beTotalBag = $shiftReports->sum(fn($report) => (float) $report->be_total_bag);
-            $paTotal = $shiftReports->sum(fn($report) => (float) $report->pa_total);
+            $lastReport = $ticketLevelRows->last();
+            $budgetQty = optional($lastReport)->uu_budget_qty;
+            $totalCPO = $ticketLevelRows->sum(fn($report) => (float) ($report->uu_total_cpo ?? 0));
+            $totalSteam = $ticketLevelRows->sum(fn($report) => (float) ($report->uu_total_steam ?? 0));
+            $steamCpo = $ticketLevelRows->sum(fn($report) => (float) ($report->uu_steam_cpo ?? 0));
+            $yieldPercent = $ticketLevelRows->sum(fn($report) => (float) ($report->uu_yield_percent ?? 0));
+
+            $beTotalBag = $ticketLevelRows->sum(fn($report) => (float) ($report->be_total_bag ?? 0));
+            $paTotal = $ticketLevelRows->sum(fn($report) => (float) ($report->pa_total ?? 0));
 
             $beLotBatchNumber = optional($lastReport)->be_lot_batch_number;
             $paLotBatchNumber = optional($lastReport)->pa_lot_batch_number;
@@ -483,7 +548,7 @@ class RptDailyPRefController extends Controller
                 'uu_total_steam' => $totalSteam, // Total Steam for the shift
                 'uu_steam_cpo' => $steamCpo,
                 'uu_yield_percent' => $yieldPercent,
-                'uu_item' => $shiftReports->pluck('uu_item')->filter()->unique()->implode(', '), // Show unique items
+                'uu_item' => $ticketLevelRows->pluck('uu_item')->filter()->unique()->implode(', '), // Show unique items
 
                 // Chemicals Summary (SUM)
                 'be_total_bag' => $beTotalBag,
@@ -498,7 +563,7 @@ class RptDailyPRefController extends Controller
                 'pa_yield_percent' => $paYieldPercent,
 
                 // Remarks Summary (Concatenate all remarks for the shift)
-                'remarks' => $shiftReports->pluck('remarks')->filter()->implode(PHP_EOL . '---' . PHP_EOL),
+                'remarks' => $ticketLevelRows->pluck('remarks')->filter()->unique()->implode(PHP_EOL . '---' . PHP_EOL),
             ];
         })->sortBy('shift')->values(); // Sort by shift and reset keys
 

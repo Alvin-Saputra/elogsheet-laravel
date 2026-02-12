@@ -26,6 +26,7 @@ use App\Http\Controllers\RptDailyProductionController;
 use App\Http\Controllers\RptDailyQualityCompositeFractionation;
 use App\Http\Controllers\RptDailyStorageTankAnalyticalController;
 use App\Http\Controllers\RptFormTransferController;
+use App\Http\Controllers\AROSByVesselController;
 /*
 |--------------------------------------------------------------------------
 | Guest Routes (Login)
@@ -418,12 +419,10 @@ Route::middleware('auth')->group(function () {
       Route::prefix('analytical-result-outgoing-shipment-product-by-vessel')
         ->name('analytical-result-outgoing-shipment-product-by-vessel.')
         ->group(function () {
-            Route::get('/', [AROSProductByTruckController::class, 'index'])->name('index');
-            // Route::post('/bulk/approve', [AROSProductByTruckController::class, 'bulkApprove'])->name('bulk-approve');
-            // Route::post('/bulk/reject', [AROSProductByTruckController::class, 'bulkReject'])->name('bulk-reject');
-            // Route::post('/{id}/approve-report', [AROSProductByTruckController::class, 'updateApprovalStatusWeb'])->name('approveReject');
-            // Route::get('/{id}', [AROSProductByTruckController::class, 'getById'])->name('show');
-            // Route::get('/{id}/export/view', [AROSProductByTruckController::class, 'getById'])->name('preview');
-            // Route::get('/{id}/export/pdf', [AROSProductByTruckController::class, 'getById'])->name('export');
+            Route::get('/', [AROSByVesselController::class, 'index'])->name('index');
+            Route::post('/{id}/approve-report', [AROSByVesselController::class, 'updateApprovalStatusWeb'])->name('approveReject');
+            Route::get('/{id}', [AROSByVesselController::class, 'getById'])->name('show');
+            Route::get('/{id}/export/view', [AROSByVesselController::class, 'getById'])->name('preview');
+            Route::get('/{id}/export/pdf', [AROSByVesselController::class, 'getById'])->name('export');
         });
 });
