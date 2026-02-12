@@ -112,4 +112,10 @@ class LSQualityReportQc extends Model
 
         'updated_date' => 'datetime',
     ];
+
+    public function dailyProduction()
+    {
+        // Parameter: (Model Tujuan, Foreign Key di tabel ini, Owner Key di tabel tujuan)
+        return $this->belongsTo(LSDailyProductionRefinery::class, 'daily_production_refinery_id', 'id');
+    }
 }

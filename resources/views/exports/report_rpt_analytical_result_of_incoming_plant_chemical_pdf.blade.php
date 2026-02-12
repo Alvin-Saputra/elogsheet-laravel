@@ -332,15 +332,15 @@
         <tr>
           <td>
             <div class="sig-role">Done by</div>
-            <div class="muted">(Operator)</div>
-            <div class="sig-name">({{ $header->entry_by ?? '_______________________' }})</div>
+            <div class="muted">{{ optional($header->entriedByUser)->roles }}</div>
+            <div class="sig-name">{{ optional($header->entriedByUser)->fullname ?? $header->entry_by ?? '_________________' }}</div>
             <div class="sig-date">Date:
               {{ $header->entry_date ? \Carbon\Carbon::parse($header->entry_date)->format('d-m-Y H:i') : '' }}</div>
           </td>
           <td>
             <div class="sig-role">Prepared by</div>
-            <div class="muted">(Shift Leader)</div>
-            <div class="sig-name">({{ $header->prepared_by ?? '_______________________' }})</div>
+            <div class="muted">{{ optional($header->preparedByUser)->roles }}</div>
+            <div class="sig-name">{{ optional($header->preparedByUser)->fullname ?? $header->prepared_by ?? '_________________' }}</div>
             <div class="sig-date">Date:
               {{ $header->prepared_date ? \Carbon\Carbon::parse($header->prepared_date)->format('d-m-Y H:i') : '' }}
             </div>
@@ -350,8 +350,8 @@
           </td>
           <td>
             <div class="sig-role">Approved by</div>
-            <div class="muted">(QC Head)</div>
-            <div class="sig-name">({{ $header->approved_by ?? '_______________________' }})</div>
+            <div class="muted">{{ optional($header->approvedByUser)->roles }}</div>
+            <div class="sig-name">{{ optional($header->approvedByUser)->fullname ?? $header->approved_by ?? '_________________' }}</div>
             <div class="sig-date">Date:
               {{ $header->approved_date ? \Carbon\Carbon::parse($header->approved_date)->format('d-m-Y H:i') : '' }}
             </div>
@@ -448,8 +448,8 @@
         <div style="width:170px; text-align:center;">
           <div style="font-size:13px; font-weight:600;">Issue by</div>
           <div style="height:52px;"></div>
-          <div style="font-weight:700;">{{ $coa->issue_by ?? $header->approved_by ?? '_________________' }}</div>
-          <div style="font-size:11px;color:#6b7280;">Head of Quality Assurance</div>
+          <div style="font-weight:700;">{{optional($coa->issuedByUser)->fullname ?? $coa->issue_by ?? '_________________' }}</div>
+          <div style="font-size:11px;color:#6b7280;">{{ optional($coa->issuedByUser)->roles }} </div>
         </div>
       </div>
 

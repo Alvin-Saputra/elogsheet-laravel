@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AROIPChemicalController;
+use App\Http\Controllers\Api\FormTransferController;
 use App\Http\Controllers\ARIMByTruckController;
 use App\Http\Controllers\ARIMByVesselController;
 use App\Http\Controllers\AROIPFuelController;
@@ -8,6 +9,7 @@ use App\Http\Controllers\AROSByVesselController;
 use App\Http\Controllers\AROSProductByTruckController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\COAController;
+use App\Http\Controllers\DryFraController;
 use App\Http\Controllers\MstBusinessUnitController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -121,9 +123,24 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
 Route::middleware('auth:sanctum')->group(function () {
-    Route::post('arosvess', [AROSByVesselController::class, 'create']);
-    Route::get('arosvess', [AROSByVesselController::class, 'get']);
-    Route::put('arosvess/{id}', [AROSByVesselController::class, 'update']);
-    Route::delete('arosvess/{id}', [AROSByVesselController::class, 'destroy']);
-    Route::put('arosvess/{id}/approve', [AROSByVesselController::class, 'updateApproval']);
+
+    // new single api route
+    Route::post('dryfrac', [DryFraController::class, 'create']);
+    Route::get('dryfrac', [DryFraController::class, 'get']);
+    Route::delete('dryfrac/{id}', [DryFraController::class, 'destroy']);
+    Route::put('dryfrac/approve-reject', [DryFraController::class, 'updateApprovalStatusApi']);
+    Route::put('dryfrac/approve-reject-perdate', [DryFraController::class, 'updateApprovalStatusPerDateApi']);
+    Route::put('dryfrac/{id}', [DryFraController::class, 'update']);
+
+});
+
+
+Route::middleware('auth:sanctum')->group(function () {
+    // Form Transfer routes
+    Route::get('form-transfer', [FormTransferController::class, 'get']);
+    Route::get('form-transfer/pending', [FormTransferController::class, 'getPending']);
+    Route::post('form-transfer', [FormTransferController::class, 'create']);
+    Route::put('form-transfer/{id}', [FormTransferController::class, 'update']);
+    Route::delete('form-transfer/{id}', [FormTransferController::class, 'destroy']);
+    Route::put('form-transfer/{id}/approve', [FormTransferController::class, 'updateApproval']);
 });

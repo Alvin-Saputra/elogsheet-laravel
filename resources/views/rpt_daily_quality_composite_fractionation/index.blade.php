@@ -3,270 +3,290 @@
 @section('page_title', 'Laporan Daily Quality Composite Fractionation')
 
 @section('content')
-    <div class="bg-white p-6 rounded shadow-md">
-        {{-- Judul Modern --}}
+<div class="bg-white p-6 rounded shadow-md">
 
-        <div class="flex items-center justify-between mb-6">
+    {{-- ================= HEADER ================= --}}
+    <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center space-x-3">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-600" fill="none"
+                viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path d="M3 3v18h18M16 8l-4 4-4-4M16 16l-4 4-4-4" />
+            </svg>
             <div>
-                <div class="flex items-center space-x-3 mb-1">
-                    <!-- Ikon Dry Fractionation -->
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M3 3v18h18M16 8l-4 4-4-4M16 16l-4 4-4-4" />
-                    </svg>
+                <h2 class="text-lg font-semibold text-gray-800">
+                    Daily Quality Composite Fractionation
+                </h2>
+                <span class="inline-block px-2 py-1 text-xs font-semibold text-red-800 bg-red-100 rounded">
+                    F/QCO-003
+                </span>
+            </div>
+        </div>
 
-                    <div>
-                        <h2 class="text-lg font-semibold text-gray-800">Daily Quality Composite Fractionation
-                        </h2>
-                        <div class="text-sm text-gray-600 mt-1">
-                            <span class="font-medium text-gray-700">Kode Logsheet:</span>
-                            <span class="inline-block px-2 py-1 text-xs font-semibold text-red-800 bg-red-100 rounded">
-                                F/QCO-003
-                            </span>
-                        </div>
+        <div class="flex gap-2">
+            <a href="{{ route('daily-quality-composite-fractionation.export.view', request()->query()) }}"
+                class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg">
+                View Layout
+            </a>
+            <a href="{{ route('daily-quality-composite-fractionation.export.pdf', request()->query()) }}"
+                class="px-4 py-2 bg-red-600 text-white text-sm rounded-lg">
+                Download PDF
+            </a>
+        </div>
+    </div>
+
+    {{-- ================= FILTER ================= --}}
+    <form method="GET" action="{{ route('daily-quality-composite-fractionation.index') }}"
+        class="bg-gray-50 p-4 rounded mb-4 flex flex-wrap gap-4 items-end">
+
+        <div>
+            <label class="block text-sm font-medium">Tanggal Operasional</label>
+            <input type="date" name="filter_tanggal" value="{{ $tanggal }}"
+                class="border rounded px-2 py-1 text-sm">
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium">Jam</label>
+            <select name="filter_jam" class="border rounded px-2 py-1 text-sm">
+                <option value="">Semua</option>
+                @for ($i = 0; $i < 24; $i++)
+                    @php $j = sprintf('%02d:00', $i); @endphp
+                    <option value="{{ $j }}" {{ $jam === $j ? 'selected' : '' }}>
+                        {{ $j }}
+                    </option>
+                @endfor
+            </select>
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium">Work Center</label>
+            <select name="filter_work_center" class="border rounded px-2 py-1 text-sm">
+                <option value="">Semua</option>
+                @foreach ($listWorkCenters as $wc)
+                    <option value="{{ $wc->work_center }}"
+                        {{ $workCenter === $wc->work_center ? 'selected' : '' }}>
+                        {{ $wc->label }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+
+        <button class="px-4 py-2 bg-gray-800 text-white text-sm rounded">
+            Filter
+        </button>
+    </form>
+
+    {{-- ================= INFO ================= --}}
+    <div class="mb-4 p-3 rounded bg-blue-50 text-blue-700 text-sm">
+        Hari Operasional:
+        {{ \Carbon\Carbon::parse($tanggal)->format('d/m/Y') }} 08:00 –
+        {{ \Carbon\Carbon::parse($tanggal)->addDay()->format('d/m/Y') }} 07:59
+    </div>
+
+        {{-- Bulk Action Buttons --}}
+        <div class="mb-4" x-data="{ bulkApproveAll: false, bulkRejectAll: false, bulkRemark: '' }">
+            @if (auth()->user()->roles === 'LEAD_QC' || auth()->user()->roles === 'LEAD')
+                <div class="flex gap-2">
+                    <button type="button" @click="bulkApproveAll = true"
+                        class="px-4 py-2 text-sm font-semibold rounded-lg {{ $data->where('prepared_status', null)->count() > 0 ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed' }}"
+                        {{ $data->where('prepared_status', null)->count() > 0 ? '' : 'disabled' }}>
+                        Approve All
+                    </button>
+                    <button type="button" @click="bulkRejectAll = true"
+                        class="px-4 py-2 text-sm font-semibold rounded-lg {{ $data->where('prepared_status', null)->count() > 0 ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed' }}"
+                        {{ $data->where('prepared_status', null)->count() > 0 ? '' : 'disabled' }}>
+                        Reject All
+                    </button>
+                </div>
+                @if ($data->where('prepared_status', null)->count() === 0)
+                    @if ($data->count() === 0)
+                        <small class="text-gray-500">*tidak ada data pada tanggal ini</small>
+                    @else
+                        <small class="text-gray-500">*semua data sudah di-approve</small>
+                    @endif
+                @endif
+            @elseif (auth()->user()->roles === 'MGR_QC' || auth()->user()->roles === 'MGR' || auth()->user()->roles === 'ADM')
+                <div class="flex gap-2">
+                    <button type="button" @click="bulkApproveAll = true"
+                        class="px-4 py-2 rounded text-white {{ $data->where('prepared_status', 'Approved')->where('checked_status', null)->count() > 0 ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-400' }}"
+                        {{ $data->where('prepared_status', 'Approved')->where('checked_status', null)->count() > 0 ? '' : 'disabled' }}>
+                        Approve All
+                    </button>
+                    <button type="button" @click="bulkRejectAll = true"
+                        class="px-4 py-2 rounded text-white {{ $data->where('prepared_status', 'Approved')->where('checked_status', null)->count() > 0 ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-400' }}"
+                        {{ $data->where('prepared_status', 'Approved')->where('checked_status', null)->count() > 0 ? '' : 'disabled' }}>
+                        Reject All
+                    </button>
+                </div>
+                @if ($data->where('prepared_status', 'Approved')->where('checked_status', null)->count() === 0)
+                    <small class="text-gray-500">*tidak ada data pada tanggal ini</small>
+                @endif
+            @endif
+
+            {{-- Bulk Approve Modal --}}
+            <div x-show="bulkApproveAll" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" x-cloak>
+                <div class="bg-white p-6 rounded-lg shadow-xl">
+                    <h2 class="text-lg font-bold mb-4">Approve Semua</h2>
+                    <p>Apakah Anda yakin ingin approve semua laporan?</p>
+                    <div class="mt-6 flex justify-end gap-2">
+                        <button @click="bulkApproveAll = false" class="px-4 py-2 bg-gray-300 rounded">Batal</button>
+                        <form method="POST" action="{{ route('daily-quality-composite-fractionation.bulk-approve') }}" class="inline">
+                            @csrf
+                            <input type="hidden" name="tanggal" value="{{ $tanggal }}">
+                            <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded">Approve Semua</button>
+                        </form>
                     </div>
                 </div>
             </div>
-            <div class="flex flex-wrap gap-2">
-                <a href="{{ route('daily-quality-composite-fractionation.export.view', ['filter_tanggal' => $tanggal, 'filter_jam' => $jam, 'filter_work_center' => $workCenter]) }}"
-                    class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg shadow transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M2.458 12C3.732 7.943 7.523 5 12 5s8.268 2.943 9.542 7c-1.274 4.057-5.065 7-9.542 7S3.732 16.057 2.458 12z" />
-                    </svg>
-                    View Layout
-                </a>
-                <a href="{{ route('daily-quality-composite-fractionation.export.pdf', ['filter_tanggal' => $tanggal, 'filter_jam' => $jam, 'filter_work_center' => $workCenter]) }}"
-                    class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg shadow transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2" />
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M7 10l5 5 5-5M12 4v12" />
-                    </svg>
-                    Download PDF
-                </a>
-            </div>
-        </div>
 
-
-        {{-- Filter --}}
-        <div class="bg-gray-50 p-4 rounded-md shadow-sm mb-6">
-            <form method="GET" action="{{ route('daily-quality-composite-fractionation.index') }}"
-                class="flex flex-wrap items-end gap-4">
-                <div class="w-full sm:w-44">
-                    <label for="filter_tanggal" class="block text-sm font-medium text-gray-700">Tanggal</label>
-                    <input type="date" id="filter_tanggal" name="filter_tanggal" value="{{ $tanggal }}"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-red-500 focus:border-red-500 sm:text-sm">
-                </div>
-
-                <div class="w-full sm:w-32">
-                    <label for="filter_jam" class="block text-sm font-medium text-gray-700">Time</label>
-                    <select id="filter_jam" name="filter_jam"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-red-500 focus:border-red-500 sm:text-sm">
-                        <option value="">Pilih Jam</option>
-                        @for ($i = 0; $i < 24; $i++)
-                            @php $jam = str_pad($i, 2, '0', STR_PAD_LEFT) . ':00'; @endphp
-                            <option value="{{ $jam }}" {{ request('filter_jam') == $jam ? 'selected' : '' }}>
-                                {{ $jam }}
-                            </option>
-                        @endfor
-                    </select>
-                </div>
-
-                <div class="w-full sm:w-48">
-                    <label for="filter_work_center" class="block text-sm font-medium text-gray-700">Work Center</label>
-                    <select id="filter_work_center" name="filter_work_center"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-red-500 focus:border-red-500 sm:text-sm">
-                        <option value="">Pilih Work Center</option>
-                        @foreach ($listWorkCenters as $wc)
-                            <option value="{{ $wc->work_center }}"
-                                {{ request('filter_work_center') == $wc->work_center ? 'selected' : '' }}>
-                                {{ $wc->label }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="flex items-end gap-2">
-                    <button type="submit"
-                        class="inline-flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-900 text-white text-sm font-semibold rounded-lg shadow transition">Filter</button>
-                    @if (request()->has('filter_tanggal') || request()->has('filter_jam'))
-                        <a href="{{ route('daily-quality-composite-fractionation.index') }}"
-                            class="inline-flex items-center px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 text-sm font-semibold rounded-lg shadow transition">Reset</a>
-                    @endif
-                </div>
-
-
-            </form>
-        </div>
-        {{-- Approval Day --}}
-        {{-- <div x-data="{ openRejectModal: false }">
-            <div class="flex gap-2 mb-4">
-                <form action="{{ route('report-monitoring-dry-fractionation.approve-date') }}" method="POST"> @csrf <input
-                        type="hidden" name="posting_date" value="{{ $tanggal }}">
-                    <button type="submit"
-                        class="px-4 py-2 text-sm font-semibold rounded-lg {{ $canApproveReject ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed' }}"
-                        {{ !$canApproveReject ? 'disabled' : '' }}>Approve Hari Ini</button>
-                </form>
-                <button type="button" @click="openRejectModal = true"
-                    class="px-4 py-2 text-sm font-semibold rounded-lg {{ $canApproveReject ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed' }}"
-                    {{ !$canApproveReject ? 'disabled' : '' }}>Reject Hari Ini</button>
-            </div>
-            <div x-show="openRejectModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50"
-                x-cloak>
-                <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
-                    <h2 class="text-lg font-semibold text-gray-800 mb-4">Reject Laporan</h2>
-                    <form action="{{ route('report-monitoring-dry-fractionation.reject-date') }}" method="POST"> @csrf
-                        <input type="hidden" name="posting_date" value="{{ $tanggal }}">
-                        <div class="mb-4">
-                            <label for="remark" class="block text-sm font-medium text-gray-700">Alasan Reject</label>
-                            <textarea id="remark" name="remark" rows="3" required
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-red-500 focus:border-red-500 sm:text-sm"></textarea>
-                        </div>
-                        <div class="flex justify-end gap-2">
-                            <button type="button" @click="openRejectModal = false"
-                                class="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded-lg text-gray-700">Batal</button>
-                            <button type="submit"
-                                class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg">Reject</button>
+            {{-- Bulk Reject Modal --}}
+            <div x-show="bulkRejectAll" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" x-cloak>
+                <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
+                    <h2 class="text-lg font-bold mb-4">Reject Semua</h2>
+                    <form method="POST" action="{{ route('daily-quality-composite-fractionation.bulk-reject') }}">
+                        @csrf
+                        <input type="hidden" name="tanggal" value="{{ $tanggal }}">
+                        <label for="bulk-remark" class="block mb-2">Alasan Reject:</label>
+                        <textarea id="bulk-remark" name="remark" class="w-full border rounded p-2" rows="3" required x-model="bulkRemark"></textarea>
+                        <div class="mt-6 flex justify-end gap-2">
+                            <button type="button" @click="bulkRejectAll = false" class="px-4 py-2 bg-gray-300 rounded">Batal</button>
+                            <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded">Reject Semua</button>
                         </div>
                     </form>
                 </div>
             </div>
-        </div> --}}
-
-        {{-- Tabel --}}
-        <div class="overflow-x-auto">
-            <table class="min-w-full bg-white border border-gray-200 rounded-lg">
-                <thead class="bg-gray-100 text-gray-700 text-sm">
-                    <tr>
-                        <th class="px-4 py-2 border-b text-left">No</th>
-                        <th class="px-4 py-2 border-b text-left">Report ID</th>
-                        <th class="px-4 py-2 border-b text-left">Tanggal</th>
-                        <th class="px-4 py-2 border-b text-left">Jam</th>
-                        <th class="px-4 py-2 border-b text-left">Work Center</th>
-                        <th class="px-4 py-2 border-b text-left">Crystalizer</th>
-                        <th class="px-4 py-2 border-b text-left">Prepared Status</th>
-                        <th class="px-4 py-2 border-b text-left">Checked Status</th>
-                        <th class="px-4 py-2 border-b text-left">Action</th>
-                        <th class="px-4 py-2 border-b text-left">Detail</th>
-
-                    </tr>
-                </thead>
-                <tbody class="text-sm text-gray-700">
-                    @forelse ($data as $item)
-                        <tr class="hover:bg-gray-50">
-                            <td>{{ $loop->iteration }}</td>
-                            <td>{{ $item->id }}</td>
-                            <td>{{ $item->transaction_date }}</td>
-                            <td>{{ $item->time }}</td>
-                            <td>{{ $item->work_center }}</td>
-                            <td>{{ $item->crystalizer }}</td>
-
-                            <td class="px-2 py-2 border-b text-center">
-                                @if ($item->prepared_status == 'Approved')
-                                    <span class="px-2 py-1 text-xs rounded bg-green-100 text-green-700">Approved</span>
-                                @elseif ($item->prepared_status == 'Rejected')
-                                    <span class="px-2 py-1 text-xs rounded bg-red-100 text-red-700">Rejected</span>
-                                @else
-                                    <span class="px-2 py-1 text-xs rounded bg-gray-100 text-gray-600">Pending</span>
-                                @endif
-                            </td>
-                            <td class="px-2 py-2 border-b text-center">
-                                @if ($item->checked_status == 'Approved')
-                                    <span class="px-2 py-1 text-xs rounded bg-green-100 text-green-700">Approved</span>
-                                @elseif ($item->checked_status == 'Rejected')
-                                    <span class="px-2 py-1 text-xs rounded bg-red-100 text-red-700">Rejected</span>
-                                @else
-                                    <span class="px-2 py-1 text-xs rounded bg-gray-100 text-gray-600">Pending</span>
-                                @endif
-                            </td>
-                            <td class="px-2 py-2 border-b text-center">
-                                <div class="flex justify-center gap-2" x-data="{ showApprove: false, showReject: false }">
-                                    @if ((auth()->user()->roles === 'LEAD_QC' || auth()->user()->roles === 'LEAD') && is_null($item->prepared_status))
-                                        <button @click="showApprove = true"
-                                            class="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 shadow">Approve</button>
-                                        <button @click="showReject = true"
-                                            class="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 shadow">Reject</button>
-                                    @endif
-                                    @if (
-                                        (auth()->user()->roles === 'MGR_QC' || auth()->user()->roles === 'MGR' || auth()->user()->roles === 'ADM') &&
-                                            is_null($item->checked_status) &&
-                                            $item->prepared_status === 'Approved' &&
-                                            $item->prepared_status != 'Rejected')
-                                        <button @click="showApprove = true"
-                                            class="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 shadow">Approve</button>
-                                        <button @click="showReject = true"
-                                            class="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 shadow">Reject</button>
-                                    @endif
-                                    <div x-show="showApprove"
-                                        class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
-                                        x-cloak>
-                                        <div class="bg-white p-6 rounded-lg shadow-xl">
-                                            <h2 class="text-lg font-bold mb-4">Confirm Approval</h2>
-                                            <p>Approve ticket #{{ $item->id }}?</p>
-                                            <div class="mt-6 flex justify-end gap-2">
-                                                <button @click="showApprove = false"
-                                                    class="px-4 py-2 bg-gray-300 rounded">Cancel</button>
-                                                <form method="POST"
-                                                    action="{{ route('daily-quality-composite-fractionation.approveReport', $item->id) }}">
-                                                    @csrf
-                                                    <button type="submit"
-                                                        class="px-4 py-2 bg-green-600 text-white rounded">Approve</button>
-                                                </form>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div x-show="showReject"
-                                        class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
-                                        x-cloak>
-                                        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
-                                            <h2 class="text-lg font-bold mb-4">Confirm Rejection</h2>
-                                            <form method="POST"
-                                                action="{{ route('daily-quality-composite-fractionation.rejectReport', $item->id) }}">
-                                                @csrf
-                                                <label for="remark-{{ $item->id }}" class="block mb-2">Reason for
-                                                    rejection:</label>
-                                                <textarea id="remark-{{ $item->id }}" name="remark" class="w-full border rounded p-2" rows="3" required></textarea>
-                                                <div class="mt-6 flex justify-end gap-2">
-                                                    <button type="button" @click="showReject = false"
-                                                        class="px-4 py-2 bg-gray-300 rounded">Cancel</button>
-                                                    <button type="submit"
-                                                        class="px-4 py-2 bg-red-600 text-white rounded">Reject</button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-                            </td>
-
-
-                            <td class="px-2 py-2 border-b text-center">
-                                <a href="{{ route('daily-quality-composite-fractionation.show', $item->id) }}"
-                                    class="text-blue-600 hover:text-blue-800"><svg xmlns="http://www.w3.org/2000/svg"
-                                        viewBox="0 0 512 512" class="w-5 h-5 inline-block">
-                                        <path fill="currentColor"
-                                            d="M256 512a256 256 0 1 0 0-512 256 256 0 1 0 0 512zM224 160a32 32 0 1 1 64 0 32 32 0 1 1 -64 0zm-8 64l48 0c13.3 0 24 10.7 24 24l0 88 8 0c13.3 0 24 10.7 24 24s-10.7 24-24 24l-80 0c-13.3 0-24-10.7-24-24s10.7-24 24-24l24 0 0-64-24 0c-13.3 0-24-10.7-24-24s10.7-24 24-24z" />
-                                    </svg></a>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="12" class="px-4 py-6 border-b text-center text-gray-500">
-                                No data available for this date.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
         </div>
-        {{-- @if ($reports->hasPages())
-            <div class="mt-4">{{ $reports->links() }}</div>
-        @endif --}}
 
-        {{-- Footer info --}}
-        {{-- <div class="mt-6 text-sm text-gray-500 italic">
-            Menampilkan {{ $reports->count() }} data ticket.
-        </div> --}}
+    {{-- ================= TABLE ================= --}}
+    <div class="overflow-x-auto">
+        <table class="min-w-full border text-sm">
+            <thead class="bg-gray-100">
+                <tr>
+                    <th class="border px-2 py-1">No</th>
+                    <th class="border px-2 py-1">ID</th>
+                    <th class="border px-2 py-1">Tanggal</th>
+                    <th class="border px-2 py-1">Jam</th>
+                    <th class="border px-2 py-1">Work Center</th>
+                    <th class="border px-2 py-1">Crystalizer</th>
+                    <th class="border px-2 py-1">Prepared</th>
+                    <th class="border px-2 py-1">Checked</th>
+                    <th class="border px-2 py-1">Action</th>
+                    <th class="border px-2 py-1">Detail</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @forelse ($data as $item)
+                <tr class="hover:bg-gray-50">
+                    <td class="border px-2 py-1">{{ $loop->iteration }}</td>
+                    <td class="border px-2 py-1">{{ $item->id }}</td>
+                    <td class="border px-2 py-1">
+                        {{ \Carbon\Carbon::parse($item->transaction_date)->format('d/m/Y') }}
+                    </td>
+                    <td class="border px-2 py-1">{{ $item->time }}</td>
+                    <td class="border px-2 py-1">{{ $item->work_center }}</td>
+                    <td class="border px-2 py-1">{{ $item->crystalizer }}</td>
+
+                    {{-- STATUS --}}
+                    <td class="border px-2 py-1 text-center">
+                        {{ $item->prepared_status ?? 'Pending' }}
+                    </td>
+                    <td class="border px-2 py-1 text-center">
+                        {{ $item->checked_status ?? 'Pending' }}
+                    </td>
+
+                    {{-- ================= ACTION ================= --}}
+                    <td class="border px-2 py-1 text-center">
+                        <div x-data="{ a:false, r:false }" class="flex justify-center gap-1">
+
+                            {{-- LEAD --}}
+                            @if (
+                                in_array(auth()->user()->roles, ['LEAD','LEAD_QC'])
+                                && is_null($item->prepared_status)
+                            )
+                                <button @click="a=true"
+                                    class="bg-green-600 text-white px-2 py-1 text-xs rounded">
+                                    Approve
+                                </button>
+                                <button @click="r=true"
+                                    class="bg-red-600 text-white px-2 py-1 text-xs rounded">
+                                    Reject
+                                </button>
+                            @endif
+
+                            {{-- MANAGER --}}
+                            @if (
+                                in_array(auth()->user()->roles, ['MGR','MGR_QC','ADM'])
+                                && $item->prepared_status === 'Approved'
+                                && is_null($item->checked_status)
+                            )
+                                <button @click="a=true"
+                                    class="bg-green-600 text-white px-2 py-1 text-xs rounded">
+                                    Approve
+                                </button>
+                                <button @click="r=true"
+                                    class="bg-red-600 text-white px-2 py-1 text-xs rounded">
+                                    Reject
+                                </button>
+                            @endif
+
+                            {{-- APPROVE MODAL --}}
+                            <div x-show="a" x-cloak
+                                class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                                <div class="bg-white p-4 rounded">
+                                    <p>Approve ticket #{{ $item->id }}?</p>
+                                    <form method="POST"
+                                        action="{{ route('daily-quality-composite-fractionation.approveReport', $item->id) }}">
+                                        @csrf
+                                        <div class="mt-3 flex gap-2 justify-end">
+                                            <button type="button" @click="a=false">Cancel</button>
+                                            <button class="bg-green-600 text-white px-3 py-1 rounded">
+                                                Approve
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+
+                            {{-- REJECT MODAL --}}
+                            <div x-show="r" x-cloak
+                                class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                                <div class="bg-white p-4 rounded w-80">
+                                    <form method="POST"
+                                        action="{{ route('daily-quality-composite-fractionation.rejectReport', $item->id) }}">
+                                        @csrf
+                                        <textarea name="remark" required
+                                            class="w-full border rounded p-1 text-sm"
+                                            placeholder="Reason"></textarea>
+                                        <div class="mt-3 flex gap-2 justify-end">
+                                            <button type="button" @click="r=false">Cancel</button>
+                                            <button class="bg-red-600 text-white px-3 py-1 rounded">
+                                                Reject
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+
+                        </div>
+                    </td>
+
+                    <td class="border px-2 py-1 text-center">
+                        <a href="{{ route('daily-quality-composite-fractionation.show', $item->id) }}"
+                            class="text-blue-600">
+                            Detail
+                        </a>
+                    </td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="10" class="text-center py-6 text-gray-500">
+                        No data available
+                    </td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
     </div>
+
+</div>
 @endsection

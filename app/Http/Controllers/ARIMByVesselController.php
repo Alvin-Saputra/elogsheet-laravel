@@ -18,7 +18,7 @@ class ARIMByVesselController extends Controller
     // ---private function----
     private function findHeaderWithId($id)
     {
-        return ARIMByVesselHeader::with('details')->findOrFail($id);
+        return ARIMByVesselHeader::with('details', 'preparedByUser', 'approvedByUser', 'entriedByUser')->findOrFail($id);
     }
 
     private function processApprovalStatus($header, $status, $remark, $user_name, $user_roles)
@@ -65,44 +65,46 @@ class ARIMByVesselController extends Controller
                 'plant' => 'required',
                 'arrival' => ['required'],
                 'material' => 'required',
-                'quantity' => 'required',
-                'supplier' => 'required',
-                'ship_name' => 'required',
-                'hasil_analisa_ffa' => 'numeric',
-                'hasil_analisa_iv' => 'numeric',
-                'hasil_analisa_moisture' => 'numeric',
-                'hasil_analisa_dobi' => 'numeric',
-                'hasil_analisa_pv' => 'numeric',
-                'hasil_analisa_anv' => 'numeric',
+                'quantity' => 'nullable|numeric',   // Sebelumnya 'required'
+                'supplier' => 'nullable',   // Sebelumnya 'required'
+                'ship_name' => 'nullable',
+                'detail'    => 'present|array',  // Sebelumnya 'required'
+                'hasil_analisa_ffa' => 'nullable|numeric',
+                'hasil_analisa_iv' => 'nullable|numeric',
+                'hasil_analisa_moisture' => 'nullable|numeric',
+                'hasil_analisa_dobi' => 'nullable|numeric',
+                'hasil_analisa_pv' => 'nullable|numeric',
+                'hasil_analisa_anv' => 'nullable|numeric',
             ]);
             $validator_det = null;
-            foreach ($detail as $det) {
-                $validator_det = Validator::make(
-                    $det,
-
-                    [
-                        'palka_s_no' => 'numeric',
-                        'palka_s_ffa' => 'numeric',
-                        'palka_s_iv' => 'numeric',
-                        'palka_s_dobi' => 'numeric',
-                        'palka_s_mni' => 'numeric',
-                        'palka_c_no' => 'numeric',
-                        'palka_c_ffa' => 'numeric',
-                        'palka_c_iv' => 'numeric',
-                        'palka_c_dobi' => 'numeric',
-                        'palka_c_mni' => 'numeric',
-                        'palka_p_no' => 'numeric',
-                        'palka_p_ffa' => 'numeric',
-                        'palka_p_iv' => 'numeric',
-                        'palka_p_dobi' => 'numeric',
-                        'palka_p_mni' => 'numeric',
-                    ]
-                );
-                if ($validator->fails()) {
-                    break;
+            if (!empty($detail)) {
+                foreach ($detail as $det) {
+                    $validator_det = Validator::make(
+                        $det,
+                        [
+                            'palka_s_no' => 'nullable|numeric',
+                            'palka_s_ffa' => 'nullable|numeric',
+                            'palka_s_iv' => 'nullable|numeric',
+                            'palka_s_dobi' => 'nullable|numeric',
+                            'palka_s_mni' => 'nullable|numeric',
+                            'palka_c_no' => 'nullable|numeric',
+                            'palka_c_ffa' => 'nullable|numeric',
+                            'palka_c_iv' => 'nullable|numeric',
+                            'palka_c_dobi' => 'nullable|numeric',
+                            'palka_c_mni' => 'nullable|numeric',
+                            'palka_p_no' => 'nullable|numeric',
+                            'palka_p_ffa' => 'nullable|numeric',
+                            'palka_p_iv' => 'nullable|numeric',
+                            'palka_p_dobi' => 'nullable|numeric',
+                            'palka_p_mni' => 'nullable|numeric',
+                        ]
+                    );
+                    if ($validator_det->fails()) {
+                        break;
+                    }
                 }
             }
-            if ($validator->fails() || $validator_det->fails()) {
+            if ($validator->fails() || ($validator_det && $validator_det->fails())) {
                 DB::rollBack();
 
                 return response()->json([
@@ -110,7 +112,7 @@ class ARIMByVesselController extends Controller
                     'error' => 'INVALID_PAYLOAD',
                     'data' => [
                         'header' => $validator->errors()->all(),
-                        'detail' => $validator_det->errors()->all(),
+                        'detail' => $validator_det ? $validator_det->errors()->all() : [],
                     ],
                 ], 400);
             }
@@ -138,8 +140,8 @@ class ARIMByVesselController extends Controller
             $nextnum = intval($control['autonumber']) + 1;
             $padded_num = str_pad($nextnum, 6, '0', STR_PAD_LEFT);
             $hd_id = $control['prefix'];
-            $suffix = $control['plantid'].$control['accountingyear'].$padded_num;
-            $header_id = $hd_id.$suffix;
+            $suffix = $control['plantid'] . $control['accountingyear'] . $padded_num;
+            $header_id = $hd_id . $suffix;
             $now = new DateTime();
 
             $payload = [
@@ -160,7 +162,7 @@ class ARIMByVesselController extends Controller
 
             //inser detail
             foreach ($detail as $key => $det) {
-                $id_det = $hd_id.'D'.$suffix.$key;
+                $id_det = $hd_id . 'D' . $suffix . $key;
                 $payload_det = [
                     ...$det,
                     'id' => $id_det,
@@ -252,15 +254,15 @@ class ARIMByVesselController extends Controller
 
             $validator = Validator::make($data, [
                 'material' => 'required',
-                'quantity' => 'required',
-                'supplier' => 'required',
-                'ship_name' => 'required',
-                'hasil_analisa_ffa' => 'numeric',
-                'hasil_analisa_iv' => 'numeric',
-                'hasil_analisa_moisture' => 'numeric',
-                'hasil_analisa_dobi' => 'numeric',
-                'hasil_analisa_pv' => 'numeric',
-                'hasil_analisa_anv' => 'numeric',
+                'quantity' => 'nullable|numeric',   // Sebelumnya 'required'
+                'supplier' => 'nullable',   // Sebelumnya 'required'
+                'ship_name' => 'nullable',
+                'hasil_analisa_ffa' => 'nullable|numeric',
+                'hasil_analisa_iv' => 'nullable|numeric',
+                'hasil_analisa_moisture' => 'nullable|numeric',
+                'hasil_analisa_dobi' => 'nullable|numeric',
+                'hasil_analisa_pv' => 'nullable|numeric',
+                'hasil_analisa_anv' => 'nullable|numeric',
             ]);
 
             $validator_det = null;
@@ -268,21 +270,21 @@ class ARIMByVesselController extends Controller
                 $validator_det = Validator::make(
                     $det,
                     [
-                        'palka_s_no' => 'numeric',
-                        'palka_s_ffa' => 'numeric',
-                        'palka_s_iv' => 'numeric',
-                        'palka_s_dobi' => 'numeric',
-                        'palka_s_mni' => 'numeric',
-                        'palka_c_no' => 'numeric',
-                        'palka_c_ffa' => 'numeric',
-                        'palka_c_iv' => 'numeric',
-                        'palka_c_dobi' => 'numeric',
-                        'palka_c_mni' => 'numeric',
-                        'palka_p_no' => 'numeric',
-                        'palka_p_ffa' => 'numeric',
-                        'palka_p_iv' => 'numeric',
-                        'palka_p_dobi' => 'numeric',
-                        'palka_p_mni' => 'numeric',
+                        'palka_s_no' => 'nullable|numeric',
+                        'palka_s_ffa' => 'nullable|numeric',
+                        'palka_s_iv' => 'nullable|numeric',
+                        'palka_s_dobi' => 'nullable|numeric',
+                        'palka_s_mni' => 'nullable|numeric',
+                        'palka_c_no' => 'nullable|numeric',
+                        'palka_c_ffa' => 'nullable|numeric',
+                        'palka_c_iv' => 'nullable|numeric',
+                        'palka_c_dobi' => 'nullable|numeric',
+                        'palka_c_mni' => 'nullable|numeric',
+                        'palka_p_no' => 'nullable|numeric',
+                        'palka_p_ffa' => 'nullable|numeric',
+                        'palka_p_iv' => 'nullable|numeric',
+                        'palka_p_dobi' => 'nullable|numeric',
+                        'palka_p_mni' => 'nullable|numeric',
                     ]
                 );
                 if ($validator->fails()) {
@@ -340,7 +342,7 @@ class ARIMByVesselController extends Controller
                     $processedIds[] = $providedId;
                 } else {
                     // create new detail row
-                    $id_det = $providedId ?? ($id.'D'.$key);
+                    $id_det = $providedId ?? ($id . 'D' . $key);
                     $payload_det = [
                         ...$det,
                         'id' => $id_det,
@@ -503,7 +505,7 @@ class ARIMByVesselController extends Controller
         ]);
 
         $pdf->setPaper('a4', 'portrait');
-        $fileName = 'startup-produksi-checklist-'.$data->id.'.pdf';
+        $fileName = 'startup-produksi-checklist-' . $data->id . '.pdf';
 
         return $pdf->stream($fileName);
     }
@@ -525,11 +527,70 @@ class ARIMByVesselController extends Controller
                     'header' => $data,
                 ]);
                 $pdf->setPaper('a4', 'portrait');
-                $fileName = 'startup-produksi-checklist-'.$data->id.'.pdf';
+                $fileName = 'startup-produksi-checklist-' . $data->id . '.pdf';
 
                 return $pdf->stream($fileName);
             })(),
             default => abort(400, 'Invalid intention')
         };
+    }
+
+    public function bulkApprove(Request $request)
+    {
+        $status = 'Approved';
+        $remark = null;
+        $username = auth()->user()->username;
+        $role = auth()->user()->roles;
+        $count = 0;
+        $tanggal = $request->input('tanggal') ?? now()->format('Y-m-d');
+
+        // Get reports based on role
+        if (in_array($role, ['LEAD', 'LEAD_QC'])) {
+            $reports = ARIMByVesselHeader::whereNull('prepared_status')
+                ->whereDate('arrival', $tanggal)
+                ->get();
+        } else {
+            $reports = ARIMByVesselHeader::where('prepared_status', 'Approved')
+                ->whereNull('approved_status')
+                ->whereDate('arrival', $tanggal)
+                ->get();
+        }
+
+        foreach ($reports as $report) {
+            $this->processApprovalStatus($report, $status, $remark, $username, $role);
+            $count++;
+        }
+
+        return back()->with('success', "Total {$count} tiket berhasil di-approve.");
+    }
+
+    public function bulkReject(Request $request)
+    {
+        $request->validate(['remark' => 'nullable|string|max:255']);
+        $status = 'Rejected';
+        $remark = $request->remark;
+        $username = auth()->user()->username;
+        $role = auth()->user()->roles;
+        $count = 0;
+        $tanggal = $request->input('tanggal') ?? now()->format('Y-m-d');
+
+        // Get reports based on role
+        if (in_array($role, ['LEAD', 'LEAD_QC'])) {
+            $reports = ARIMByVesselHeader::whereNull('prepared_status')
+                ->whereDate('arrival', $tanggal)
+                ->get();
+        } else {
+            $reports = ARIMByVesselHeader::where('prepared_status', 'Approved')
+                ->whereNull('approved_status')
+                ->whereDate('arrival', $tanggal)
+                ->get();
+        }
+
+        foreach ($reports as $report) {
+            $this->processApprovalStatus($report, $status, $remark, $username, $role);
+            $count++;
+        }
+
+        return back()->with('success', "Total {$count} tiket berhasil di-reject.");
     }
 }

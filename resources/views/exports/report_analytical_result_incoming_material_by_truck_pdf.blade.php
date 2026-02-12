@@ -2,83 +2,127 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-    <title>Document</title>
-
+    <meta charset="utf-8" />
+    <title>Analytical Result Truck - {{ $header->id }}</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <style>
+        /* Basic reset & Style from Chemical Report */
+        html,
         body {
-            background: #ffffff;
+            margin: 0;
+            padding: 0;
             font-family: Arial, Helvetica, sans-serif;
+            background: #fff;
+            color: #111;
         }
 
-        .container {
-            background: #ffffff;
-            padding: 24px;
-            border-radius: 8px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, .1);
-            max-width: 900px;
-            margin: auto;
+        .page {
+            width: 210mm;
+            margin: 0 auto;
+            padding: 18mm;
+            box-sizing: border-box;
         }
 
-        h2 {
-            font-size: 24px;
-            margin-bottom: 16px;
-            color: #1f2937;
+        .section {
+            background: #fff;
+            border-radius: 0;
+            padding: 0;
+            margin-bottom: 18px;
         }
 
-        .text-blue {
-
-            color: #2563eb;
-        }
-
-        /* Info table (replaces info-grid) */
-        .info-table {
+        /* Header Table */
+        .top-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 24px;
-            table-layout: fixed;
+            margin-bottom: 12px;
         }
 
-        .info-table td {
+        .top-table td {
             vertical-align: top;
-            padding: 6px 8px;
-            border: none;
-            /* no box border for info cells */
-            font-size: 14px;
         }
 
-        .info-label {
-            display: block;
-            font-size: 13px;
-            color: #4b5563;
-            font-weight: bold;
-            margin-bottom: 4px;
+        .logo {
+            text-align: center;
         }
 
-        .info-value {
-            font-size: 14px;
-            color: #111827;
+        .logo img {
+            height: 56px;
         }
 
-        /* Keep main data tables style */
-        table.data-table {
+        .title {
+            text-align: center;
+            font-weight: 700;
+            font-size: 16px;
+            line-height: 1.05;
+            text-transform: uppercase;
+        }
+
+        /* Right Form Box */
+        .form-box {
+            font-size: 11px;
+            border: 1px solid #000;
+            padding: 6px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 70px 8px 1fr;
+            gap: 2px;
+            align-items: start;
+            font-size: 11px;
+        }
+
+        .form-grid span:first-child {
+            font-weight: 600;
+        }
+
+        /* Info Section */
+        .info-box {
+            border: 1px solid #9ca3af;
+            padding: 8px;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+
+        .info-grid {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 24px;
+            font-size: 12px;
         }
 
-        table.data-table th,
-        table.data-table td {
+        .info-grid td {
+            padding: 4px 6px;
+            vertical-align: top;
+        }
+
+        .info-grid strong {
+            display: inline-block;
+            width: 100px;
+            /* Adjusted width for labels */
+        }
+
+        /* Data Tables */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+            font-size: 11px;
+            /* Slightly smaller for many columns */
+        }
+
+        .data-table th,
+        .data-table td {
             border: 1px solid #9ca3af;
-            padding: 6px 8px;
+            padding: 6px;
             text-align: center;
-            font-size: 13px;
+            vertical-align: middle;
         }
 
-        table.data-table thead {
+        .data-table thead {
             background: #e5e7eb;
+            font-weight: 600;
             color: #1f2937;
         }
 
@@ -87,215 +131,215 @@
             font-style: italic;
         }
 
-        /* Responsive: stack info cells on small screens */
-        @media (max-width: 640px) {
-            .info-table td {
-                display: block;
-                width: 100%;
-            }
-        }
-
-        .approval-table {
+        /* Signatures */
+        .signature-row {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 40px;
+            margin-top: 24px;
             text-align: center;
-        }
-
-        .approval-table td {
-            width: 33.33%;
-            padding: 12px 8px;
             font-size: 12px;
+        }
+
+        .signature-row td {
+            padding: 12px 8px;
             vertical-align: top;
+            width: 33.33%;
         }
 
-        .approval-role {
+        .sig-role {
             font-weight: bold;
+            margin-bottom: 4px;
         }
 
-        .approval-sign {
-            margin: 40px 0 10px 0;
+        .sig-name {
+            font-weight: 600;
+            margin-top: 40px;
+            /* Space for signature */
+            text-decoration: underline;
         }
 
-        .approval-date {
+        .sig-date {
             font-size: 11px;
+            color: #6b7280;
             margin-top: 4px;
         }
 
-        .approval-footer {
-            margin-top: 24px;
-            text-align: center;
+        .footer-note {
+            margin-top: 12px;
             font-size: 11px;
-            color: #4b5563;
+            color: #6b7280;
             font-style: italic;
+            text-align: center;
         }
 
-        .report-title {
-            margin-bottom: 16px;
-            font-size: 24px;
-            color: #1f2937;
+        .text-left {
+            text-align: left;
+        }
+
+        .text-right {
+            text-align: right;
         }
     </style>
 </head>
 
 <body>
-    <div class="container">
+    <div class="page">
+        <div class="section">
 
-        <h2 class="report-title">
-            Report ID:
-            <span class="text-blue">{{ $header->id }}</span>
-        </h2>
-
-
-        <!-- Info table: 3 columns per row (label + value stacked) -->
-        <table class="info-table" role="presentation">
-            <tr>
-                <td>
-                    <span class="info-label">Arrival Date:</span>
-                    <span class="info-value">{{ $header->arrival_date->format('Y-m-d H:i') }}</span>
-                </td>
-
-                <td>
-                    <span class="info-label">Material:</span>
-                    <span class="info-value">{{ $header->material ?? 'N/A' }}</span>
-                </td>
-
-                <td>
-                    <span class="info-label">Vessel Vehicle:</span>
-                    <span class="info-value">{{ $header->vessel_vehicle ?? 'N/A' }}</span>
-                </td>
-            </tr>
-
-            <tr>
-
-
-                <td>
-                    <span class="info-label">Contract/Do Number:</span>
-                    <span class="info-value">{{ $header->contract_do ?? 'N/A' }}</span>
-                </td>
-
-                <td>
-                    <span class="info-label">FFA:</span>
-                    <span class="info-value">{{ $header->ss_ffa ?? 'N/A' }}</span>
-                </td>
-            </tr>
-
-            <tr>
-                <td>
-                    <span class="info-label">M&I:</span>
-                    <span class="info-value">{{ $header->ss_mni ?? 'N/A' }}</span>
-                </td>
-
-                <td>
-                    <span class="info-label">ss_Others:</span>
-                    <span class="info-value">{{ $header->others ?? 'N/A' }}</span>
-                </td>
-            </tr>
-        </table>
-        <br>
-        <br>
-        <!-- Main palka analysis table -->
-        <table class="data-table">
-            <thead>
+            <table class="top-table">
                 <tr>
-                    <th rowspan="2">No</th>
-                    <th rowspan="2">Sampling Date</th>
-                    <th rowspan="2">Police No</th>
-                    <th colspan="9">Parameter</th>
+                    <td style="width:18%" class="logo">
+                        <img src="{{ public_path('images/KPN Corp.jpg') }}" alt="logo" />
+                    </td>
+
+                    <td style="width:57%" class="title">
+                        ANALYTICAL RESULT OF<br />INCOMING MATERIAL BY TRUCK
+                    </td>
+
+                    <td style="width:20%" class="text-right">
+                        <div class="form-box">
+                            <div class="form-grid">
+                                <span>No. Form</span><span>:</span><span>{{ $header->form_no ?? 'F/QOC-011' }}</span>
+                                <span>Issued date</span><span>:</span>
+                                <span>
+                                    {{ $header->date_issued
+                                        ? \Carbon\Carbon::parse($header->date_issued)->format('ymd')
+                                        : ($header->entry_date
+                                            ? \Carbon\Carbon::parse($header->entry_date)->format('ymd')
+                                            : '-') }}
+                                </span>
+                                <span>Rev</span><span>:</span><span>{{ $header->revision_no ? str_pad($header->revision_no, 2, '0', STR_PAD_LEFT) : '00' }}</span>
+                                <span>Rev date</span><span>:</span>
+                                <span>{{ $header->revision_date ? \Carbon\Carbon::parse($header->revision_date)->format('ymd') : '-' }}</span>
+                            </div>
+                        </div>
+                    </td>
                 </tr>
+            </table>
+
+            <div class="info-box">
+                <table class="info-grid">
+                    <tr>
+                        <td style="width:50%;">
+                            <div><strong>Arrival Date</strong> :
+                                {{ $header->arrival_date ? \Carbon\Carbon::parse($header->arrival_date)->format('Y-m-d H:i') : '-' }}
+                            </div>
+                            <div style="margin-top:6px;"><strong>Material</strong> : {{ $header->material ?? 'N/A' }}
+                            </div>
+                            <div style="margin-top:6px;"><strong>Vessel Vehicle</strong> :
+                                {{ $header->vessel_vehicle ?? 'N/A' }}</div>
+                        </td>
+                        <td style="width:50%;">
+                            <div><strong>Contract/DO</strong> : {{ $header->contract_do ?? 'N/A' }}</div>
+                            <div style="margin-top:6px;"><strong>FFA (Spec)</strong> : {{ $header->ss_ffa ?? 'N/A' }}
+                            </div>
+                            <div style="margin-top:6px;"><strong>M&I (Spec)</strong> : {{ $header->ss_mni ?? 'N/A' }}
+                            </div>
+                            <div style="margin-top:6px;"><strong>Others</strong> : {{ $header->others ?? 'N/A' }}</div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th rowspan="2" style="width: 30px;">No</th>
+                        <th rowspan="2" style="width: 80px;">Sampling Date</th>
+                        <th rowspan="2">Police No</th>
+                        <th colspan="7">Parameter</th>
+                        <th rowspan="2">Analyst</th>
+                        <th rowspan="2">Remark</th>
+                    </tr>
+                    <tr>
+                        <th>FFA</th>
+                        <th>Moist</th>
+                        <th>IV</th>
+                        <th>DOBI</th>
+                        <th>PV</th>
+                        <th>Color R</th>
+                        <th>Color Y</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @forelse ($header->details as $detail)
+                        <tr>
+                            <td>{{ $detail->no ?? '-' }}</td>
+                            <td>{{ $detail->sampling_date ? \Carbon\Carbon::parse($detail->sampling_date)->format('Y-m-d') : '-' }}
+                            </td>
+                            <td class="text-left">{{ $detail->police_no ?? '-' }}</td>
+                            <td>{{ $detail->p_ffa ?? '-' }}</td>
+                            <td>{{ $detail->p_moisture ?? '-' }}</td>
+                            <td>{{ $detail->p_iv ?? '-' }}</td>
+                            <td>{{ $detail->p_dobi ?? '-' }}</td>
+                            <td>{{ $detail->p_pv ?? '-' }}</td>
+                            <td>{{ $detail->p_color_r ?? '-' }}</td>
+                            <td>{{ $detail->p_color_y ?? '-' }}</td>
+                            <td>{{ $detail->analis ?? '-' }}</td>
+                            <td class="text-left">{{ $detail->remarks ?? '-' }}</td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="12" class="empty-row">No data found.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+
+            <table class="signature-row">
                 <tr>
-                    <th>FFA</th>
-                    <th>Moisture</th>
-                    <th>IV</th>
-                    <th>DOBI</th>
-                    <th>PV</th>
-                    <th>Color R</th>
-                    <th>Color Y</th>
-                    <th>Analis</th>
-                    <th>Remark</th>
+                    <td>
+                        <div class="sig-role">Done by</div>
+                        <div style="font-size: 11px; color: #6b7280;">{{ optional($header->preparedByUser)->roles }}</div>
+
+                        <div class="sig-name">
+                            {{ optional($header->preparedByUser)->fullname ??$header->entry_by ?? '_______________________' }}
+                        </div>
+
+                        <div class="sig-date">
+                            Date:
+                            {{ $header->entry_date ? \Carbon\Carbon::parse($header->entry_date)->format('d-m-Y H:i') : '' }}
+                        </div>
+                    </td>
+
+                    <td>
+                        <div class="sig-role">Prepared by</div>
+                        <div style="font-size: 11px; color: #6b7280;">{{ optional($header->preparedByUser)->roles }}</div>
+
+                        <div class="sig-name">
+                            {{optional($header->preparedByUser)->fullname ??$header->prepared_by ?? '_______________________' }}
+                        </div>
+
+                        <div class="sig-date">
+                            Date:
+                            {{ $header->prepared_date ? \Carbon\Carbon::parse($header->prepared_date)->format('d-m-Y H:i') : '' }}
+                        </div>
+                    </td>
+
+                    <td>
+                        <div class="sig-role">Approved by</div>
+                        <div style="font-size: 11px; color: #6b7280;">{{ optional($header->preparedByUser)->roles }}</div>
+
+                        <div class="sig-name">
+                            {{ optional($header->preparedByUser)->fullname ??$header->approved_by ?? '_______________________' }}
+                        </div>
+
+                        <div class="sig-date">
+                            Date:
+                            {{ $header->approved_date ? \Carbon\Carbon::parse($header->approved_date)->format('d-m-Y H:i') : '' }}
+                        </div>
+                    </td>
                 </tr>
-            </thead>
+            </table>
 
-            <tbody>
-                @forelse ($header->details as $detail)
-                    <tr>
-                        <td>{{ $detail->no ?? '-' }}</td>
-                        <td>{{ $detail->sampling_date?->format('Y-m-d') ?? '-' }}</td>
-                        <td>{{ $detail->police_no ?? '-' }}</td>
-                        <td>{{ $detail->p_ffa ?? '-' }}</td>
-                        <td>{{ $detail->p_moisture ?? '-' }}</td>
-                        <td>{{ $detail->p_iv ?? '-' }}</td>
-                        <td>{{ $detail->p_dobi ?? '-' }}</td>
-                        <td>{{ $detail->p_pv ?? '-' }}</td>
-                        <td>{{ $detail->p_color_r ?? '-' }}</td>
-                        <td>{{ $detail->p_color_y ?? '-' }}</td>
-                        <td>{{ $detail->analis ?? '-' }}</td>
-                        <td>{{ $detail->remarks ?? '-' }}</td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="12" class="empty-row">No Palka data found.</td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
+            <div class="footer-note">
+                Dokumen ini telah disetujui secara elektronik melalui sistem E-Logsheet,
+                sehingga tidak memerlukan tanda tangan asli.
+            </div>
 
-
-        <table class="approval-table">
-            <tr>
-                <td>
-                    <div class="approval-role">Done by</div>
-                    <div>(Operator)</div>
-
-                    <div class="approval-sign">
-                        ( {{ $header->entry_by ?? '_______________________' }} )
-                    </div>
-
-                    <div class="approval-date">
-                        Date:
-                        {{ $header->entry_date ? \Carbon\Carbon::parse($header->entry_date)->format('d-m-Y H:i') : '' }}
-                    </div>
-                </td>
-
-                <td>
-                    <div class="approval-role">Prepared by</div>
-                    <div>(Shift Leader)</div>
-
-                    <div class="approval-sign">
-                        ( {{ $header->prepared_by ?? '_______________________' }} )
-                    </div>
-
-                    <div class="approval-date">
-                        Date:
-                        {{ $header->prepared_date ? \Carbon\Carbon::parse($header->prepared_date)->format('d-m-Y H:i') : '' }}
-                    </div>
-                </td>
-
-                <td>
-                    <div class="approval-role">Approved by</div>
-                    <div>(Section Head)</div>
-
-                    <div class="approval-sign">
-                        ( {{ $header->approved_by ?? '_______________________' }} )
-                    </div>
-
-                    <div class="approval-date">
-                        Date:
-                        {{ $header->approved_date ? \Carbon\Carbon::parse($header->approved_date)->format('d-m-Y H:i') : '' }}
-                    </div>
-                </td>
-            </tr>
-        </table>
-
-        <div class="approval-footer">
-            Dokumen ini telah disetujui secara elektronik melalui sistem [E-Logsheet],
-            sehingga tidak memerlukan tanda tangan asli.
         </div>
-
     </div>
-
-
-
 </body>
 
 </html>

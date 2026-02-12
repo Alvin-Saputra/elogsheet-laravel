@@ -19,7 +19,8 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div>
                 <strong class="text-gray-600 block text-sm">Arrival Date:</strong>
-                <span class="text-sm">{{ $header->arrival_date->format('Y-m-d H:i') }}</span>
+                <span
+                    class="text-sm">{{ $header->arrival_date ? \Carbon\Carbon::parse($header->arrival_date)->format('Y-m-d H:i') : '-' }}</span>
             </div>
 
             <div>
@@ -90,7 +91,7 @@
                             {{ $detail->no ?? '-' }}
                         </td>
                         <td class="px-3 py-1 border border-gray-400 text-center">
-                            {{ $detail->sampling_date?->format('Y-m-d') ?? '-' }}
+                            {{ $detail->sampling_date ? \Carbon\Carbon::parse($detail->sampling_date)->format('Y-m-d') : '-' }}
                         </td>
                         <td class="px-3 py-1 border border-gray-400 text-center">
                             {{ $detail->police_no ?? '-' }}

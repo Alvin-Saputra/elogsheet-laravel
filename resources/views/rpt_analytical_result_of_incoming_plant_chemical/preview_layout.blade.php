@@ -153,17 +153,17 @@
       <div class="grid grid-cols-3 text-center text-xs mt-6 gap-4">
         <div class="space-y-1">
           <div class="font-semibold">Done by</div>
-          <div class="text-[12px]">(Operator)</div>
+          <div class="text-[12px]">{{ optional($header->entriedByUser)->roles }}</div>
           <div class="h-6"></div>
-          <div class="font-medium">{{ $header->entry_by ?? '_________________' }}</div>
+          <div class="font-medium">{{ optional($header->entriedByUser)->fullname ?? $header->entry_by ?? '_________________' }}</div>
           <div class="text-xs text-gray-600">{{ $header->entry_date ? \Carbon\Carbon::parse($header->entry_date)->format('d-m-Y H:i') : '' }}</div>
         </div>
 
         <div class="space-y-1">
           <div class="font-semibold">Corrected by</div>
-          <div class="text-[12px]">(QC Leader)</div>
+          <div class="text-[12px]">{{ optional($header->preparedByUser)->roles}}</div>
           <div class="h-6"></div>
-          <div class="font-medium">{{ $header->prepared_by ?? '_________________' }}</div>
+          <div class="font-medium">{{ optional($header->preparedByUser)->fullname ?? $header->prepared_by ?? '_________________' }}</div>
           <div class="text-xs text-gray-600">{{ $header->prepared_date ? \Carbon\Carbon::parse($header->prepared_date)->format('d-m-Y H:i') : '' }}</div>
 
           @if(in_array(strtoupper($header->prepared_status ?? ''), ['REJECT', 'REJECTED']))
@@ -173,9 +173,9 @@
 
         <div class="space-y-1">
           <div class="font-semibold">Approved by</div>
-          <div class="text-[12px]">(QC Head)</div>
+          <div class="text-[12px]">{{ optional($header->approvedByUser)->roles  }}</div>
           <div class="h-6"></div>
-          <div class="font-medium">{{ $header->approved_by ?? '_________________' }}</div>
+          <div class="font-medium">{{ optional($header->approvedByUser)->fullname ?? $header->approved_by ?? '_________________' }}</div>
           <div class="text-xs text-gray-600">{{ $header->approved_date ? \Carbon\Carbon::parse($header->approved_date)->format('d-m-Y H:i') : '' }}</div>
 
           @if(in_array(strtoupper($header->approved_status ?? ''), ['REJECT', 'REJECTED']))
@@ -260,8 +260,8 @@
         <div class="text-center w-48">
           <div class="text-sm font-medium">Issue by</div>
           <div class="h-10"></div>
-          <div class="font-semibold">{{ $coa->issue_by ?? $header->approved_by ?? '_________________' }}</div>
-          <div class="text-xs text-gray-600">Head of Quality Assurance</div>
+          <div class="font-semibold">{{optional($coa->issuedByUser)->fullname ?? $coa->issue_by ?? '_________________' }}</div>
+          <div class="text-xs text-gray-600">{{ optional($coa->issuedByUser)->roles }} </div>
         </div>
       </div>
 

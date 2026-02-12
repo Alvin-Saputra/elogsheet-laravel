@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\DryFraController;
 use App\Http\Controllers\MstRoleController;
 use App\Http\Controllers\MstUserController;
 use App\Http\Controllers\MstPlantController;
@@ -11,18 +12,20 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\RptQualityController;
 use App\Http\Controllers\ARIMByTruckController;
 use App\Http\Controllers\ARIMByVesselController;
-use App\Http\Controllers\AROSByVesselController;
-use App\Http\Controllers\RptDailyPFraController;
 use App\Http\Controllers\RptDailyPRefController;
 use App\Http\Controllers\RptLampGlassController;
 use App\Http\Controllers\AROIPChemicalController;
-use App\Http\Controllers\LogsheetDryFraController;
+use App\Http\Controllers\DailyProdFracController;
+use App\Http\Controllers\RptLogsheetDryFraController;
 use App\Http\Controllers\MstMastervalueController;
 use App\Http\Controllers\RptDeodorizingController;
 use App\Http\Controllers\RptLogsheetPBFController;
 use App\Http\Controllers\MstBusinessUnitController;
 use App\Http\Controllers\RptChangeProductController;
-use App\Http\Controllers\RptLogsheetDryFraController;
+use App\Http\Controllers\RptDailyProductionController;
+use App\Http\Controllers\RptDailyQualityCompositeFractionation;
+use App\Http\Controllers\RptDailyStorageTankAnalyticalController;
+use App\Http\Controllers\RptFormTransferController;
 /*
 |--------------------------------------------------------------------------
 | Guest Routes (Login)
@@ -30,10 +33,7 @@ use App\Http\Controllers\RptLogsheetDryFraController;
 */
 
 use App\Http\Controllers\AROSProductByTruckController;
-use App\Http\Controllers\RptDailyProductionController;
 use App\Http\Controllers\RptStartupProduksiController;
-use App\Http\Controllers\RptDailyQualityCompositeFractionation;
-use App\Http\Controllers\RptDailyStorageTankAnalyticalController;
 
 Route::get('/', function () {
     return Auth::check()
@@ -202,16 +202,26 @@ Route::middleware('auth')->group(function () {
         });
 
         // Fractination
+        // Route::prefix('fractionation')->name('fractionation.')->group(function () {
+        //     Route::get('/', [RptDailyPFraController::class, 'index'])->name('index');
+        //     Route::get('/{id}', [RptDailyPFraController::class, 'show'])->name('show');
+        //     Route::post('/approve-date', [RptDailyPFraController::class, 'approveDate'])->name('approve-date');
+        //     Route::post('/reject-date', [RptDailyPFraController::class, 'rejectDate'])->name('reject-date');
+        //     Route::post('/{id}/approve', [RptDailyPFraController::class, 'approveTicket'])->name('approve');
+        //     Route::post('/{id}/reject', [RptDailyPFraController::class, 'rejectTicket'])->name('reject');
+        //     Route::get('/export/view', [RptDailyPFraController::class, 'exportLayoutPreview'])->name('export.view');
+        //     Route::get('/export/excel', [RptDailyPFraController::class, 'exportExcel'])->name('export.excel');
+        //     Route::get('/export/pdf', [RptDailyPFraController::class, 'exportPdf'])->name('export.pdf');
+        // });
+
         Route::prefix('fractionation')->name('fractionation.')->group(function () {
-            Route::get('/', [RptDailyPFraController::class, 'index'])->name('index');
-            Route::get('/{id}', [RptDailyPFraController::class, 'show'])->name('show');
-            Route::post('/approve-date', [RptDailyPFraController::class, 'approveDate'])->name('approve-date');
-            Route::post('/reject-date', [RptDailyPFraController::class, 'rejectDate'])->name('reject-date');
-            Route::post('/{id}/approve', [RptDailyPFraController::class, 'approveTicket'])->name('approve');
-            Route::post('/{id}/reject', [RptDailyPFraController::class, 'rejectTicket'])->name('reject');
-            Route::get('/export/view', [RptDailyPFraController::class, 'exportLayoutPreview'])->name('export.view');
-            Route::get('/export/excel', [RptDailyPFraController::class, 'exportExcel'])->name('export.excel');
-            Route::get('/export/pdf', [RptDailyPFraController::class, 'exportPdf'])->name('export.pdf');
+            Route::get('/', [DailyProdFracController::class, 'index'])->name('index');
+            Route::get('/{id}', [DailyProdFracController::class, 'show'])->name('show');
+            Route::post('/approval-per-shift', [DailyProdFracController::class, 'approveShiftWorkCenter'])->name('approvalPerShift');
+            Route::post('/approval-per-date', [DailyProdFracController::class, 'approvalDate'])->name('approvalPerDate');
+            Route::get('/export/view', [DailyProdFracController::class, 'exportLayoutPreview'])->name('export.view');
+            Route::get('/export/excel', [DailyProdFracController::class, 'exportExcel'])->name('export.excel');
+            Route::get('/export/pdf', [DailyProdFracController::class, 'exportPdf'])->name('export.pdf');
         });
     });
 
@@ -295,8 +305,10 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('daily-storage-tank-analytical')->name('daily-storage-tank-analytical.')->group(function () {
         Route::get('/', [RptDailyStorageTankAnalyticalController::class, 'index'])->name('index');
-        Route::post('/{id}/approve-report', [RptDailyStorageTankAnalyticalController::class, 'approveReport'])->name('approveReport');
-        Route::post('/{id}/reject-report', [RptDailyStorageTankAnalyticalController::class, 'rejectReport'])->name('rejectReport');
+        Route::post('/bulk/approve', [RptDailyStorageTankAnalyticalController::class, 'bulkApprove'])->name('bulk-approve');
+        Route::post('/bulk/reject', [RptDailyStorageTankAnalyticalController::class, 'bulkReject'])->name('bulk-reject');
+        Route::post('/{id}/approve', [RptDailyStorageTankAnalyticalController::class, 'approveReport'])->name('approveReport');
+        Route::post('/{id}/reject', [RptDailyStorageTankAnalyticalController::class, 'rejectReport'])->name('rejectReport');
         Route::get('/{id}', [RptDailyStorageTankAnalyticalController::class, 'show'])->name('show');
         Route::get('/export/view', [RptDailyStorageTankAnalyticalController::class, 'exportLayoutPreview'])->name('export.view');
         Route::get('/export/pdf', [RptDailyStorageTankAnalyticalController::class, 'exportPdf'])->name('export.pdf');
@@ -304,8 +316,10 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('daily-quality-composite-fractionation')->name('daily-quality-composite-fractionation.')->group(function () {
         Route::get('/', [RptDailyQualityCompositeFractionation::class, 'index'])->name('index');
-        Route::post('/{id}/approve-report', [RptDailyQualityCompositeFractionation::class, 'approveReport'])->name('approveReport');
-        Route::post('/{id}/reject-report', [RptDailyQualityCompositeFractionation::class, 'rejectReport'])->name('rejectReport');
+        Route::post('/bulk/approve', [RptDailyQualityCompositeFractionation::class, 'bulkApprove'])->name('bulk-approve');
+        Route::post('/bulk/reject', [RptDailyQualityCompositeFractionation::class, 'bulkReject'])->name('bulk-reject');
+        Route::post('/{id}/approve', [RptDailyQualityCompositeFractionation::class, 'approveReport'])->name('approveReport');
+        Route::post('/{id}/reject', [RptDailyQualityCompositeFractionation::class, 'rejectReport'])->name('rejectReport');
         Route::get('/{id}', [RptDailyQualityCompositeFractionation::class, 'show'])->name('show');
         Route::get('/export/view', [RptDailyQualityCompositeFractionation::class, 'exportLayoutPreview'])->name('export.view');
         Route::get('/export/pdf', [RptDailyQualityCompositeFractionation::class, 'exportPdf'])->name('export.pdf');
@@ -313,6 +327,8 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('analytical-result-incoming-material-by-vessel')->name('analytical-result-incoming-material-by-vessel.')->group(function () {
         Route::get('/', [ARIMByVesselController::class, 'index'])->name('index');
+        Route::post('/bulk/approve', [ARIMByVesselController::class, 'bulkApprove'])->name('bulk-approve');
+        Route::post('/bulk/reject', [ARIMByVesselController::class, 'bulkReject'])->name('bulk-reject');
         Route::post('/{id}/approve-report', [ARIMByVesselController::class, 'updateApprovalStatusWeb'])->name('approveReject');
         Route::get('/{id}', [ARIMByVesselController::class, 'getById'])->name('show');
         Route::get('/{id}/export/view', [ARIMByVesselController::class, 'getById'])->name('preview');
@@ -321,6 +337,8 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('analytical-result-incoming-material-by-truck')->name('analytical-result-incoming-material-by-truck.')->group(function () {
         Route::get('/', [ARIMByTruckController::class, 'index'])->name('index');
+        Route::post('/bulk/approve', [ARIMByTruckController::class, 'bulkApprove'])->name('bulk-approve');
+        Route::post('/bulk/reject', [ARIMByTruckController::class, 'bulkReject'])->name('bulk-reject');
         Route::post('/{id}/approve-report', [ARIMByTruckController::class, 'updateApprovalStatusWeb'])->name('approveReject');
         Route::get('/{id}', [ARIMByTruckController::class, 'getById'])->name('show');
         Route::get('/{id}/export/view', [ARIMByTruckController::class, 'getById'])->name('preview');
@@ -335,6 +353,10 @@ Route::middleware('auth')->group(function () {
                 ->name('index');
             Route::post('/{id}/approve-report', [AROIPChemicalController::class, 'updateApprovalStatusWeb'])
                 ->name('approveReject');
+            Route::post('/bulk/approve', [AROIPChemicalController::class, 'bulkApprove'])
+                ->name('bulk-approve');
+            Route::post('/bulk/reject', [AROIPChemicalController::class, 'bulkReject'])
+                ->name('bulk-reject');
             Route::get('/{id}', [AROIPChemicalController::class, 'getById'])
                 ->name('show');
             Route::get('/{id}/export/view', [AROIPChemicalController::class, 'getById'])
@@ -348,6 +370,8 @@ Route::middleware('auth')->group(function () {
         ->group(function () {
             Route::get('/', [AROIPFuelController::class, 'index'])->name('index');
             Route::post('/{id}/approve-report', [AROIPFuelController::class, 'updateApprovalStatusWeb'])->name('approveReject');
+            Route::post('/bulk/approve', [AROIPFuelController::class, 'bulkApprove'])->name('bulk-approve');
+            Route::post('/bulk/reject', [AROIPFuelController::class, 'bulkReject'])->name('bulk-reject');
             Route::get('/{id}', [AROIPFuelController::class, 'getById'])->name('show');
             Route::get('/{id}/export/view', [AROIPFuelController::class, 'getById'])->name('preview');
             Route::get('/{id}/export/pdf', [AROIPFuelController::class, 'getById'])->name('export');
@@ -356,22 +380,50 @@ Route::middleware('auth')->group(function () {
         ->name('analytical-result-outgoing-shipment-product-by-truck.')
         ->group(function () {
             Route::get('/', [AROSProductByTruckController::class, 'index'])->name('index');
+            Route::post('/bulk/approve', [AROSProductByTruckController::class, 'bulkApprove'])->name('bulk-approve');
+            Route::post('/bulk/reject', [AROSProductByTruckController::class, 'bulkReject'])->name('bulk-reject');
             Route::post('/{id}/approve-report', [AROSProductByTruckController::class, 'updateApprovalStatusWeb'])->name('approveReject');
             Route::get('/{id}', [AROSProductByTruckController::class, 'getById'])->name('show');
             Route::get('/{id}/export/view', [AROSProductByTruckController::class, 'getById'])->name('preview');
             Route::get('/{id}/export/pdf', [AROSProductByTruckController::class, 'getById'])->name('export');
         });
 
+    /*
+    |--------------------------------------------------------------------------
+    | Report: Form Transfer
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('report/form-transfer')->group(function () {
+        Route::get('/', [RptFormTransferController::class, 'index'])->name('report.form-transfer.index');
+        Route::get('/export/view', [RptFormTransferController::class, 'exportView'])->name('report.form-transfer.export.view');
+        Route::get('/export/pdf', [RptFormTransferController::class, 'exportPdf'])->name('report.form-transfer.export.pdf');
+        Route::get('/{id}', [RptFormTransferController::class, 'getById'])->name('report.form-transfer.show');
+        Route::get('/{id}/export/view', [RptFormTransferController::class, 'getById'])->name('report.form-transfer.preview');
+        Route::get('/{id}/export/pdf', [RptFormTransferController::class, 'getById'])->name('report.form-transfer.export');
+        Route::post('/{id}/approve', [RptFormTransferController::class, 'approve'])->name('report.form-transfer.approve');
+    });
 
-    Route::prefix('analytical-result-outgoing-shipment-by-vessel')
-        ->name('analytical-result-outgoing-shipment-by-vessel.')
+
+    Route::prefix('logsheet-monitoring-dry-fractionation')->name('logsheet-monitoring-dry-fractionation.')->group(function () {
+        Route::get('/', [DryFraController::class, 'index'])->name('index');
+        Route::post('/approval-per-crystallizer', [DryFraController::class, 'approvePerCrystallizer'])->name('approvalPerCrystallizer');
+        Route::post('/approval-per-date', [DryFraController::class, 'approvePerDate'])->name('approvalPerDate');
+        Route::get('/preview', [DryFraController::class, 'preview'])->name('preview');
+        Route::get('/export', [DryFraController::class, 'export'])->name('export');
+        Route::get('/{id}', [DryFraController::class, 'show'])->name('show');
+    });
+
+
+
+      Route::prefix('analytical-result-outgoing-shipment-product-by-vessel')
+        ->name('analytical-result-outgoing-shipment-product-by-vessel.')
         ->group(function () {
-            Route::get('/', [AROSByVesselController::class, 'index'])->name('index');
-            Route::post('/bulk/approve', [AROSByVesselController::class, 'bulkApprove'])->name('bulk-approve');
-            Route::post('/bulk/reject', [AROSByVesselController::class, 'bulkReject'])->name('bulk-reject');
-            Route::post('/{id}/approve-report', [AROSByVesselController::class, 'updateApprovalStatusWeb'])->name('approveReject');
-            Route::get('/{id}', [AROSByVesselController::class, 'getById'])->name('show');
-            Route::get('/{id}/export/view', [AROSByVesselController::class, 'getById'])->name('preview');
-            Route::get('/{id}/export/pdf', [AROSByVesselController::class, 'getById'])->name('export');
+            Route::get('/', [AROSProductByTruckController::class, 'index'])->name('index');
+            // Route::post('/bulk/approve', [AROSProductByTruckController::class, 'bulkApprove'])->name('bulk-approve');
+            // Route::post('/bulk/reject', [AROSProductByTruckController::class, 'bulkReject'])->name('bulk-reject');
+            // Route::post('/{id}/approve-report', [AROSProductByTruckController::class, 'updateApprovalStatusWeb'])->name('approveReject');
+            // Route::get('/{id}', [AROSProductByTruckController::class, 'getById'])->name('show');
+            // Route::get('/{id}/export/view', [AROSProductByTruckController::class, 'getById'])->name('preview');
+            // Route::get('/{id}/export/pdf', [AROSProductByTruckController::class, 'getById'])->name('export');
         });
 });

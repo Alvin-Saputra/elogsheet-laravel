@@ -48,4 +48,9 @@ class ROAHeader extends Model
     {
         return $this->hasMany(ROADetail::class, 'id_hdr', 'id');
     }
+
+    public function authorizedByUser()
+    {
+        return $this->belongsTo(MUser::class, 'authorized_by', 'username');
+    }
 }
