@@ -75,6 +75,9 @@ class ARIMByVesselController extends Controller
                 'hasil_analisa_dobi' => 'nullable|numeric',
                 'hasil_analisa_pv' => 'nullable|numeric',
                 'hasil_analisa_anv' => 'nullable|numeric',
+                'hasil_analisa_totox' => 'nullable|numeric',
+                'hasil_analisa_carotex' => 'nullable|numeric',
+                'hasil_analisa_mineral_oil' => 'nullable|numeric',
             ]);
             $validator_det = null;
             if (!empty($detail)) {
@@ -263,6 +266,9 @@ class ARIMByVesselController extends Controller
                 'hasil_analisa_dobi' => 'nullable|numeric',
                 'hasil_analisa_pv' => 'nullable|numeric',
                 'hasil_analisa_anv' => 'nullable|numeric',
+                'hasil_analisa_totox' => 'nullable|numeric',
+                'hasil_analisa_carotex' => 'nullable|numeric',
+                'hasil_analisa_mineral_oil' => 'nullable|numeric',
             ]);
 
             $validator_det = null;
