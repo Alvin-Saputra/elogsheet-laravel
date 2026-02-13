@@ -77,7 +77,10 @@
             {{-- Jika ALL, tampilkan semua refinery yang ada di groupedData --}}
             <div style="margin-top: 5px;">
                 @foreach ($groupedData as $wc => $rows)
-                    @php $firstRow = $rows->first(); @endphp
+                    @php 
+                        // Cari baris data asli untuk ambil nama refinery, jika tidak ada pakai nama WC
+                        $firstRow = $rows->first(fn($r) => isset($r->refinery_name)); 
+                    @endphp
                     <p>{{ $firstRow->refinery_name ?? $wc }} {{ $firstRow->capacity ?? '' }}</p>
                 @endforeach
             </div>
@@ -94,10 +97,8 @@
         </p>
         <p><strong>Rev. No.</strong>: {{ '0' ?? '-' }}</p>
         <p><strong>Rev. Date.</strong>: {{ '-' }}</p>
-        {{-- <p><strong>Rev</strong>: {{ $formInfoLast->revision_no ?? '-' }}</p> --}}
     </div>
 
-    <!-- Tabel utama -->
     @if ($groupedData->isNotEmpty())
         @foreach ($groupedData as $wc => $rows)
             @php
@@ -139,7 +140,7 @@
                         <th>FFA</th>
                         <th>{{ $isRef01 ? 'M&I' : 'Moist' }}</th>
                         @if (!$isRef01)
-                        <th>IMP</th>
+                            <th>IMP</th>
                         @endif
                         <th>IV</th>
                         <th>PV</th>
@@ -161,71 +162,68 @@
                     @foreach ($rows as $row)
                         <tr>
                             <td>{{ optional($row->time)->format('H:i') }}</td>
-                            <td>
-                                {{ $row->oil_type ?? '-' }}
-                            </td>
-                            <td>
-                                {{ $row->oil_type_fg ?? '-' }}
-                            </td>
+                            <td>{{ $row->oil_type ?? '-' }}</td>
+                            <td>{{ $row->oil_type_fg ?? '-' }}</td>
+                            <td>{{ $row->oil_type_bp ?? '-' }}</td>
+                            
+                            {{-- PERBAIKAN DI SINI: Menggunakan ?? '' --}}
+                            <td>{{ $row->rm_tank_source ?? '' }}</td>
+                            <td>{{ $row->rm_flowrate ?? '' }}</td>
+                            
+                            <td>{{ $row->rm_ffa ?? '' }}</td>
+                            <td>{{ $row->{'rm_m&i'} ?? '' }}</td>
+                            <td>{{ $row->rm_dobi ?? '' }}</td>
+                            <td>{{ $row->rm_iv ?? '' }}</td>
+                            <td>{{ $row->rm_pv ?? '' }}</td>
+                            <td>{{ $row->rm_av ?? '' }}</td>
+                            <td>{{ $row->rm_totox ?? '' }}</td>
+                            <td>{{ $row->rm_color_r ?? '' }}</td>
+                            <td>{{ $row->rm_color_y ?? '' }}</td>
+                            <td>{{ $row->rm_color_b ?? '' }}</td>
 
-                            <td>
-                                {{ $row->oil_type_bp ?? '-' }}
-                            </td>
-                            <td>{{ $row->rm_tank_source }}</td>
-                            <td>{{ $row->rm_flowrate }}</td>
-                            <td>{{ $row->rm_ffa }}</td>
-                            <td>{{ $row->{'rm_m&i'} }}</td>
-                            <td>{{ $row->rm_dobi }}</td>
-                            <td>{{ $row->rm_iv }}</td>
-                            <td>{{ $row->rm_pv }}</td>
-                            <td>{{ $row->rm_av }}</td>
-                            <td>{{ $row->rm_totox }}</td>
-                            <td>{{ $row->rm_color_r }}</td>
-                            <td>{{ $row->rm_color_y }}</td>
-                            <td>{{ $row->rm_color_b }}</td>
+                            <td>{{ $row->bo_color_r ?? '' }}</td>
+                            <td>{{ $row->bo_color_y ?? '' }}</td>
+                            <td>{{ $row->bo_color_b ?? '' }}</td>
+                            <td>{{ $row->bo_break_test ?? '' }}</td>
 
-                            <td>{{ $row->bo_color_r }}</td>
-                            <td>{{ $row->bo_color_y }}</td>
-                            <td>{{ $row->bo_color_b }}</td>
-                            <td>{{ $row->bo_break_test }}</td>
-
-                            <td>{{ $row->fg_ffa }}</td>
-                            <td>{{ $row->fg_moisture }}</td>
+                            <td>{{ $row->fg_ffa ?? '' }}</td>
+                            <td>{{ $row->fg_moisture ?? '' }}</td>
                             @if (!$isRef01)
-                            <td>{{ $row->fg_impurities }}</td>
+                                <td>{{ $row->fg_impurities ?? '' }}</td>
                             @endif
-                            <td>{{ $row->fg_iv }}</td>
-                            <td>{{ $row->fg_pv }}</td>
-                            <td>{{ $row->fg_color_r }}</td>
-                            <td>{{ $row->fg_color_y }}</td>
-                            <td>{{ $row->fg_color_b }}</td>
-                            <td>{{ $row->fg_tank_to }}</td>
-                            <td>{{ $row->fg_tank_to_others_remarks }}</td>
-                            <td>{{ $row->bp_ffa }}</td>
-                            <td>{{ $row->{'bp_m&i'} }}</td>
-                            <td>{{ $row->bp_to_tank }}</td>
-                            <td>{{ $row->{'w_sbe_m&i'} }}</td>
-                            <td>{{ $row->w_sbe_qc }}</td>
-                            <td>{{ $row->remarks }}</td>
+                            <td>{{ $row->fg_iv ?? '' }}</td>
+                            <td>{{ $row->fg_pv ?? '' }}</td>
+                            <td>{{ $row->fg_color_r ?? '' }}</td>
+                            <td>{{ $row->fg_color_y ?? '' }}</td>
+                            <td>{{ $row->fg_color_b ?? '' }}</td>
+                            <td>{{ $row->fg_tank_to ?? '' }}</td>
+                            <td>{{ $row->fg_tank_to_others_remarks ?? '' }}</td>
+                            
+                            <td>{{ $row->bp_ffa ?? '' }}</td>
+                            <td>{{ $row->{'bp_m&i'} ?? '' }}</td>
+                            <td>{{ $row->bp_to_tank ?? '' }}</td>
+                            
+                            <td>{{ $row->{'w_sbe_m&i'} ?? '' }}</td>
+                            <td>{{ $row->w_sbe_qc ?? '' }}</td>
+                            <td>{{ $row->remarks ?? '' }}</td>
                         </tr>
                     @endforeach
                 </tbody>
             </table>
         @endforeach
     @else
-        {{-- @php
-            $isRef01 = $workCenter === 'REF-01';
-        @endphp --}}
-
+        {{-- TABEL KEDUA (JIKA GROUPED DATA KOSONG / LOGIC LAIN) --}}
         <table style="margin-bottom: 20px;">
             <thead>
                 <tr>
                     <th rowspan="2">Time</th>
+                    <th rowspan="2">Oil Type</th>
+                    <th rowspan="2">Finish Good</th>
+                    <th rowspan="2">By Product</th>
                     <th rowspan="2">From Tank No.</th>
                     <th rowspan="2">Flow Rate</th>
                     <th colspan="10">RAW MATERIAL</th>
                     <th colspan="4">BPO</th>
-                    {{-- <th colspan="{{ $isRef01 ? 9 : 10 }}">RRPO</th> --}}
                     <th colspan="10">RRPO</th>
                     <th colspan="3">PFAD</th>
                     <th colspan="2">SPENT EARTH</th>
@@ -250,9 +248,7 @@
 
                     <th>FFA</th>
                     <th>Moist</th>
-                    {{-- @if (!$isRef01) --}}
                     <th>IMP</th>
-                    {{-- @endif --}}
                     <th>IV</th>
                     <th>PV</th>
                     <th>Color R</th>
@@ -273,68 +269,88 @@
                 @foreach ($data as $row)
                     <tr>
                         <td>{{ optional($row->time)->format('H:i') }}</td>
-                        <td>{{ $row->rm_tank_source }}</td>
-                        <td>{{ $row->rm_flowrate }}</td>
-                        <td>{{ $row->rm_ffa }}</td>
-                        <td>{{ $row->{'rm_m&i'} }}</td>
-                        <td>{{ $row->rm_dobi }}</td>
-                        <td>{{ $row->rm_iv }}</td>
-                        <td>{{ $row->rm_pv }}</td>
-                        <td>{{ $row->rm_av }}</td>
-                        <td>{{ $row->rm_totox }}</td>
-                        <td>{{ $row->rm_color_r }}</td>
-                        <td>{{ $row->rm_color_y }}</td>
-                        <td>{{ $row->rm_color_b }}</td>
+                        <td>{{ $row->oil_type ?? '' }}</td>
+                        <td>{{ $row->oil_type_fg ?? '' }}</td>
+                        <td>{{ $row->oil_type_bp ?? '' }}</td>
 
-                        <td>{{ $row->bo_color_r }}</td>
-                        <td>{{ $row->bo_color_y }}</td>
-                        <td>{{ $row->bo_color_b }}</td>
-                        <td>{{ $row->bo_break_test }}</td>
+                        {{-- PERBAIKAN DI SINI JUGA --}}
+                        <td>{{ $row->rm_tank_source ?? '' }}</td>
+                        <td>{{ $row->rm_flowrate ?? '' }}</td>
 
-                        <td>{{ $row->fg_ffa }}</td>
-                        <td>{{ $row->fg_moist }}</td>
-                        {{-- @if (!$isRef01) --}}
-                        <td>{{ $row->fg_impurities }}</td>
-                        {{-- @endif --}}
-                        <td>{{ $row->fg_iv }}</td>
-                        <td>{{ $row->fg_pv }}</td>
-                        <td>{{ $row->fg_color_r }}</td>
-                        <td>{{ $row->fg_color_y }}</td>
-                        <td>{{ $row->fg_color_b }}</td>
-                        <td>{{ $row->fg_tank_to }}</td>
-                        <td>{{ $row->fg_tank_to_others_remarks }}</td>
-                        <td>{{ $row->bp_ffa }}</td>
-                        <td>{{ $row->{'bp_m&i'} }}</td>
-                        <td>{{ $row->bp_to_tank }}</td>
-                        <td>{{ $row->{'w_sbe_m&i'} }}</td>
-                        <td>{{ $row->w_sbe_qc }}</td>
-                        <td>{{ $row->remarks }}</td>
+                        <td>{{ $row->rm_ffa ?? '' }}</td>
+                        <td>{{ $row->{'rm_m&i'} ?? '' }}</td>
+                        <td>{{ $row->rm_dobi ?? '' }}</td>
+                        <td>{{ $row->rm_iv ?? '' }}</td>
+                        <td>{{ $row->rm_pv ?? '' }}</td>
+                        <td>{{ $row->rm_av ?? '' }}</td>
+                        <td>{{ $row->rm_totox ?? '' }}</td>
+                        <td>{{ $row->rm_color_r ?? '' }}</td>
+                        <td>{{ $row->rm_color_y ?? '' }}</td>
+                        <td>{{ $row->rm_color_b ?? '' }}</td>
+
+                        <td>{{ $row->bo_color_r ?? '' }}</td>
+                        <td>{{ $row->bo_color_y ?? '' }}</td>
+                        <td>{{ $row->bo_color_b ?? '' }}</td>
+                        <td>{{ $row->bo_break_test ?? '' }}</td>
+
+                        <td>{{ $row->fg_ffa ?? '' }}</td>
+                        <td>{{ $row->fg_moisture ?? '' }}</td>
+                        {{-- Asumsi tabel kedua ini logic Ref01-nya dihandle di luar atau dianggap tidak Ref01 untuk amannya saya beri col IMP --}}
+                        <td>{{ $row->fg_impurities ?? '' }}</td> 
+                        
+                        <td>{{ $row->fg_iv ?? '' }}</td>
+                        <td>{{ $row->fg_pv ?? '' }}</td>
+                        <td>{{ $row->fg_color_r ?? '' }}</td>
+                        <td>{{ $row->fg_color_y ?? '' }}</td>
+                        <td>{{ $row->fg_color_b ?? '' }}</td>
+                        <td>{{ $row->fg_tank_to ?? '' }}</td>
+                        <td>{{ $row->fg_tank_to_others_remarks ?? '' }}</td>
+
+                        <td>{{ $row->bp_ffa ?? '' }}</td>
+                        <td>{{ $row->{'bp_m&i'} ?? '' }}</td>
+                        <td>{{ $row->bp_to_tank ?? '' }}</td>
+
+                        <td>{{ $row->{'w_sbe_m&i'} ?? '' }}</td>
+                        <td>{{ $row->w_sbe_qc ?? '' }}</td>
+                        <td>{{ $row->remarks ?? '' }}</td>
                     </tr>
                 @endforeach
             </tbody>
         </table>
-
     @endif
-    <!-- Bagian bawah -->
     
-   
-    {{-- Logic untuk mengelompokkan Data Daily Production per Work Center --}}
     @php
+        $production = null;
         $productionList = [];
+
+        // Helper function untuk mencari data asli (bukan dummy stdClass)
+        $findRealRow = function($collection) {
+            return $collection->first(function($item) {
+                return isset($item->dailyProduction);
+            });
+        };
 
         // Skenario 1: Jika User memfilter 1 Work Center spesifik
         if (!empty($workCenter) && !empty($data) && $data->count() > 0) {
-            $prod = $data->first()->dailyProduction;
-            if ($prod) {
-                $productionList[$workCenter] = $prod;
+            $realRow = $findRealRow($data);
+            if ($realRow) {
+                $production = $realRow->dailyProduction;
+                $productionList[$workCenter] = $production;
             }
         } 
-        // Skenario 2: Jika Laporan menampilkan banyak Work Center (Grouped Data)
+        // Skenario 2: Grouped Data
         elseif (!empty($groupedData)) {
             foreach ($groupedData as $wc => $rows) {
                 if ($rows->count() > 0) {
-                    $prod = $rows->first()->dailyProduction;
-                    $productionList[$wc] = $prod;
+                    $realRow = $findRealRow($rows);
+                    if ($realRow) {
+                        $productionList[$wc] = $realRow->dailyProduction;
+                        if (is_null($production)) {
+                            $production = $realRow->dailyProduction;
+                        }
+                    } else {
+                        $productionList[$wc] = null;
+                    }
                 }
             }
         }
@@ -342,18 +358,13 @@
 
     {{-- Footer Box Loop --}}
     @foreach ($productionList as $wcKey => $production)
-        {{-- Container per Work Center --}}
         <div style="margin-top: 20px; width: 100%;">
-            
-            {{-- Judul Kecil --}}
             <div style="font-weight: bold; text-decoration: underline; margin-bottom: 5px;">
                 Refinery Data: {{ $wcKey }}
             </div>
 
-            {{-- Wrapper untuk Float Layout (Pengganti Grid) --}}
             <div style="width: 100%;">
-                
-                {{-- Box Kiri: Chemical Usage --}}
+                {{-- Box Kiri --}}
                 <div class="section-table" style="margin-top: 0; width: 48%; float: left; margin-right: 2%;">
                     <div style="padding: 5px; font-weight: bold; background-color: #f3f3f3; border-bottom: 0.5px solid #444;">
                         Daily Chemical Usage
@@ -374,7 +385,7 @@
                     </table>
                 </div>
 
-                {{-- Box Kanan: Theoretical Yield --}}
+                {{-- Box Kanan --}}
                 <div class="section-table" style="margin-top: 0; width: 48%; float: left;">
                     <div style="padding: 5px; font-weight: bold; background-color: #f3f3f3; border-bottom: 0.5px solid #444;">
                         Theoretical Yield
@@ -395,20 +406,17 @@
                     </table>
                 </div>
 
-                {{-- Clear Both (Penting untuk PDF agar layout tidak berantakan ke bawah) --}}
                 <div style="clear: both;"></div>
             </div>
         </div>
     @endforeach
 
-    {{-- Pesan jika kosong --}}
     @if (empty($productionList))
         <div style="margin-top: 20px; text-align: center; border: 0.5px solid #444; padding: 10px; color: #666;">
             Data Produksi (Interlock) belum tersedia.
         </div>
     @endif
 
-    {{-- Pemisah sebelum Tanda Tangan --}}
     <div style="margin-top: 30px;"></div>
 
     <table class="signature-table">
@@ -428,16 +436,10 @@
         </tr>
     </table>
 
-
-
-
-
     <div style="margin-top:10px; text-align:center; font-size:9px; font-style:italic; color:#555;">
         Dokumen ini telah disetujui secara elektronik melalui sistem [E-Logsheet],
         sehingga tidak memerlukan tanda tangan basah.
     </div>
 
-    </div>
 </body>
-
 </html>

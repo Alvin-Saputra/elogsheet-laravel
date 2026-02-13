@@ -64,13 +64,13 @@ class AROSByVesselHeader extends Model
         'revision_date' => 'datetime',
 
         // numeric casts (preserve scale)
-        'quantity' => 'decimal:4',
-        'hasil_analisa_ffa' => 'decimal:4',
-        'hasil_analisa_iv' => 'decimal:4',
-        'hasil_analisa_moisture' => 'decimal:4',
-        'hasil_analisa_colour' => 'decimal:4',
-        'hasil_analisa_pv' => 'decimal:4',
-        'hasil_analisa_smp' => 'decimal:4',
+        'quantity' => 'decimal:3',
+        'hasil_analisa_ffa' => 'decimal:3',
+        'hasil_analisa_iv' => 'decimal:3',
+        'hasil_analisa_moisture' => 'decimal:3',
+        'hasil_analisa_colour' => 'decimal:3',
+        'hasil_analisa_pv' => 'decimal:3',
+        'hasil_analisa_smp' => 'decimal:3',
     ];
 
     public function details()

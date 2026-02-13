@@ -615,56 +615,148 @@ class RptQualityController extends Controller
         ];
     }
 
+    // private function renderPreview(Request $request, string $view)
+    // {
+    //     $tanggal = $request->input('filter_tanggal', now()->toDateString());
+    //     $workCenter = $request->input('filter_work_center');
+
+    //     // Memanggil set fungsi yang sesuai berdasarkan view
+    //     if (str_contains($view, 'QC')) {
+    //         $data = $this->getMainDataQc($tanggal, $workCenter);
+    //         [$formInfoFirst, $formInfoLast] = $this->getFormInfoQc($tanggal, $workCenter);
+    //         $refinery = $this->getRefineryQc($tanggal, $workCenter);
+    //         $oilType = $this->getOilTypeQc($tanggal, $workCenter);
+    //     } else {
+    //         $data = $this->getMainData($tanggal, $workCenter);
+    //         [$formInfoFirst, $formInfoLast] = $this->getFormInfo($tanggal, $workCenter);
+    //         $refinery = $this->getRefinery($tanggal, $workCenter);
+    //         $oilType = $this->getOilType($tanggal, $workCenter);
+    //     }
+
+    //     $groupedData = empty($workCenter) ? $data->groupBy('work_center') : collect();
+    //     $signatures = $this->getSignatures($tanggal, $workCenter);
+    //     $signaturesQc = $this->getSignaturesQc($tanggal, $workCenter);
+    //     $sign = $data->first();
+
+    //     return view($view, compact('data', 'groupedData', 'tanggal', 'workCenter', 'signatures', 'signaturesQc', 'sign', 'formInfoFirst', 'formInfoLast', 'refinery', 'oilType'));
+    // }
+
+
     private function renderPreview(Request $request, string $view)
     {
         $tanggal = $request->input('filter_tanggal', now()->toDateString());
         $workCenter = $request->input('filter_work_center');
 
-        // Memanggil set fungsi yang sesuai berdasarkan view
+        // 1. Ambil Data Mentah dari Database (Existing logic)
         if (str_contains($view, 'QC')) {
-            $data = $this->getMainDataQc($tanggal, $workCenter);
+            $dataRaw = $this->getMainDataQc($tanggal, $workCenter);
             [$formInfoFirst, $formInfoLast] = $this->getFormInfoQc($tanggal, $workCenter);
             $refinery = $this->getRefineryQc($tanggal, $workCenter);
             $oilType = $this->getOilTypeQc($tanggal, $workCenter);
+            $signaturesQc = $this->getSignaturesQc($tanggal, $workCenter); // Pindahkan ke sini
+            $signatures = []; // Kosongkan jika QC
         } else {
-            $data = $this->getMainData($tanggal, $workCenter);
+            $dataRaw = $this->getMainData($tanggal, $workCenter);
             [$formInfoFirst, $formInfoLast] = $this->getFormInfo($tanggal, $workCenter);
             $refinery = $this->getRefinery($tanggal, $workCenter);
             $oilType = $this->getOilType($tanggal, $workCenter);
+            $signatures = $this->getSignatures($tanggal, $workCenter);
+            $signaturesQc = [];
         }
 
-        $groupedData = empty($workCenter) ? $data->groupBy('work_center') : collect();
-        $signatures = $this->getSignatures($tanggal, $workCenter);
-        $signaturesQc = $this->getSignaturesQc($tanggal, $workCenter);
-        $sign = $data->first();
+        // 2. PROSES FILLING HOURS (Logika Baru)
+        // Hasilnya adalah Collection yang dikelompokkan per Work Center
+        // Contoh struktur: ['REF-01' => [Row 08:00, Row 09:00...], 'REF-02' => [...]]
+        $groupedData = $this->fillMissingHours($dataRaw, $tanggal);
 
-        return view($view, compact('data', 'groupedData', 'tanggal', 'workCenter', 'signatures', 'signaturesQc', 'sign', 'formInfoFirst', 'formInfoLast', 'refinery', 'oilType'));
+        // 3. Ambil data tanda tangan (Sign)
+        // Ambil dari data raw saja untuk cari yang terakhir diinput/prepare
+        $sign = $dataRaw->first();
+
+        // Note: Variable $data tidak lagi kita kirim sebagai raw collection flat,
+        // tapi view preview.blade.php Anda sepertinya butuh $groupedData.
+
+        return view($view, compact(
+            'groupedData', // Gunakan ini di view untuk loop utama
+            'tanggal',
+            'workCenter',
+            'signatures',
+            'signaturesQc',
+            'sign',
+            'formInfoFirst',
+            'formInfoLast',
+            'refinery',
+            'oilType'
+        ));
     }
+
+    // private function renderPdf(Request $request, string $view)
+    // {
+    //     $tanggal = $request->input('filter_tanggal', now()->toDateString());
+    //     $workCenter = $request->input('filter_work_center');
+
+    //     // Memanggil set fungsi yang sesuai berdasarkan view
+    //     if (str_contains($view, 'qc')) {
+    //         $data = $this->getMainDataQc($tanggal, $workCenter);
+    //         [$formInfoFirst, $formInfoLast] = $this->getFormInfoQc($tanggal, $workCenter);
+    //         $refinery = $this->getRefineryQc($tanggal, $workCenter);
+    //         $oilType = $this->getOilTypeQc($tanggal, $workCenter);
+    //     } else {
+    //         $data = $this->getMainData($tanggal, $workCenter);
+    //         [$formInfoFirst, $formInfoLast] = $this->getFormInfo($tanggal, $workCenter);
+    //         $refinery = $this->getRefinery($tanggal, $workCenter);
+    //         $oilType = $this->getOilType($tanggal, $workCenter);
+    //     }
+
+    //     $groupedData = empty($workCenter) ? $data->groupBy('work_center') : collect();
+    //     $signatures = $this->getSignatures($tanggal, $workCenter);
+    //     $signaturesQc = $this->getSignaturesQc($tanggal, $workCenter);
+    //     $lastShift = collect($signaturesQc)->filter(fn($s) => data_get($s, 'prepared') || data_get($s, 'acknowledge'))->last();
+
+    //     $pdf = Pdf::loadView($view, compact('data', 'groupedData', 'tanggal', 'workCenter', 'formInfoFirst', 'formInfoLast', 'refinery', 'oilType', 'signatures', 'signaturesQc', 'lastShift'))->setPaper('a3', 'landscape');
+    //     return $pdf->stream("quality_report_{$tanggal}.pdf");
+    // }
+
 
     private function renderPdf(Request $request, string $view)
     {
         $tanggal = $request->input('filter_tanggal', now()->toDateString());
         $workCenter = $request->input('filter_work_center');
 
-        // Memanggil set fungsi yang sesuai berdasarkan view
         if (str_contains($view, 'qc')) {
-            $data = $this->getMainDataQc($tanggal, $workCenter);
+            $dataRaw = $this->getMainDataQc($tanggal, $workCenter);
             [$formInfoFirst, $formInfoLast] = $this->getFormInfoQc($tanggal, $workCenter);
             $refinery = $this->getRefineryQc($tanggal, $workCenter);
             $oilType = $this->getOilTypeQc($tanggal, $workCenter);
+            $signaturesQc = $this->getSignaturesQc($tanggal, $workCenter);
+            $signatures = [];
         } else {
-            $data = $this->getMainData($tanggal, $workCenter);
+            $dataRaw = $this->getMainData($tanggal, $workCenter);
             [$formInfoFirst, $formInfoLast] = $this->getFormInfo($tanggal, $workCenter);
             $refinery = $this->getRefinery($tanggal, $workCenter);
             $oilType = $this->getOilType($tanggal, $workCenter);
+            $signatures = $this->getSignatures($tanggal, $workCenter);
+            $signaturesQc = [];
         }
 
-        $groupedData = empty($workCenter) ? $data->groupBy('work_center') : collect();
-        $signatures = $this->getSignatures($tanggal, $workCenter);
-        $signaturesQc = $this->getSignaturesQc($tanggal, $workCenter);
+        // PROSES FILLING HOURS
+        $groupedData = $this->fillMissingHours($dataRaw, $tanggal);
+
         $lastShift = collect($signaturesQc)->filter(fn($s) => data_get($s, 'prepared') || data_get($s, 'acknowledge'))->last();
 
-        $pdf = Pdf::loadView($view, compact('data', 'groupedData', 'tanggal', 'workCenter', 'formInfoFirst', 'formInfoLast', 'refinery', 'oilType', 'signatures', 'signaturesQc', 'lastShift'))->setPaper('a3', 'landscape');
+        $pdf = Pdf::loadView($view, compact(
+            'groupedData',
+            'tanggal',
+            'workCenter',
+            'formInfoFirst',
+            'formInfoLast',
+            'refinery',
+            'oilType',
+            'signatures',
+            'signaturesQc',
+            'lastShift'
+        ))->setPaper('a3', 'landscape');
+
         return $pdf->stream("quality_report_{$tanggal}.pdf");
     }
 
@@ -1100,5 +1192,66 @@ class RptQualityController extends Controller
             'canApproveReject' => $canApproveReject,
             'statusMessage' => $statusMessage,
         ];
+    }
+
+
+
+    private function getOperationalHours()
+    {
+        $hours = [];
+        // Shift 1 & 2 (Hari H)
+        for ($i = 8; $i <= 23; $i++) $hours[] = sprintf('%02d:00:00', $i);
+        // Shift 3 (Hari H+1)
+        for ($i = 0; $i <= 7; $i++)  $hours[] = sprintf('%02d:00:00', $i);
+
+        return $hours;
+    }
+
+
+    private function fillMissingHours($data, $tanggal)
+    {
+        $hours = $this->getOperationalHours();
+
+        // Kita grouping berdasarkan Work Center agar setiap mesin punya tabel jam lengkap
+        return $data->groupBy('work_center')->map(function ($rows, $wc) use ($hours, $tanggal) {
+            // Indexing data berdasarkan string waktu (misal '08:00:00')
+            // Pastikan kolom 'time' di database formatnya H:i:s
+            $rowsByTime = $rows->keyBy(function ($item) {
+                return \Carbon\Carbon::parse($item->time)->format('H:i:s');
+            });
+
+            $filled = collect();
+
+            foreach ($hours as $hour) {
+                if ($rowsByTime->has($hour)) {
+                    // Jika data ada di database, pakai data itu
+                    $filled->push($rowsByTime->get($hour));
+                } else {
+                    // Jika tidak ada, buat dummy object
+                    // Kita perlu convert string jam ke Carbon object untuk View
+
+                    // Tentukan tanggal untuk jam ini (apakah hari H atau H+1)
+                    $isNextDay = (intval(substr($hour, 0, 2)) < 8);
+                    $dateObj = \Carbon\Carbon::parse($tanggal . ' ' . $hour);
+                    if ($isNextDay) {
+                        $dateObj->addDay();
+                    }
+
+                    // Buat Object Dummy
+                    $dummy = new \stdClass();
+                    $dummy->time = $dateObj; // Penting: tipe Carbon
+                    $dummy->work_center = $wc;
+                    $dummy->oil_type = null;
+                    $dummy->remarks = null;
+
+                    // Properti lain otomatis null jika diakses di PHP modern pada stdClass,
+                    // tapi pastikan view Anda menggunakan `optional()` atau `??`
+
+                    $filled->push($dummy);
+                }
+            }
+
+            return $filled;
+        });
     }
 }

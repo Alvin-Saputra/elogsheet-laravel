@@ -41,14 +41,14 @@ class LSFormTransferDetail extends Model
 
     protected $casts = [
         'to_auto_filling_tank' => 'integer',
-        'quality_m_and_i' => 'decimal:4',
-        'quality_ffa' => 'decimal:4',
-        'quality_lov_color_r' => 'decimal:4',
-        'quality_lov_color_y' => 'decimal:4',
-        'quality_cp_temp' => 'decimal:4',
-        'quality_smp' => 'decimal:4',
-        'quality_pv' => 'decimal:4',
-        'quality_iv' => 'decimal:4',
+        'quality_m_and_i' => 'decimal:3',
+        'quality_ffa' => 'decimal:3',
+        'quality_lov_color_r' => 'decimal:3',
+        'quality_lov_color_y' => 'decimal:3',
+        'quality_cp_temp' => 'decimal:3',
+        'quality_smp' => 'decimal:3',
+        'quality_pv' => 'decimal:3',
+        'quality_iv' => 'decimal:3',
     ];
 
     public function header()

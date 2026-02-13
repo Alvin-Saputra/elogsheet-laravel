@@ -41,18 +41,18 @@ class ARIMByVesselDetail extends Model
     ];
 
     protected $casts = [
-        'palka_s_ffa' => 'float',
-        'palka_s_iv' => 'float',
-        'palka_s_dobi' => 'float',
-        'palka_s_mni' => 'float',
-        'palka_c_ffa' => 'float',
-        'palka_c_iv' => 'float',
-        'palka_c_dobi' => 'float',
-        'palka_c_mni' => 'float',
-        'palka_p_ffa' => 'float',
-        'palka_p_iv' => 'float',
-        'palka_p_dobi' => 'float',
-        'palka_p_mni' => 'float',
+        'palka_s_ffa' => 'decimal:3',
+        'palka_s_iv' => 'decimal:3',
+        'palka_s_dobi' => 'decimal:3',
+        'palka_s_mni' => 'decimal:3',
+        'palka_c_ffa' => 'decimal:3',
+        'palka_c_iv' => 'decimal:3',
+        'palka_c_dobi' => 'decimal:3',
+        'palka_c_mni' => 'decimal:3',
+        'palka_p_ffa' => 'decimal:3',
+        'palka_p_iv' => 'decimal:3',
+        'palka_p_dobi' => 'decimal:3',
+        'palka_p_mni' => 'decimal:3',
     ];
 
     /**

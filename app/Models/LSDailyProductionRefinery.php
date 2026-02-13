@@ -109,14 +109,14 @@ class LSDailyProductionRefinery extends Model
         'bp_total' => 'decimal:3',
 
         'be_lot_batch_number' => 'integer',
-        'be_yield_percent' => 'float',
+        'be_yield_percent' => 'decimal:3',
 
         'pa_lot_batch_number' => 'integer',
         'pa_yield_percent' => 'float',
 
-        'uu_total_cpo' => 'integer',
-        'uu_total_steam' => 'integer',
-        'uu_yield_percent' => 'float',
+        'uu_total_cpo' => 'decimal:3',
+        'uu_total_steam' => 'decimal:3',
+        'uu_yield_percent' => 'decimal:3',
 
         'entry_date' => 'datetime',
         'prepared_date' => 'datetime',

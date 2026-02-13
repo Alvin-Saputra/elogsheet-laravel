@@ -39,16 +39,16 @@ class ARIMByTruckDetail extends Model
     ];
 
     protected $casts = [
-        'p_ffa' => 'float',
-        'p_moisture' => 'float',
-        'p_iv' => 'float',
-        'p_dobi' => 'float',
-        'p_pv' => 'float',
-        'p_color_r' => 'float',
-        'p_color_y' => 'float',
-        'palka_p_iv' => 'float',
-        'palka_p_dobi' => 'float',
-        'palka_p_mni' => 'float',
+        'p_ffa' => 'decimal:3',
+        'p_moisture' => 'decimal:3',
+        'p_iv' => 'decimal:3',
+        'p_dobi' => 'decimal:3',
+        'p_pv' => 'decimal:3',
+        'p_color_r' => 'decimal:3',
+        'p_color_y' => 'decimal:3',
+        'palka_p_iv' => 'decimal:3',
+        'palka_p_dobi' => 'decimal:3',
+        'palka_p_mni' => 'decimal:3',
         // "sampling_date" => "datetime",
     ];
 

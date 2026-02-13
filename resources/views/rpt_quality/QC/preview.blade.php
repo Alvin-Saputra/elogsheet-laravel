@@ -62,7 +62,7 @@
 
 
         {{-- Table Section --}}
-        @if (!empty($workCenter))
+        {{-- @if (!empty($workCenter))
             @include('rpt_quality.QC._table', ['rows' => $data])
         @else
             @foreach ($groupedData as $wc => $rows)
@@ -78,12 +78,41 @@
 
                 @include('rpt_quality.QC._table', ['rows' => $rows, 'workCenter' => $firstRow->work_center ?? $wc,])
             @endforeach
-        @endif
+        @endif --}}
+
+
+
+        @foreach ($groupedData as $wc => $rows)
+            @php
+                // Ambil row pertama (bisa dummy atau real) untuk info header
+                // Kita perlu filter row yang BUKAN dummy untuk ambil nama oil_type dll jika memungkinkan
+                $realRow = $rows->whereNotNull('oil_type')->first();
+
+                $oilTypeName = $realRow->oil_type ?? ($oilType->raw_material ?? '-');
+                // Ambil nama refinery dari real row, atau fallback ke variable $refinery, atau kode WC
+                $wcName = $realRow->refinery_name ?? ($refinery->name ?? $wc);
+            @endphp
+
+            {{-- Tampilkan Header per Work Center --}}
+            <div class="mt-6 mb-2">
+                <h4 class="text-md font-bold">
+                    {{ $wcName }} ({{ $wc }})
+                </h4>
+                <div class="text-xs">Oil Type: {{ $oilTypeName }}</div>
+            </div>
+
+            {{-- Include Table --}}
+            {{-- $rows di sini sudah berisi 24 baris (08:00 - 07:00) --}}
+            @include('rpt_quality.QC._table', [
+                'rows' => $rows,
+                'workCenter' => $wc,
+            ])
+        @endforeach
 
 
         {{-- Footer Box --}}
-      {{-- Logic untuk mengambil Data Daily Production (Interlock) --}}
-        @php
+        {{-- Logic untuk mengambil Data Daily Production (Interlock) --}}
+        {{-- @php
             $production = null;
             // Cek sumber data, apakah single ($data) atau grouped ($groupedData)
             if (!empty($data) && $data->count() > 0) {
@@ -92,10 +121,10 @@
                 // Ambil dari grup pertama, baris pertama
                 $production = $groupedData->first()->first()->dailyProduction;
             }
-        @endphp
+        @endphp --}}
 
-      {{-- Logic untuk mengelompokkan Data Daily Production per Work Center --}}
-        @php
+        {{-- Logic untuk mengelompokkan Data Daily Production per Work Center --}}
+        {{-- @php
             $productionList = [];
 
             // Skenario 1: Jika User memfilter 1 Work Center spesifik
@@ -105,7 +134,7 @@
                 if ($prod) {
                     $productionList[$workCenter] = $prod;
                 }
-            } 
+            }
             // Skenario 2: Jika Laporan menampilkan banyak Work Center (Grouped Data)
             elseif (!empty($groupedData)) {
                 foreach ($groupedData as $wc => $rows) {
@@ -113,6 +142,54 @@
                         $prod = $rows->first()->dailyProduction;
                         // Masukkan ke list meskipun null (nanti di-handle di view dengan tanda '-')
                         $productionList[$wc] = $prod;
+                    }
+                }
+            }
+        @endphp --}}
+
+
+
+        {{-- Logic untuk mengambil Data Daily Production (Interlock) --}}
+        @php
+            $production = null;
+            $productionList = [];
+
+            // Helper function untuk mencari data asli (bukan dummy stdClass)
+            // Data asli adalah instance Model yang punya relationship dailyProduction
+            $findRealRow = function($collection) {
+                return $collection->first(function($item) {
+                    // Cek apakah item ini punya property dailyProduction (berarti bukan dummy)
+                    return isset($item->dailyProduction);
+                });
+            };
+
+            // Skenario 1: Jika User memfilter 1 Work Center spesifik ($data biasanya flat collection)
+            if (!empty($workCenter) && !empty($data) && $data->count() > 0) {
+                $realRow = $findRealRow($data);
+                if ($realRow) {
+                    $production = $realRow->dailyProduction;
+                    $productionList[$workCenter] = $production;
+                }
+            } 
+            // Skenario 2: Jika Laporan menampilkan banyak Work Center (Grouped Data)
+            elseif (!empty($groupedData)) {
+                foreach ($groupedData as $wc => $rows) {
+                    if ($rows->count() > 0) {
+                        // Cari baris yang valid di dalam grup ini
+                        $realRow = $findRealRow($rows);
+                        
+                        // Jika ketemu data asli, ambil dailyProduction-nya
+                        if ($realRow) {
+                            $productionList[$wc] = $realRow->dailyProduction;
+                            
+                            // Set $production default ke item pertama yg ketemu (untuk backward compatibility kode lama)
+                            if (is_null($production)) {
+                                $production = $realRow->dailyProduction;
+                            }
+                        } else {
+                            // Jika satu grup isinya dummy semua (belum ada input sama sekali hari itu)
+                            $productionList[$wc] = null;
+                        }
                     }
                 }
             }
@@ -164,10 +241,10 @@
                             </tr>
                         </table>
                     </div>
-                    
+
                     {{-- Box Kanan (Opsional: Kosong atau Catatan lain) --}}
                     {{-- Jika ingin layout 2 kolom saja, ubah grid-cols-3 jadi grid-cols-2 --}}
-                    <div></div> 
+                    <div></div>
                 </div>
             </div>
         @endforeach
@@ -192,7 +269,7 @@
                 <div>
                     Prepared by,<br><br><br>
                     <strong>({{ $lastShift['prepared']['name'] ?? '-' }})</strong><br>
-                     <p>({{ $lastShift['prepared']['role'] ?? '-' }})</p><br>
+                    <p>({{ $lastShift['prepared']['role'] ?? '-' }})</p><br>
                     {{ $lastShift['prepared']['date']
                         ? \Carbon\Carbon::parse($lastShift['prepared']['date'])->format('d-m-Y H:i')
                         : '' }}
@@ -200,7 +277,7 @@
                 <div>
                     Acknowledged by,<br><br><br>
                     <strong>({{ $lastShift['acknowledge']['name'] ?? '-' }})</strong><br>
-                     <p>({{ $lastShift['acknowledge']['role'] ?? '-' }})</p><br>
+                    <p>({{ $lastShift['acknowledge']['role'] ?? '-' }})</p><br>
                     {{ $lastShift['acknowledge']['date']
                         ? \Carbon\Carbon::parse($lastShift['acknowledge']['date'])->format('d-m-Y H:i')
                         : '' }}
