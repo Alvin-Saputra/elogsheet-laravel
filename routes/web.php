@@ -1,4 +1,4 @@
-<?php
+    <?php
 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -398,6 +398,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [RptFormTransferController::class, 'index'])->name('report.form-transfer.index');
         Route::get('/export/view', [RptFormTransferController::class, 'exportView'])->name('report.form-transfer.export.view');
         Route::get('/export/pdf', [RptFormTransferController::class, 'exportPdf'])->name('report.form-transfer.export.pdf');
+        // Bulk routes MUST come before /{id} routes
+        Route::post('/bulk/approve', [RptFormTransferController::class, 'bulkApprove'])->name('report.form-transfer.bulk-approve');
+        Route::post('/bulk/reject', [RptFormTransferController::class, 'bulkReject'])->name('report.form-transfer.bulk-reject');
         Route::get('/{id}', [RptFormTransferController::class, 'getById'])->name('report.form-transfer.show');
         Route::get('/{id}/export/view', [RptFormTransferController::class, 'getById'])->name('report.form-transfer.preview');
         Route::get('/{id}/export/pdf', [RptFormTransferController::class, 'getById'])->name('report.form-transfer.export');
