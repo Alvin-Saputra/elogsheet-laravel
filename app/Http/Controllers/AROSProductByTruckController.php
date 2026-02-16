@@ -106,10 +106,15 @@ class AROSProductByTruckController extends Controller
         if ($request->filled('loading_date')) {
             $query->whereDate('loading_date', $request->loading_date);
         }
+
+        if ($request->filled('plant')) {
+            $query->where('plant', $request->plant);
+        }
+
         $query->orderBy('loading_date', 'desc');
 
         $result = $query->get();
-        if ($request->anyFilled(['loading_date']) && $result->isEmpty()) {
+        if ($request->anyFilled(['loading_date', 'plant']) && $result->isEmpty()) {
             return response()->json([
                 'success' => false,
                 'message' => 'No data found for the given filters.',

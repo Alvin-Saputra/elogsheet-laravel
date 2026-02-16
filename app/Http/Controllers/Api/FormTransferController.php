@@ -28,12 +28,17 @@ class FormTransferController extends Controller
             $query->whereDate('transaction_date', $request->transaction_date);
         }
 
+
         // Filter by date range
         if ($request->filled('start_date') && $request->filled('end_date')) {
             $query->whereBetween('transaction_date', [
                 $request->start_date,
                 $request->end_date,
             ]);
+        }
+
+        if ($request->filled('plant')) {
+            $query->where('plant', $request->plant);
         }
 
         // Filter by department
@@ -81,7 +86,7 @@ class FormTransferController extends Controller
 
         $result = $query->get();
 
-        if ($request->anyFilled(['transaction_date', 'start_date', 'end_date', 'from_dept', 'to_dept', 'status']) && $result->isEmpty()) {
+        if ($request->anyFilled(['transaction_date', 'start_date', 'end_date', 'from_dept', 'to_dept', 'status', 'plant']) && $result->isEmpty()) {
             return response()->json([
                 'success' => false,
                 'message' => 'No data found for the given filters.',

@@ -104,11 +104,15 @@ class AROSByVesselController extends Controller
             $query->whereDate('sampling_date', $request->sampling_date);
         }
 
+        if ($request->filled('plant')) {
+            $query->where('plant', $request->plant);
+        }
+
         $query->orderBy('sampling_date', 'desc');
 
         $result = $query->get();
 
-        if ($request->filled('sampling_date') && $result->isEmpty()) {
+        if ($request->filled('sampling_date', 'plant') && $result->isEmpty()) {
             return response()->json([
                 'success' => false,
                 'message' => 'No data found for the given filters.',

@@ -43,14 +43,14 @@ class LSFormTransferHeader extends Model
     ];
 
     protected $casts = [
-        'transaction_date' => 'date',
+        // 'transaction_date' => 'date',
         'date_issued' => 'date',
         'revision_no' => 'integer',
         'revision_date' => 'date',
         'entry_date' => 'datetime',
-        'prepared_date' => 'datetime',
-        'approved_date' => 'datetime',
-        'updated_date' => 'datetime',
+        // 'prepared_date' => 'datetime',
+        // 'approved_date' => 'datetime',
+        // 'updated_date' => 'datetime',
     ];
 
     public function details()
