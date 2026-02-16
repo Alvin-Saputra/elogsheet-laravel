@@ -441,11 +441,15 @@ class AROIPFuelController extends Controller
             $query->whereBetween('entry_date', [$request->start_date, $request->end_date]);
         }
 
+        if ($request->filled('plant')) {
+            $query->where('plant', $request->plant);
+        }
+
         $query->orderBy('entry_date', 'desc');
 
         $result = $query->get();
 
-        if ($request->anyFilled(['entry_date', 'start_date', 'end_date']) && $result->isEmpty()) {
+        if ($request->anyFilled(['entry_date', 'plant', 'start_date', 'end_date']) && $result->isEmpty()) {
             return response()->json(['success' => false, 'message' => 'No data found for the given filters.'], 404);
         }
 

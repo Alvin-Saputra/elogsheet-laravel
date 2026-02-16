@@ -40,12 +40,16 @@ class AROIPChemicalController extends Controller
             ]);
         }
 
+        if($request->filled('plant')){
+             $query->where('plant', $request->plant);
+        }
+
         // Order by most recent first
         $query->orderBy('entry_date', 'desc');
 
         $result = $query->get();
 
-        if ($request->anyFilled(['entry_date', 'start_date', 'end_date']) && $result->isEmpty()) {
+        if ($request->anyFilled(['entry_date', 'plant', 'start_date', 'end_date']) && $result->isEmpty()) {
             return response()->json([
                 'success' => false,
                 'message' => 'No data found for the given filters.',
