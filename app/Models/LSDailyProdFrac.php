@@ -97,4 +97,14 @@ class LSDailyProdFrac extends Model
         'is_completed' => 'boolean',
         // ... cast lainnya sesuaikan dengan tipe data database
     ];
+
+
+        protected static function booted()
+    {
+        static::addGlobalScope('plant', function ($query) {
+            if ($plant = session('plant_code')) {
+                $query->where('plant', $plant);
+            }
+        });
+    }
 }

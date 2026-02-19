@@ -113,6 +113,15 @@ class LSQualityReportQc extends Model
         'updated_date' => 'datetime',
     ];
 
+    protected static function booted()
+    {
+        static::addGlobalScope('plant', function ($query) {
+            if ($plant = session('plant_code')) {
+                $query->where('plant', $plant);
+            }
+        });
+    }
+
     public function dailyProduction()
     {
         // Parameter: (Model Tujuan, Foreign Key di tabel ini, Owner Key di tabel tujuan)

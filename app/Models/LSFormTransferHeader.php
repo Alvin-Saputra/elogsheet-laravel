@@ -53,6 +53,15 @@ class LSFormTransferHeader extends Model
         // 'updated_date' => 'datetime',
     ];
 
+      protected static function booted()
+    {
+        static::addGlobalScope('plant', function ($query) {
+            if ($plant = session('plant_code')) {
+                $query->where('plant', $plant);
+            }
+        });
+    }
+
     public function details()
     {
         return $this->hasMany(LSFormTransferDetail::class, 'id_hdr', 'id');

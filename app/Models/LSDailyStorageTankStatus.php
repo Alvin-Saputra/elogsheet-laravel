@@ -27,4 +27,13 @@ class LSDailyStorageTankStatus extends Model
         'today_date' => 'datetime',
         'last_used_date' => 'datetime',
     ];
+
+    // protected static function booted()
+    // {
+    //     static::addGlobalScope('plant', function ($query) {
+    //         if ($plant = session('plant_code')) {
+    //             $query->where('plant', $plant);
+    //         }
+    //     });
+    // }
 }

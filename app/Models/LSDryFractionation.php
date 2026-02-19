@@ -94,4 +94,14 @@ class LSDryFractionation extends Model
         'filtration_cycle_no' => 'integer',
         'revision_no' => 'integer',
     ];
+
+
+    protected static function booted()
+    {
+        static::addGlobalScope('plant', function ($query) {
+            if ($plant = session('plant_code')) {
+                $query->where('plant', $plant);
+            }
+        });
+    }
 }

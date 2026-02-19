@@ -44,6 +44,16 @@ class AROSProductByTruckHeader extends Model
         'revision_date',
     ];
 
+
+     protected static function booted()
+    {
+        static::addGlobalScope('plant', function ($query) {
+            if ($plant = session('plant_code')) {
+                $query->where('plant', $plant);
+            }
+        });
+    }
+
     /**
      * One Header has many Details
      */

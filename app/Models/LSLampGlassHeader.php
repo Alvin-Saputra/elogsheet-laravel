@@ -43,6 +43,15 @@ class LSLampGlassHeader extends Model
     'checked_status_remarks' => 'string',
   ];
 
+  protected static function booted()
+  {
+    static::addGlobalScope('plant', function ($query) {
+      if ($plant = session('plant_code')) {
+        $query->where('plant', $plant);
+      }
+    });
+  }
+
   public function details()
   {
     return $this->hasMany(LSLampGlassDetail::class, 'id_hdr', 'id');

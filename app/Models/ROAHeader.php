@@ -39,6 +39,15 @@ class ROAHeader extends Model
         'authorized_date',
     ];
 
+    protected static function booted()
+    {
+        static::addGlobalScope('plant', function ($query) {
+            if ($plant = session('plant_code')) {
+                $query->where('plant', $plant);
+            }
+        });
+    }
+
     public function aroipFuelHeaders()
     {
         return $this->hasMany(AROIPFuelHeader::class, 'id_roa', 'id');

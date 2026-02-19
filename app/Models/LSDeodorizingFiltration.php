@@ -106,4 +106,13 @@ class LSDeodorizingFiltration extends Model
         'date_issued' => 'datetime',
         'revision_date' => 'datetime',
     ];
+
+    protected static function booted()
+    {
+        static::addGlobalScope('plant', function ($query) {
+            if ($plant = session('plant_code')) {
+                $query->where('plant', $plant);
+            }
+        });
+    }
 }

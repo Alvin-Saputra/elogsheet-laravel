@@ -49,6 +49,15 @@ class AROIPFuelHeader extends Model
         'revision_date',
     ];
 
+     protected static function booted()
+    {
+        static::addGlobalScope('plant', function ($query) {
+            if ($plant = session('plant_code')) {
+                $query->where('plant', $plant);
+            }
+        });
+    }
+
      public function roa()
     {
         return $this->belongsTo(ROAHeader::class, 'id_roa', 'id');

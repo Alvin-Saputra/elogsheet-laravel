@@ -55,6 +55,15 @@ class AROIPChemicalHeader extends Model
         'exp_date',
     ];
 
+     protected static function booted()
+    {
+        static::addGlobalScope('plant', function ($query) {
+            if ($plant = session('plant_code')) {
+                $query->where('plant', $plant);
+            }
+        });
+    }
+
     public function coa()
     {
         return $this->belongsTo(COAHeader::class, 'id_coa', 'id');

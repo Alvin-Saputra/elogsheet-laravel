@@ -63,6 +63,16 @@ class ARIMByVesselHeader extends Model
         "revision_date"
     ];
 
+
+    protected static function booted()
+    {
+        static::addGlobalScope('plant', function ($query) {
+            if ($plant = session('plant_code')) {
+                $query->where('plant', $plant);
+            }
+        });
+    }
+
     // protected $casts = [
     //     'arrival' => "datetime",
     //     "entry_date" => "datetime",
@@ -82,7 +92,7 @@ class ARIMByVesselHeader extends Model
     }
 
 
-       public function preparedByUser()
+    public function preparedByUser()
     {
         return $this->belongsTo(MUser::class, 'prepared_by', 'username');
     }

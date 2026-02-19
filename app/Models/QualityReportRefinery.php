@@ -99,4 +99,13 @@ class QualityReportRefinery extends Model
         'fp_product_tank_no' => 'decimal:0',
         'spent_earth_oic' => 'decimal:2',
     ];
+
+      protected static function booted()
+    {
+        static::addGlobalScope('plant', function ($query) {
+            if ($plant = session('plant_code')) {
+                $query->where('plant', $plant);
+            }
+        });
+    }
 }

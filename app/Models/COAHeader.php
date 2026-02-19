@@ -38,6 +38,9 @@ class COAHeader extends Model
         'updated_date',
     ];
 
+
+
+
     public function aroipChemicalHeaders()
     {
         return $this->hasMany(AROIPChemicalHeader::class, 'id_coa', 'id');
@@ -59,9 +62,16 @@ class COAHeader extends Model
                 ]);
             }
         });
+
+        static::addGlobalScope('plant', function ($query) {
+            if ($plant = session('plant_code')) {
+                $query->where('plant', $plant);
+            }
+        });
     }
 
-        public function issuedByUser()
+
+    public function issuedByUser()
     {
         return $this->belongsTo(MUser::class, 'issue_by', 'username');
     }

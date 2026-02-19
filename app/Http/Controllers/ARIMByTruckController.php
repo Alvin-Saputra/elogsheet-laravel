@@ -472,15 +472,16 @@ class ARIMByTruckController extends Controller
     // ---- Web Request Function ------
 
     public function index(Request $request)
-    {
+    {   
+        // $plantCode = session('plant_code'); 
         $tanggal = $request->input('filter_tanggal');
 
         if (!$tanggal) {
             $tanggal = now()->toDateString();
         }
-        $plantCode = session('plant_code');
+        // $plantCode = session('plant_code');
         $headers = ARIMByTruckHeader::with('details')
-            ->where('plant', $plantCode)
+            // ->where('plant', $plantCode)
             ->whereDate('arrival_date', $tanggal)
             ->orderBy('arrival_date', 'asc')
             ->orderBy('transaction_date', 'asc')
@@ -491,9 +492,11 @@ class ARIMByTruckController extends Controller
     }
 
     public function getById(Request $request, $id)
-    {
+    {   
+       
         $data = $this->findHeaderWithId($id);
         $intention = $request->query('intention');
+        
 
         return match ($intention) {
             'show' => view('rpt_analytical_result_incoming_material_by_truck.show', [

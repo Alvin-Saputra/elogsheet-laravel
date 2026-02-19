@@ -75,6 +75,14 @@ class LSDailyQualityCompositeFractionation extends Model
         'updated_date' => 'datetime'
     ];
 
+    protected static function booted()
+    {
+        static::addGlobalScope('plant', function ($query) {
+            if ($plant = session('plant_code')) {
+                $query->where('plant', $plant);
+            }
+        });
+    }
 
     public function preparedByUser()
     {

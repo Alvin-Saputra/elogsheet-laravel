@@ -67,19 +67,27 @@ class LSDailyStorageTankAnalytical extends Model
     'transaction_date' => 'datetime',
   ];
 
+  protected static function booted()
+  {
+    static::addGlobalScope('plant', function ($query) {
+      if ($plant = session('plant_code')) {
+        $query->where('plant', $plant);
+      }
+    });
+  }
 
   public function preparedByUser()
-    {
-        return $this->belongsTo(MUser::class, 'prepared_by', 'username');
-    }
+  {
+    return $this->belongsTo(MUser::class, 'prepared_by', 'username');
+  }
 
-    public function approvedByUser()
-    {
-        return $this->belongsTo(MUser::class, 'approved_by', 'username');
-    }
+  public function approvedByUser()
+  {
+    return $this->belongsTo(MUser::class, 'approved_by', 'username');
+  }
 
-    public function entriedByUser()
-    {
-        return $this->belongsTo(MUser::class, 'entry_by', 'username');
-    }
+  public function entriedByUser()
+  {
+    return $this->belongsTo(MUser::class, 'entry_by', 'username');
+  }
 }

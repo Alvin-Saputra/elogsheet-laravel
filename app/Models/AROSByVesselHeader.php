@@ -73,6 +73,16 @@ class AROSByVesselHeader extends Model
         'hasil_analisa_smp' => 'decimal:3',
     ];
 
+
+     protected static function booted()
+    {
+        static::addGlobalScope('plant', function ($query) {
+            if ($plant = session('plant_code')) {
+                $query->where('plant', $plant);
+            }
+        });
+    }
+
     public function details()
     {
         return $this->hasMany(AROSByVesselDetail::class, 'id_hdr', 'id');

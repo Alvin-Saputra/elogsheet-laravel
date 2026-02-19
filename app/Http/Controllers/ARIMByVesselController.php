@@ -413,9 +413,9 @@ class ARIMByVesselController extends Controller
         if (! $tanggal) {
             $tanggal = now()->toDateString();
         }
-        $plantCode = session('plant_code');
+        // $plantCode = session('plant_code');
         $headers = ARIMByVesselHeader::with('details')
-            ->where('plant', $plantCode)
+            // ->where('plant', $plantCode)
             ->whereDate('arrival', $tanggal)
             ->get();
 

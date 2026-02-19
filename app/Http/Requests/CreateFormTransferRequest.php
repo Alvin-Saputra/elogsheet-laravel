@@ -30,6 +30,8 @@ class CreateFormTransferRequest extends FormRequest
             |------------------------------------------------------------------
             */
             'transaction_date' => 'nullable|date',
+            'company' => 'required|string|max:45',
+            'plant' => 'required|string|max:45',
             'to_dept' => 'nullable|string|max:45',
             'from_dept' => 'nullable|string|max:45',
             'flag' => 'nullable|in:I,U',

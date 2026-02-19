@@ -49,6 +49,16 @@ class ARIMByTruckHeader extends Model
         "revision_date",
     ];
 
+
+    protected static function booted()
+    {
+        static::addGlobalScope('plant', function ($query) {
+            if ($plant = session('plant_code')) {
+                $query->where('plant', $plant);
+            }
+        });
+    }
+
     // protected $casts = [
     //     "arrival_date" => "datetime",
     //     "transaction_date" => "datetime",

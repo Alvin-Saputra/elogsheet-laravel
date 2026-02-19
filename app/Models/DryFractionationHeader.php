@@ -81,6 +81,15 @@ class DryFractionationHeader extends Model
         // 'initial_oil_level' => 'decimal:2',
     ];
 
+       protected static function booted()
+    {
+        static::addGlobalScope('plant', function ($query) {
+            if ($plant = session('plant_code')) {
+                $query->where('plant', $plant);
+            }
+        });
+    }
+
     /**
      * Relasi ke tabel detail.
      * Diasumsikan nama model detail adalah DryFractionationDetail.
