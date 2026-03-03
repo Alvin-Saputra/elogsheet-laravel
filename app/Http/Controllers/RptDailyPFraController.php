@@ -31,9 +31,16 @@ class RptDailyPFraController extends Controller
         $refineryMachines = LSDailyProductionFractionation::select('work_center')->distinct()->get();
         $signatures = $this->getSignatures($tanggal, $request->input('filter_work_center'));
         $approvalStatus = $this->getApprovalStatus($tanggal);
+        
+        $hasIncomplete = LSDailyProductionFractionation::whereDate('posting_date', $tanggal)
+            ->where('flag', 'T')
+            ->where(function($q) {
+                $q->where('is_completed', 0)->orWhereNull('is_completed');
+            })
+            ->exists();
 
         // We use an empty array for shiftStatuses if not implemented
-        return view('rpt_daily_production.fractionation.index', compact('reports', 'tanggal', 'refineryMachines', 'signatures') + $approvalStatus);
+        return view('rpt_daily_production.fractionation.index', compact('reports', 'tanggal', 'refineryMachines', 'signatures', 'hasIncomplete') + $approvalStatus);
     }
 
     /**

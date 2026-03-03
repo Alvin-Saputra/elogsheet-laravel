@@ -3,6 +3,41 @@
 @section('page_title', 'Report Daily Production Refinery')
 
 @section('content')
+    @php
+        $allItems = collect();
+        foreach ($groupedReports as $wc => $shifts) {
+            foreach ($shifts as $shift => $items) {
+                $allItems = $allItems->merge($items);
+            }
+        }
+        $flatReports = $allItems->groupBy('id')->map(function ($rows) {
+            $first = $rows->first();
+            $shiftList = $rows->pluck('shift')->unique()->sort()->values();
+            
+            $shiftsData = [];
+            foreach ($rows as $row) {
+                $shiftsData[$row->shift] = [
+                    'prepared_status' => $row->prepared_status,
+                    'checked_status' => $row->checked_status,
+                    'is_completed' => $row->is_completed,
+                ];
+            }
+            
+            return (object) [
+                'id' => $first->id,
+                'work_center' => $first->work_center,
+                'shifts' => $shiftList->implode(', '),
+                'shift_list' => $shiftList->toArray(),
+                'shifts_data' => $shiftsData,
+                'transaction_date' => $first->transaction_date,
+                'entry_by' => $first->entry_by,
+                'prepared_status' => $first->prepared_status,
+                'checked_status' => $first->checked_status,
+                'is_completed' => $first->is_completed,
+            ];
+        })->values();
+    @endphp
+
     <div class="bg-white p-6 rounded shadow-md">
         <div class="flex items-center justify-between mb-6">
             <div>
@@ -89,37 +124,103 @@
         </div>
 
         {{-- Approval Buttons and Modal --}}
-        <div x-data="{ openRejectModal: false }">
+        <div x-data="{ openApproveModal: false, openRejectModal: false }">
             <div class="flex gap-2 mb-4">
-                <form action="{{ route('report-daily-production.refinery.approve-date') }}" method="POST"> @csrf <input
-                        type="hidden" name="posting_date" value="{{ $tanggal }}">
-                    <button type="submit"
-                        class="px-4 py-2 text-sm font-semibold rounded-lg {{ $canApproveReject ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed' }}"
-                        {{ !$canApproveReject ? 'disabled' : '' }}>Approve Hari Ini</button>
-                </form>
+                <button type="button" @click="openApproveModal = true"
+                    class="px-4 py-2 text-sm font-semibold rounded-lg {{ $canApproveReject ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed' }}"
+                    {{ !$canApproveReject ? 'disabled' : '' }}>Approve Hari Ini</button>
                 <button type="button" @click="openRejectModal = true"
                     class="px-4 py-2 text-sm font-semibold rounded-lg {{ $canApproveReject ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed' }}"
                     {{ !$canApproveReject ? 'disabled' : '' }}>Reject Hari Ini</button>
             </div>
+
+            {{-- Approve Modal --}}
+            <div x-show="openApproveModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50"
+                x-cloak>
+                @if($hasIncomplete)
+                <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6 border-t-4 border-yellow-500">
+                    <h2 class="text-lg font-semibold text-yellow-700 mb-4 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        Warning
+                    </h2>
+                    <p class="text-gray-700 mb-6">Warning: This data is not completed yet. Are you sure you want to proceed?</p>
+                    <div class="flex justify-end gap-2">
+                        <button type="button" @click="openApproveModal = false"
+                            class="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded-lg text-gray-700">Cancel</button>
+                        <form action="{{ route('report-daily-production.refinery.approve-date') }}" method="POST">
+                            @csrf
+                            <input type="hidden" name="posting_date" value="{{ $tanggal }}">
+                            <button type="submit"
+                                class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg">Confirm - Approve</button>
+                        </form>
+                    </div>
+                </div>
+                @else
+                <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4">Confirm Approval</h2>
+                    <p class="text-gray-600 mb-6">Are you sure you want to approve all data for today?</p>
+                    <div class="flex justify-end gap-2">
+                        <button type="button" @click="openApproveModal = false"
+                            class="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded-lg text-gray-700">Cancel</button>
+                        <form action="{{ route('report-daily-production.refinery.approve-date') }}" method="POST">
+                            @csrf
+                            <input type="hidden" name="posting_date" value="{{ $tanggal }}">
+                            <button type="submit"
+                                class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg">Confirm - Approve</button>
+                        </form>
+                    </div>
+                </div>
+                @endif
+            </div>
+
+            {{-- Reject Modal --}}
             <div x-show="openRejectModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50"
                 x-cloak>
-                <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
-                    <h2 class="text-lg font-semibold text-gray-800 mb-4">Reject Laporan</h2>
+                @if($hasIncomplete)
+                <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6 border-t-4 border-yellow-500">
+                    <h2 class="text-lg font-semibold text-yellow-700 mb-4 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        Warning
+                    </h2>
+                    <p class="text-gray-700 mb-4">Warning: This data is not completed yet. Are you sure you want to proceed?</p>
                     <form action="{{ route('report-daily-production.refinery.reject-date') }}" method="POST"> @csrf <input
                             type="hidden" name="posting_date" value="{{ $tanggal }}">
                         <div class="mb-4">
-                            <label for="remark" class="block text-sm font-medium text-gray-700">Alasan Reject</label>
+                            <label for="remark" class="block text-sm font-medium text-gray-700">Reason for rejection</label>
                             <textarea id="remark" name="remark" rows="3" required
                                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-red-500 focus:border-red-500 sm:text-sm"></textarea>
                         </div>
                         <div class="flex justify-end gap-2">
                             <button type="button" @click="openRejectModal = false"
-                                class="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded-lg text-gray-700">Batal</button>
+                                class="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded-lg text-gray-700">Cancel</button>
+                            <button type="submit"
+                                class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg">Confirm - Reject</button>
+                        </div>
+                    </form>
+                </div>
+                @else
+                <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4">Reject Laporan</h2>
+                    <form action="{{ route('report-daily-production.refinery.reject-date') }}" method="POST"> @csrf <input
+                            type="hidden" name="posting_date" value="{{ $tanggal }}">
+                        <div class="mb-4">
+                            <label for="remark" class="block text-sm font-medium text-gray-700">Reason for rejection</label>
+                            <textarea id="remark" name="remark" rows="3" required
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-red-500 focus:border-red-500 sm:text-sm"></textarea>
+                        </div>
+                        <div class="flex justify-end gap-2">
+                            <button type="button" @click="openRejectModal = false"
+                                class="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded-lg text-gray-700">Cancel</button>
                             <button type="submit"
                                 class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg">Reject</button>
                         </div>
                     </form>
                 </div>
+                @endif
             </div>
             {{-- Status Message (for manager/leader) --}}
             @if ($statusMessage)
@@ -130,7 +231,7 @@
         </div>
 
         {{-- Table --}}
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto" x-data="{ expandedTickets: {} }">
             <table class="min-w-full bg-white border border-gray-200 rounded-lg">
                 <thead class="bg-gray-100 text-gray-700 text-xs sticky top-0 z-10">
                     <tr>
@@ -140,6 +241,7 @@
                         <th class="px-2 py-2 border-b text-left">Shift(s)</th>
                         <th class="px-2 py-2 border-b text-left">Work Center</th>
                         <th class="px-2 py-2 border-b text-left">Entry By</th>
+                        <th class="px-2 py-2 border-b text-center">Completed</th>
                         <th class="px-2 py-2 border-b text-center">Leader Status</th>
                         <th class="px-2 py-2 border-b text-center">Manager Status</th>
                         <th class="px-2 py-2 border-b text-center">Action</th>
@@ -147,116 +249,191 @@
                     </tr>
                 </thead>
                 <tbody class="text-sm text-gray-700">
-                    @forelse ($reports as $index => $report)
-                        <tr class="{{ $index % 2 === 0 ? 'bg-white' : 'bg-gray-50' }} hover:bg-gray-100">
-                            <td class="px-2 py-2 border-b">{{ $reports->firstItem() + $index }}</td>
-                            <td class="px-2 py-2 border-b">{{ $report->id }}</td>
-                            <td class="px-2 py-2 border-b">
-                                {{ $report->transaction_date ? \Carbon\Carbon::parse($report->transaction_date)->format('d/m/Y') : '-' }}
-                            </td>
-                            <td class="px-2 py-2 border-b">{{ $report->shifts ?: '-' }}</td>
-                            <td class="px-2 py-2 border-b">
-                                <span class="inline-block px-2 py-1 text-xs font-semibold rounded bg-green-100 text-green-800">
-                                    {{ $report->work_center ?: '-' }}
-                                </span>
-                            </td>
-                            <td class="px-2 py-2 border-b">{{ $report->entry_by }}</td>
-                            <td class="px-2 py-2 border-b text-center">
-                                @if ($report->prepared_status == 'Approved')
-                                    <span class="px-2 py-1 text-xs rounded bg-green-100 text-green-700">Approved</span>
-                                @elseif ($report->prepared_status == 'Rejected')
-                                    <span class="px-2 py-1 text-xs rounded bg-red-100 text-red-700">Rejected</span>
-                                @else
-                                    <span class="px-2 py-1 text-xs rounded bg-gray-100 text-gray-600">Pending</span>
-                                @endif
-                            </td>
-                            <td class="px-2 py-2 border-b text-center">
-                                @if ($report->checked_status == 'Approved')
-                                    <span class="px-2 py-1 text-xs rounded bg-green-100 text-green-700">Approved</span>
-                                @elseif ($report->checked_status == 'Rejected')
-                                    <span class="px-2 py-1 text-xs rounded bg-red-100 text-red-700">Rejected</span>
-                                @else
-                                    <span class="px-2 py-1 text-xs rounded bg-gray-100 text-gray-600">Pending</span>
-                                @endif
-                            </td>
-                            <td class="px-2 py-2 border-b text-center">
-                                <div class="flex justify-center gap-2" x-data="{ showApprove: false, showReject: false }">
-                                    @if ((auth()->user()->roles === 'LEAD_PROD' || auth()->user()->roles === 'LEAD') && is_null($report->prepared_status))
+                    @forelse ($flatReports as $index => $report)
+                        @php
+                            $hasMultipleShifts = count($report->shift_list ?? []) > 1;
+                            $userRole = auth()->user()->roles;
+                            $isLead = in_array($userRole, ['LEAD_PROD', 'LEAD']);
+                            $isManager = in_array($userRole, ['MGR_PROD', 'MGR']);
+                        @endphp
+                        @foreach($report->shift_list as $shiftIndex => $shift)
+                            @php 
+                                $shiftData = $report->shifts_data[$shift] ?? null;
+                                $canLead = $isLead && ($shiftData['prepared_status'] ?? null) === null;
+                                $canManager = $isManager && ($shiftData['checked_status'] ?? null) === null && ($shiftData['prepared_status'] ?? null) === 'Approved';
+                                $canAction = $canLead || $canManager;
+                                $isCompleted = $shiftData && $shiftData['is_completed'] == 1;
+                            @endphp
+                            <tr class="{{ $index % 2 === 0 ? 'bg-white' : 'bg-gray-50' }} hover:bg-gray-100"
+                                x-show="{{ $shiftIndex }} === 0 || (expandedTickets['{{ $report->id }}'] ?? {{ $hasMultipleShifts ? 'true' : 'false' }})"
+                                x-transition x-cloak>
+                                <td class="px-2 py-2 border-b">
+                                    @if($shiftIndex === 0)
+                                        @if($hasMultipleShifts)
+                                        <button type="button" @click="expandedTickets['{{ $report->id }}'] = !expandedTickets['{{ $report->id }}']" class="text-gray-600 hover:text-gray-900 font-medium">
+                                            <span x-show="!(expandedTickets['{{ $report->id }}'] ?? true)" x-cloak>▼</span>
+                                            <span x-show="expandedTickets['{{ $report->id }}'] ?? true" x-cloak>▲</span>
+                                        </button>
+                                        @endif
+                                        {{ $index + 1 }}
+                                    @endif
+                                </td>
+                                <td class="px-2 py-2 border-b">{{ $report->id }}</td>
+                                <td class="px-2 py-2 border-b">
+                                    {{ $report->transaction_date ? \Carbon\Carbon::parse($report->transaction_date)->format('d/m/Y') : '-' }}
+                                </td>
+                                <td class="px-2 py-2 border-b">{{ $shift }}</td>
+                                <td class="px-2 py-2 border-b">
+                                    <span class="inline-block px-2 py-1 text-xs font-semibold rounded bg-green-100 text-green-800">
+                                        {{ $report->work_center ?: '-' }}
+                                    </span>
+                                </td>
+                                <td class="px-2 py-2 border-b">{{ $report->entry_by }}</td>
+                                <td class="px-2 py-2 border-b text-center">
+                                    @if($isCompleted)
+                                        <span class="text-green-600 font-bold" title="Completed">&#10004;</span>
+                                    @else
+                                        <span class="text-red-500 font-bold" title="Not Completed">&#10008;</span>
+                                    @endif
+                                </td>
+                                <td class="px-2 py-2 border-b text-center">
+                                    @if(($shiftData['prepared_status'] ?? null) === 'Approved')
+                                        <span class="px-2 py-1 text-xs rounded bg-green-100 text-green-700">Approved</span>
+                                    @elseif(($shiftData['prepared_status'] ?? null) === 'Rejected')
+                                        <span class="px-2 py-1 text-xs rounded bg-red-100 text-red-700">Rejected</span>
+                                    @else
+                                        <span class="px-2 py-1 text-xs rounded bg-gray-100 text-gray-600">Pending</span>
+                                    @endif
+                                </td>
+                                <td class="px-2 py-2 border-b text-center">
+                                    @if(($shiftData['checked_status'] ?? null) === 'Approved')
+                                        <span class="px-2 py-1 text-xs rounded bg-green-100 text-green-700">Approved</span>
+                                    @elseif(($shiftData['checked_status'] ?? null) === 'Rejected')
+                                        <span class="px-2 py-1 text-xs rounded bg-red-100 text-red-700">Rejected</span>
+                                    @else
+                                        <span class="px-2 py-1 text-xs rounded bg-gray-100 text-gray-600">Pending</span>
+                                    @endif
+                                </td>
+                                <td class="px-2 py-2 border-b text-center">
+                                    <div class="flex justify-center gap-2" x-data="{ showApprove: false, showReject: false }">
+                                        @if($canAction)
                                         <button @click="showApprove = true"
                                             class="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 shadow">Approve</button>
                                         <button @click="showReject = true"
                                             class="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 shadow">Reject</button>
-                                    @endif
-                                    @if (
-                                        (auth()->user()->roles === 'MGR_PROD' || auth()->user()->roles === 'MGR') &&
-                                            is_null($report->checked_status) &&
-                                            $report->prepared_status === 'Approved')
-                                        <button @click="showApprove = true"
-                                            class="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 shadow">Approve</button>
-                                        <button @click="showReject = true"
-                                            class="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 shadow">Reject</button>
-                                    @endif
-                                    {{-- Approve Modal --}}
-                                    <div x-show="showApprove"
-                                        class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
-                                        x-cloak>
-                                        <div class="bg-white p-6 rounded-lg shadow-xl">
-                                            <h2 class="text-lg font-bold mb-4">Confirm Approval</h2>
-                                            <p>Approve ticket #{{ $report->id }}?</p>
-                                            <div class="mt-6 flex justify-end gap-2">
-                                                <button @click="showApprove = false"
-                                                    class="px-4 py-2 bg-gray-300 rounded">Cancel</button>
+                                        @endif
+
+                                        {{-- Approve Modal --}}
+                                        <div x-show="showApprove"
+                                            class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+                                            x-cloak>
+                                            @if(!$isCompleted)
+                                            <div class="bg-white p-6 rounded-lg shadow-xl border-t-4 border-yellow-500">
+                                                <h2 class="text-lg font-bold mb-4 flex items-center gap-2 text-yellow-700">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                                    </svg>
+                                                    Warning
+                                                </h2>
+                                                <p class="text-gray-700 mb-6">Warning: This data is not completed yet. Are you sure you want to proceed?</p>
+                                                <div class="mt-6 flex justify-end gap-2">
+                                                    <button @click="showApprove = false"
+                                                        class="px-4 py-2 bg-gray-300 rounded">Cancel</button>
+                                                    <form method="POST"
+                                                        action="{{ route('report-daily-production.refinery.approve', $report->id) }}">
+                                                        @csrf
+                                                        <input type="hidden" name="shift" value="{{ $shift }}">
+                                                        <button type="submit"
+                                                            class="px-4 py-2 bg-green-600 text-white rounded">Confirm - Approve</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                            @else
+                                            <div class="bg-white p-6 rounded-lg shadow-xl">
+                                                <h2 class="text-lg font-bold mb-4">Confirm Approval</h2>
+                                                <p>Approve ticket #{{ $report->id }} - Shift {{ $shift }}?</p>
+                                                <div class="mt-6 flex justify-end gap-2">
+                                                    <button @click="showApprove = false"
+                                                        class="px-4 py-2 bg-gray-300 rounded">Cancel</button>
+                                                    <form method="POST"
+                                                        action="{{ route('report-daily-production.refinery.approve', $report->id) }}">
+                                                        @csrf
+                                                        <input type="hidden" name="shift" value="{{ $shift }}">
+                                                        <button type="submit"
+                                                            class="px-4 py-2 bg-green-600 text-white rounded">Approve</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                            @endif
+                                        </div>
+
+                                        {{-- Reject Modal --}}
+                                        <div x-show="showReject"
+                                            class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+                                            x-cloak>
+                                            @if(!$isCompleted)
+                                            <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-md border-t-4 border-yellow-500">
+                                                <h2 class="text-lg font-bold mb-4 flex items-center gap-2 text-yellow-700">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                                    </svg>
+                                                    Warning
+                                                </h2>
+                                                <p class="text-gray-700 mb-4">Warning: This data is not completed yet. Are you sure you want to proceed?</p>
                                                 <form method="POST"
-                                                    action="{{ route('report-daily-production.refinery.approve', $report->id) }}">
+                                                    action="{{ route('report-daily-production.refinery.reject', $report->id) }}">
                                                     @csrf
-                                                    <button type="submit"
-                                                        class="px-4 py-2 bg-green-600 text-white rounded">Approve</button>
+                                                    <input type="hidden" name="shift" value="{{ $shift }}">
+                                                    <label class="block mb-2">Reason for rejection:</label>
+                                                    <textarea name="remark" class="w-full border rounded p-2" rows="3" required></textarea>
+                                                    <div class="mt-6 flex justify-end gap-2">
+                                                        <button type="button" @click="showReject = false"
+                                                            class="px-4 py-2 bg-gray-300 rounded">Cancel</button>
+                                                        <button type="submit"
+                                                            class="px-4 py-2 bg-red-600 text-white rounded">Confirm - Reject</button>
+                                                    </div>
                                                 </form>
                                             </div>
+                                            @else
+                                            <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
+                                                <h2 class="text-lg font-bold mb-4">Confirm Rejection</h2>
+                                                <form method="POST"
+                                                    action="{{ route('report-daily-production.refinery.reject', $report->id) }}">
+                                                    @csrf
+                                                    <input type="hidden" name="shift" value="{{ $shift }}">
+                                                    <label class="block mb-2">Reason for rejection:</label>
+                                                    <textarea name="remark" class="w-full border rounded p-2" rows="3" required></textarea>
+                                                    <div class="mt-6 flex justify-end gap-2">
+                                                        <button type="button" @click="showReject = false"
+                                                            class="px-4 py-2 bg-gray-300 rounded">Cancel</button>
+                                                        <button type="submit"
+                                                            class="px-4 py-2 bg-red-600 text-white rounded">Reject</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                            @endif
                                         </div>
                                     </div>
-                                    {{-- Reject Modal --}}
-                                    <div x-show="showReject"
-                                        class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
-                                        x-cloak>
-                                        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
-                                            <h2 class="text-lg font-bold mb-4">Confirm Rejection</h2>
-                                            <form method="POST"
-                                                action="{{ route('report-daily-production.refinery.reject', $report->id) }}">
-                                                @csrf
-                                                <label for="remark-{{ $report->id }}" class="block mb-2">Reason for
-                                                    rejection:</label>
-                                                <textarea id="remark-{{ $report->id }}" name="remark" class="w-full border rounded p-2" rows="3" required></textarea>
-                                                <div class="mt-6 flex justify-end gap-2">
-                                                    <button type="button" @click="showReject = false"
-                                                        class="px-4 py-2 bg-gray-300 rounded">Cancel</button>
-                                                    <button type="submit"
-                                                        class="px-4 py-2 bg-red-600 text-white rounded">Reject</button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-2 py-2 border-b text-center">
-                                <a href="{{ route('report-daily-production.refinery.show', ['id' => $report->id]) }}"
-                                    class="text-blue-600 hover:text-blue-800"><svg xmlns="http://www.w3.org/2000/svg"
-                                        viewBox="0 0 512 512" class="w-5 h-5 inline-block">
-                                        <path fill="currentColor"
-                                            d="M256 512a256 256 0 1 0 0-512 256 256 0 1 0 0 512zM224 160a32 32 0 1 1 64 0 32 32 0 1 1 -64 0zm-8 64l48 0c13.3 0 24 10.7 24 24l0 88 8 0c13.3 0 24 10.7 24 24s-10.7 24-24 24l-80 0c-13.3 0-24-10.7-24-24s10.7-24 24-24l24 0 0-64-24 0c-13.3 0-24-10.7-24-24s10.7-24 24-24z" />
-                                    </svg></a>
-                            </td>
-                        </tr>
+                                </td>
+                                <td class="px-2 py-2 border-b text-center">
+                                    @if($shiftIndex === 0)
+                                        <a href="{{ route('report-daily-production.refinery.show', ['id' => $report->id]) }}"
+                                            class="text-blue-600 hover:text-blue-800">
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="w-5 h-5 inline-block">
+                                                <path fill="currentColor" d="M256 512a256 256 0 1 0 0-512 256 256 0 1 0 0 512zM224 160a32 32 0 1 1 64 0 32 32 0 1 1 -64 0zm-8 64l48 0c13.3 0 24 10.7 24 24l0 88 8 0c13.3 0 24 10.7 24 24s-10.7 24-24 24l-80 0c-13.3 0-24-10.7-24-24s10.7-24 24-24l24 0 0-64-24 0c-13.3 0-24-10.7-24-24s10.7-24 24-24z" />
+                                            </svg>
+                                        </a>
+                                    @endif
+                                </td>
+                            </tr>
+                        @endforeach
                     @empty
                         <tr>
-                            <td colspan="10" class="px-4 py-4 text-center text-gray-500">Data tidak tersedia.</td>
+                            <td colspan="11" class="px-4 py-4 text-center text-gray-500">Data tidak tersedia.</td>
                         </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
-        @if ($reports->hasPages())
-            <div class="mt-4">{{ $reports->links() }}</div>
-        @endif
     </div>
 @endsection
