@@ -22,6 +22,9 @@ class RptDailyPRefController extends Controller
     public function index(Request $request)
     {
         $tanggal = $request->input('filter_tanggal', Carbon::today()->format('Y-m-d'));
+        $filterApprovalStatus = $request->input('filter_approval_status', '');
+
+        $userRole = Auth::user()->roles ?? null;
 
         $reports = $this->buildBaseQuery($request, $tanggal)
             ->paginate(8)
@@ -38,12 +41,12 @@ class RptDailyPRefController extends Controller
             })
             ->exists();
 
-        $groupedReports = $this->buildGroupedReportsForCollapsible($request, $tanggal);
+        $groupedReports = $this->buildGroupedReportsForCollapsible($request, $tanggal, $filterApprovalStatus, $userRole);
 
-        return view('rpt_daily_production.refinery.index', compact('reports', 'tanggal', 'refineryMachines', 'signatures', 'hasIncomplete', 'groupedReports') + $approvalStatus);
+        return view('rpt_daily_production.refinery.index', compact('reports', 'tanggal', 'refineryMachines', 'signatures', 'hasIncomplete', 'groupedReports', 'filterApprovalStatus') + $approvalStatus);
     }
 
-    private function buildGroupedReportsForCollapsible(Request $request, string $tanggal)
+    private function buildGroupedReportsForCollapsible(Request $request, string $tanggal, string $filterApprovalStatus = '', ?string $userRole = null)
     {
         $query = LSDailyProductionRefinery::from('t_daily_production_refinery as t')
             ->whereDate('t.posting_date', $tanggal)
@@ -57,6 +60,28 @@ class RptDailyPRefController extends Controller
             ->orderBy('t.shift', 'asc')
             ->orderBy('t.no', 'asc')
             ->get();
+
+        // Apply approval status filter based on user role
+        if ($filterApprovalStatus && in_array($userRole, ['LEAD_PROD', 'LEAD', 'MGR_PROD', 'MGR'])) {
+            $isLead = in_array($userRole, ['LEAD_PROD', 'LEAD']);
+            
+            $allReports = $allReports->filter(function ($report) use ($filterApprovalStatus, $isLead) {
+                if ($isLead) {
+                    // Leader filters by prepared_status
+                    $status = $report->prepared_status;
+                } else {
+                    // Manager filters by checked_status
+                    $status = $report->checked_status;
+                }
+                
+                if ($filterApprovalStatus === 'approved') {
+                    return $status === 'Approved';
+                } elseif ($filterApprovalStatus === 'non_approved') {
+                    return $status === null || $status === 'Pending' || $status === 'Rejected';
+                }
+                return true;
+            });
+        }
 
         return $allReports->groupBy(['work_center', 'shift']);
     }

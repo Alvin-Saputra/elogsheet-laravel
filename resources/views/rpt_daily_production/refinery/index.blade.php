@@ -112,10 +112,21 @@
                         @endforeach
                     </select>
                 </div>
+                @if(in_array(auth()->user()->roles, ['LEAD_PROD', 'LEAD', 'MGR_PROD', 'MGR']))
+                <div class="w-full sm:w-40">
+                    <label for="filter_approval_status" class="block text-sm font-medium text-gray-700">Status</label>
+                    <select id="filter_approval_status" name="filter_approval_status"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm">
+                        <option value="">All</option>
+                        <option value="approved" {{ request('filter_approval_status') == 'approved' ? 'selected' : '' }}>Approved</option>
+                        <option value="non_approved" {{ request('filter_approval_status') == 'non_approved' ? 'selected' : '' }}>Non-Approved</option>
+                    </select>
+                </div>
+                @endif
                 <div class="flex items-end gap-2">
                     <button type="submit"
                         class="inline-flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-900 text-white text-sm font-semibold rounded-lg shadow transition">Filter</button>
-                    @if (request()->has('filter_tanggal') || request()->has('filter_work_center'))
+                    @if (request()->hasAny(['filter_tanggal', 'filter_work_center', 'filter_approval_status']))
                         <a href="{{ route('report-daily-production.refinery.index') }}"
                             class="inline-flex items-center px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 text-sm font-semibold rounded-lg shadow transition">Reset</a>
                     @endif
