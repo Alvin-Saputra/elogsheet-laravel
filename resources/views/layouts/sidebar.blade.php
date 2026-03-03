@@ -6,7 +6,7 @@
     <div class="h-full flex flex-col">
         <!-- Header -->
         <div class="p-5 border-b flex justify-between items-center">
-            <h1 class="text-lg font-bold text-gray-800">E-{{ config('app.name') }} v.1.0.26</h1>
+            <h1 class="text-lg font-bold text-gray-800">E-{{ config('app.name') }} v.1.0.27</h1>
             <button @click="$store.sidebar.toggle()" class="md:hidden text-gray-600 hover:text-gray-900">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
