@@ -51,12 +51,20 @@ class DailyProdFracController extends Controller
 
         // 5. Cek Status Approval Global (Helper function)
         $approvalStatus = $this->getApprovalStatus($tanggal);
+        
+        $hasIncomplete = LSDailyProdFrac::whereDate('posting_date', $tanggal)
+            ->where('flag', 'T')
+            ->where(function($q) {
+                $q->where('is_completed', 0)->orWhereNull('is_completed');
+            })
+            ->exists();
 
         return view('rpt_daily_production.fractionation.index', compact(
             'groupedReports',
             'refineryMachines', // Variabel ini penting untuk dropdown
             'tanggal',
-            'approvalStatus'
+            'approvalStatus',
+            'hasIncomplete'
         ));
     }
 
@@ -172,35 +180,57 @@ class DailyProdFracController extends Controller
             ];
         }
 
-        // HANYA MANAGER YANG DIPROSES
-        if (!in_array($userRole, ['MGR', 'MGR_PROD'])) {
+        // COMMENTED OUT: Shift constraint check - 2024-03-02
+        // Previously only MGR roles were processed, now added LEAD roles support
+
+        // Process LEAD roles
+        if ($userRole === "LEAD_PROD" or $userRole === "LEAD") {
+            // $assignedShifts = MRolesShiftPrepared::where('username', $user->username)->where('isactive', 'T')->pluck('shift_code');
+            // if ($assignedShifts->isEmpty()) {
+            //     $statusMessage = "User tidak memiliki shift.";
+            // } else {
+            //     $reportsForUserShifts = LSDailyProdFrac::whereDate('posting_date', $tanggal)->whereIn('shift', $assignedShifts)->get();
+            //     ... (original shift logic)
+            // }
+
+            // NEW: Simplified logic - role-based only, no shift constraint
+            $allReports = LSDailyProdFrac::whereDate('posting_date', $tanggal)->where('flag', 'T')->get();
+            
+            if ($allReports->contains(fn($r) => !is_null($r->prepared_status))) {
+                $statusMessage = 'You have already prepared the reports.';
+            } else {
+                $canApproveReject = true;
+            }
+        }
+        // Process MANAGER roles
+        elseif ($userRole === "MGR_PROD" or $userRole === "MGR") {
+            if ($reports->contains(fn($r) => !is_null($r->checked_status))) {
+                return [
+                    'canApproveReject' => false,
+                    'statusMessage' => 'Sebagian data sudah di-review. Approve/Reject global tidak diperbolehkan.'
+                ];
+            }
+
+            // Belum di-prepared leader
+            if ($reports->contains(fn($r) => is_null($r->prepared_status))) {
+                $statusMessage = 'Belum dilakukan prepared oleh shift leader.';
+            }
+            // Ada reject dari leader
+            elseif ($reports->contains(fn($r) => $r->prepared_status === 'Rejected')) {
+                $statusMessage = 'Data sudah direject oleh shift leader.';
+            }
+            // Semua leader approve → manager boleh approve all
+            elseif ($reports->every(fn($r) => $r->prepared_status === 'Approved')) {
+                $canApproveReject = true;
+            } else {
+                $statusMessage = 'Terdapat data yang tidak valid untuk diproses.';
+            }
+        } else {
+            // Other roles not allowed
             return [
                 'canApproveReject' => false,
                 'statusMessage' => null
             ];
-        }
-
-
-        if ($reports->contains(fn($r) => !is_null($r->checked_status))) {
-            return [
-                'canApproveReject' => false,
-                'statusMessage' => 'Sebagian data sudah di-review. Approve/Reject global tidak diperbolehkan.'
-            ];
-        }
-
-        // Belum di-prepared leader
-        if ($reports->contains(fn($r) => is_null($r->prepared_status))) {
-            $statusMessage = 'Belum dilakukan prepared oleh shift leader.';
-        }
-        // Ada reject dari leader
-        elseif ($reports->contains(fn($r) => $r->prepared_status === 'Rejected')) {
-            $statusMessage = 'Data sudah direject oleh shift leader.';
-        }
-        // Semua leader approve → manager boleh approve all
-        elseif ($reports->every(fn($r) => $r->prepared_status === 'Approved')) {
-            $canApproveReject = true;
-        } else {
-            $statusMessage = 'Terdapat data yang tidak valid untuk diproses.';
         }
 
         return [

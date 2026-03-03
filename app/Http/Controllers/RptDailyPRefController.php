@@ -30,8 +30,35 @@ class RptDailyPRefController extends Controller
         $refineryMachines = LSDailyProductionRefinery::select('work_center')->distinct()->get();
         $signatures = $this->getSignatures($tanggal, $request->input('filter_work_center'));
         $approvalStatus = $this->getApprovalStatus($tanggal);
+        
+        $hasIncomplete = LSDailyProductionRefinery::whereDate('posting_date', $tanggal)
+            ->where('flag', 'T')
+            ->where(function($q) {
+                $q->where('is_completed', 0)->orWhereNull('is_completed');
+            })
+            ->exists();
 
-        return view('rpt_daily_production.refinery.index', compact('reports', 'tanggal', 'refineryMachines', 'signatures') + $approvalStatus);
+        $groupedReports = $this->buildGroupedReportsForCollapsible($request, $tanggal);
+
+        return view('rpt_daily_production.refinery.index', compact('reports', 'tanggal', 'refineryMachines', 'signatures', 'hasIncomplete', 'groupedReports') + $approvalStatus);
+    }
+
+    private function buildGroupedReportsForCollapsible(Request $request, string $tanggal)
+    {
+        $query = LSDailyProductionRefinery::from('t_daily_production_refinery as t')
+            ->whereDate('t.posting_date', $tanggal)
+            ->where('t.flag', 'T');
+
+        if ($request->filled('filter_work_center')) {
+            $query->where('t.work_center', $request->filter_work_center);
+        }
+
+        $allReports = $query->orderBy('t.work_center', 'asc')
+            ->orderBy('t.shift', 'asc')
+            ->orderBy('t.no', 'asc')
+            ->get();
+
+        return $allReports->groupBy(['work_center', 'shift']);
     }
 
     /**
@@ -300,6 +327,7 @@ class RptDailyPRefController extends Controller
                     WHEN SUM(CASE WHEN t.checked_status = 'Approved' THEN 1 ELSE 0 END) = COUNT(*) THEN 'Approved'
                     ELSE NULL
                 END as checked_status"),
+                DB::raw('MIN(t.is_completed) as is_completed'),
             ])
             ->groupBy('t.id')
             ->orderByRaw('MIN(t.transaction_date) DESC')
@@ -409,26 +437,39 @@ class RptDailyPRefController extends Controller
             $statusMessage = "Tidak ada data pada tanggal $tanggal.";
         } else {
             if ($userRole === "LEAD_PROD" or $userRole === "LEAD") {
-                $assignedShifts = MRolesShiftPrepared::where('username', $user->username)->where('isactive', 'T')->pluck('shift_code');
-                if ($assignedShifts->isEmpty()) {
-                    $statusMessage = "User tidak memiliki shift.";
-                } else {
-                    $reportsForUserShifts = LSDailyProductionRefinery::whereDate('posting_date', $tanggal)->whereIn('shift', $assignedShifts)->get();
-                    $reportedShifts = $reportsForUserShifts->pluck('shift')->unique();
-                    $allShiftsReported = $assignedShifts->diff($reportedShifts)->isEmpty();
+                // COMMENTED OUT: Shift constraint check - 2024-03-02
+                // $assignedShifts = MRolesShiftPrepared::where('username', $user->username)->where('isactive', 'T')->pluck('shift_code');
+                // if ($assignedShifts->isEmpty()) {
+                //     $statusMessage = "User tidak memiliki shift.";
+                // } else {
+                //     $reportsForUserShifts = LSDailyProductionRefinery::whereDate('posting_date', $tanggal)->whereIn('shift', $assignedShifts)->get();
+                //     $reportedShifts = $reportsForUserShifts->pluck('shift')->unique();
+                //     $allShiftsReported = $assignedShifts->diff($reportedShifts)->isEmpty();
+                //
+                //     if ($reportsForUserShifts->isEmpty()) {
+                //         $statusMessage = "No reports for your shifts yet.";
+                //     } elseif (!$allShiftsReported) {
+                //         $missingShifts = $assignedShifts->diff($reportedShifts)->implode(', ');
+                //         $statusMessage = "Waiting for reports from shift(s): {$missingShifts}.";
+                //     } elseif ($reportsForUserShifts->contains(fn($r) => !is_null($r->prepared_status))) {
+                //         $statusMessage = 'You have already prepared the reports.';
+                //     } else {
+                //         $canApproveReject = true;
+                //     }
+                // }
 
-                    if ($reportsForUserShifts->isEmpty()) {
-                        $statusMessage = "No reports for your shifts yet.";
-                    } elseif (!$allShiftsReported) {
-                        $missingShifts = $assignedShifts->diff($reportedShifts)->implode(', ');
-                        $statusMessage = "Waiting for reports from shift(s): {$missingShifts}.";
-                    } elseif ($reportsForUserShifts->contains(fn($r) => !is_null($r->prepared_status))) {
-                        $statusMessage = 'You have already prepared the reports.';
-                    } else {
-                        $canApproveReject = true;
-                    }
+                // NEW: Simplified logic - role-based only, no shift constraint
+                $allReports = LSDailyProductionRefinery::whereDate('posting_date', $tanggal)->where('flag', 'T')->get();
+                
+                if ($allReports->isEmpty()) {
+                    $statusMessage = "No reports for this date.";
+                } elseif ($allReports->contains(fn($r) => !is_null($r->prepared_status))) {
+                    $statusMessage = 'You have already prepared the reports.';
+                } else {
+                    $canApproveReject = true;
                 }
             } elseif ($userRole === "MGR_PROD" or $userRole === "MGR") {
+                // COMMENTED OUT: Simplified logic without shift constraint
                 if ($reports->contains(fn($r) => is_null($r->prepared_status)))
                     $statusMessage = 'Belum dilakukan prepared oleh shift leader.';
                 elseif ($reports->contains(fn($r) => $r->prepared_status === 'Rejected'))
