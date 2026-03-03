@@ -46,8 +46,10 @@ class RptDailyPRefController extends Controller
         return view('rpt_daily_production.refinery.index', compact('reports', 'tanggal', 'refineryMachines', 'signatures', 'hasIncomplete', 'groupedReports', 'filterApprovalStatus') + $approvalStatus);
     }
 
-    private function buildGroupedReportsForCollapsible(Request $request, string $tanggal, string $filterApprovalStatus = '', ?string $userRole = null)
+    private function buildGroupedReportsForCollapsible(Request $request, string $tanggal, ?string $filterApprovalStatus = null, ?string $userRole = null)
     {
+        $filterApprovalStatus = $filterApprovalStatus ?? '';
+        
         $query = LSDailyProductionRefinery::from('t_daily_production_refinery as t')
             ->whereDate('t.posting_date', $tanggal)
             ->where('t.flag', 'T');
