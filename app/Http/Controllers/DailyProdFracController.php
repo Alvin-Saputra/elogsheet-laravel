@@ -120,6 +120,10 @@ class DailyProdFracController extends Controller
                 'checked_status_remarks' => $request->remark,         // Ambil remark reject
                 'checked_date'           => now(),
                 'checked_by'             => $user->username ?? $user->name,
+                'verified_status'         => $request->approve_status, // Ambil dari input (Approved/Rejected)
+                'verified_status_remarks' => $request->remark,         // Ambil remark reject
+                'verified_date'           => now(),
+                'verified_by'             => $user->username ?? $user->name,
             ]);
 
             $action = $request->approve_status == 'Approved' ? 'di-approve' : 'di-reject';
@@ -274,6 +278,10 @@ class DailyProdFracController extends Controller
                 'checked_status_remarks' => $request->remark,
                 'checked_date' => now(),
                 'checked_by' => $user->username ?? $user->name,
+                'verified_status' => $request->approve_status,
+                'verified_status_remarks' => $request->remark,
+                'verified_date' => now(),
+                'verified_by' => $user->username ?? $user->name,
             ]);
 
         return back()->with('success', "Seluruh laporan tanggal $date berhasil di-approve.");

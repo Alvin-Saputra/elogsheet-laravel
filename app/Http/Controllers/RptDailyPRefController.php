@@ -30,10 +30,10 @@ class RptDailyPRefController extends Controller
         $refineryMachines = LSDailyProductionRefinery::select('work_center')->distinct()->get();
         $signatures = $this->getSignatures($tanggal, $request->input('filter_work_center'));
         $approvalStatus = $this->getApprovalStatus($tanggal);
-        
+
         $hasIncomplete = LSDailyProductionRefinery::whereDate('posting_date', $tanggal)
             ->where('flag', 'T')
-            ->where(function($q) {
+            ->where(function ($q) {
                 $q->where('is_completed', 0)->orWhereNull('is_completed');
             })
             ->exists();
@@ -159,7 +159,6 @@ class RptDailyPRefController extends Controller
                     'prepared_date' => now(),
                     'prepared_by' => auth()->user()->username ?? auth()->user()->name,
                 ]);
-
         } else if ($role === "MGR_PROD" or $role === "MGR") {
             if ($reports->contains(fn($r) => is_null($r->prepared_status))) {
                 return back()->with('error', 'Belum dilakukan prepared oleh shift leader.');
@@ -170,6 +169,10 @@ class RptDailyPRefController extends Controller
                 'checked_status_remarks' => null,
                 'checked_date' => now(),
                 'checked_by' => auth()->user()->username ?? auth()->user()->name,
+                'verified_status' => 'Approved',
+                // 'verified_status_remarks' => null,
+                'verified_date' => now(),
+                'verified_by' => auth()->user()->username ?? auth()->user()->name,
             ]);
         }
 
@@ -197,13 +200,26 @@ class RptDailyPRefController extends Controller
 
             LSDailyProductionRefinery::whereDate('posting_date', $date)
                 ->whereIn('shift', $assignedShifts)
-                ->update(['prepared_status' => 'Rejected', 'prepared_status_remarks' => $request->remark, 'prepared_date' => now(), 'prepared_by' => $user->username ?? $user->name]);
+                ->update([
+                    'prepared_status' => 'Rejected', 
+                    'prepared_status_remarks' => $request->remark, 
+                    'prepared_date' => now(), 
+                    'prepared_by' => $user->username ?? $user->name
+                ]);
 
             $message = "All reports for your assigned shifts on {$date} have been rejected.";
-
         } elseif ($role === 'MGR_PROD' || $role === 'MGR') {
             LSDailyProductionRefinery::whereDate('posting_date', $date)
-                ->update(['checked_status' => 'Rejected', 'checked_status_remarks' => $request->remark, 'checked_date' => now(), 'checked_by' => $user->username ?? $user->name]);
+                ->update([
+                    'checked_status' => 'Rejected', 
+                    'checked_status_remarks' => $request->remark, 
+                    'checked_date' => now(), 
+                    'checked_by' => $user->username ?? $user->name,
+                    'verified_status' => 'Rejected', 
+                    // 'verified_status_remarks' => $request->remark, 
+                    'verified_date' => now(), 
+                    'verified_by' => $user->username ?? $user->name
+                ]);
             $message = "All data on {$date} has been rejected (Checked).";
         } else {
             return back()->with('error', 'You do not have permission to perform this action.');
@@ -240,7 +256,11 @@ class RptDailyPRefController extends Controller
                 'checked_status' => 'Approved',
                 'checked_status_remarks' => null,
                 'checked_date' => now(),
-                'checked_by' => auth()->user()->username ?? auth()->user()->name
+                'checked_by' => auth()->user()->username ?? auth()->user()->name,
+                'verified_status' => 'Approved',
+                // 'verified_status_remarks' => null,
+                'verified_date' => now(),
+                'verified_by' => auth()->user()->username ?? auth()->user()->name
             ]);
         }
 
@@ -277,7 +297,11 @@ class RptDailyPRefController extends Controller
                 'checked_status' => 'Rejected',
                 'checked_status_remarks' => $request->remark,
                 'checked_date' => now(),
-                'checked_by' => auth()->user()->username ?? auth()->user()->name
+                'checked_by' => auth()->user()->username ?? auth()->user()->name,
+                'verified_status' => 'Rejected',
+                // 'verified_status_remarks' => $request->remark,
+                'verified_date' => now(),
+                'verified_by' => auth()->user()->username ?? auth()->user()->name
             ]);
         }
 
@@ -460,7 +484,7 @@ class RptDailyPRefController extends Controller
 
                 // NEW: Simplified logic - role-based only, no shift constraint
                 $allReports = LSDailyProductionRefinery::whereDate('posting_date', $tanggal)->where('flag', 'T')->get();
-                
+
                 if ($allReports->isEmpty()) {
                     $statusMessage = "No reports for this date.";
                 } elseif ($allReports->contains(fn($r) => !is_null($r->prepared_status))) {
