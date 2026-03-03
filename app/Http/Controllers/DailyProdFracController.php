@@ -19,6 +19,10 @@ class DailyProdFracController extends Controller
         // 1. Ambil Input Filter
         $tanggal = $request->input('filter_tanggal', Carbon::today()->format('Y-m-d'));
         $filterWorkCenter = $request->input('filter_work_center');
+        $filterApprovalStatus = $request->input('filter_approval_status', '');
+
+        // Get user role for filtering
+        $userRole = Auth::user()->roles ?? null;
 
         // 2. Ambil List Work Center untuk Dropdown Filter
         // Kita ambil unique work_center dari tabel agar dropdown dinamis
@@ -45,6 +49,28 @@ class DailyProdFracController extends Controller
             ->orderBy('no', 'asc') // Opsional: urutkan nomor urut
             ->get();
 
+        // Apply approval status filter based on user role
+        if ($filterApprovalStatus && in_array($userRole, ['LEAD_PROD', 'LEAD', 'MGR_PROD', 'MGR'])) {
+            $isLead = in_array($userRole, ['LEAD_PROD', 'LEAD']);
+            
+            $allReports = $allReports->filter(function ($report) use ($filterApprovalStatus, $isLead) {
+                if ($isLead) {
+                    // Leader filters by prepared_status
+                    $status = $report->prepared_status;
+                } else {
+                    // Manager filters by checked_status
+                    $status = $report->checked_status;
+                }
+                
+                if ($filterApprovalStatus === 'approved') {
+                    return $status === 'Approved';
+                } elseif ($filterApprovalStatus === 'non_approved') {
+                    return $status === null || $status === 'Pending' || $status === 'Rejected';
+                }
+                return true;
+            });
+        }
+
         // 4. Grouping Data: Work Center -> Shift
         // Hasil: [ 'FRA-01' => [ '1' => [items...], '2' => [items...] ] ]
         $groupedReports = $allReports->groupBy(['work_center', 'shift']);
@@ -64,7 +90,8 @@ class DailyProdFracController extends Controller
             'refineryMachines', // Variabel ini penting untuk dropdown
             'tanggal',
             'approvalStatus',
-            'hasIncomplete'
+            'hasIncomplete',
+            'filterApprovalStatus'
         ));
     }
 
