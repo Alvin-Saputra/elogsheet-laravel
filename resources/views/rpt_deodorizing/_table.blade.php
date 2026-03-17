@@ -67,36 +67,36 @@
         </thead>
         <tbody>
             @foreach ($rows as $row)
-                <tr>
-                    <td class="border p-1">{{ optional($row->time)->format('H:i') }}</td>
-                    <td class="border p-1">{{ $row->oil_type }}</td>
-                    <td class="border p-1">{{ $row->fit701_bpo }}</td>
-                    <td class="border p-1">{{ $row->d701_vacum }}</td>
-                    <td class="border p-1">{{ $row->d701_td701 }}</td>
-                    <td class="border p-1">{{ $row->e702 }}</td>
-                    <td class="border p-1">{{ $row->thermopac_inlet }}</td>
-                    <td class="border p-1">{{ $row->thermopac_outlet }}</td>
-                    <td class="border p-1">{{ $row->d702_inlet }}</td>
-                    <td class="border p-1">{{ $row->d702_outlet }}</td>
-                    <td class="border p-1">{{ $row->d702_vacum }}</td>
-                    <td class="border p-1">{{ $row->sparging_a }}</td>
-                    <td class="border p-1">{{ $row->sparging_b }}</td>
-                    <td class="border p-1">{{ $row->e730_inlet }}</td>
-                    <td class="border p-1">{{ $row->steam_inlet }}</td>
-                    <td class="border p-1">{{ $row->pish_706 }}</td>
-                    <td class="border p-1">{{ $row->tiwh_706 }}</td>
-                    <td class="border p-1">{{ $row->f702_a }}</td>
-                    <td class="border p-1">{{ $row->f702_b }}</td>
-                    <td class="border p-1">{{ $row->f702_c }}</td>
-                    <td class="border p-1">{{ $row->oil_type_fg }}</td>
-                    <td class="border p-1">{{ $row->fit704_rpo }}</td>
-                    <td class="border p-1">{{ $row->e704 }}</td>
-                    <td class="border p-1">{{ $row->oil_type_bp }}</td>
-                    <td class="border p-1">{{ $row->fit_705_pfad }}</td>
-                    <td class="border p-1">{{ $row->e705 }}</td>
-                    <td class="border p-1">{{ $row->clarity }}</td>
-                    <td class="border p-1">{{ $row->remarks }}</td>
-                </tr>
+                       <tr>
+                        <td class="border p-1">{{ \Carbon\Carbon::parse($row->time)->format('H:i') }}</td>
+                        <td class="border p-1">{{ $row->oil_type ?? '' }}</td>
+                        <td class="border p-1">{{ $row->fit701_bpo ?? '' }}</td>
+                        <td class="border p-1">{{ $row->d701_vacum ?? '' }}</td>
+                        <td class="border p-1">{{ $row->d701_td701 ?? '' }}</td>
+                        <td class="border p-1">{{ $row->e702 ?? '' }}</td>
+                        <td class="border p-1">{{ $row->thermopac_inlet ?? '' }}</td>
+                        <td class="border p-1">{{ $row->thermopac_outlet ?? '' }}</td>
+                        <td class="border p-1">{{ $row->d702_inlet ?? '' }}</td>
+                        <td class="border p-1">{{ $row->d702_outlet ?? '' }}</td>
+                        <td class="border p-1">{{ $row->d702_vacum ?? '' }}</td>
+                        <td class="border p-1">{{ $row->sparging_a ?? '' }}</td>
+                        <td class="border p-1">{{ $row->sparging_b ?? '' }}</td>
+                        <td class="border p-1">{{ $row->e730_inlet ?? '' }}</td>
+                        <td class="border p-1">{{ $row->steam_inlet ?? '' }}</td>
+                        <td class="border p-1">{{ $row->pish_706 ?? '' }}</td>
+                        <td class="border p-1">{{ $row->tiwh_706 ?? '' }}</td>
+                        <td class="border p-1">{{ $row->f702_a ?? '' }}</td>
+                        <td class="border p-1">{{ $row->f702_b ?? '' }}</td>
+                        <td class="border p-1">{{ $row->f702_c ?? '' }}</td>
+                        <td class="border p-1">{{ $row->oil_type_fg ?? '' }}</td>
+                        <td class="border p-1">{{ $row->fit704_rpo ?? '' }}</td>
+                        <td class="border p-1">{{ $row->e704 ?? '' }}</td>
+                        <td class="border p-1">{{ $row->oil_type_bp ?? '' }}</td>
+                        <td class="border p-1">{{ $row->fit_705_pfad ?? '' }}</td>
+                        <td class="border p-1">{{ $row->e705 ?? '' }}</td>
+                        <td class="border p-1">{{ $row->clarity ?? '' }}</td>
+                        <td class="border p-1">{{ $row->remarks ?? '' }}</td>
+                    </tr>
             @endforeach
         </tbody>
     </table>

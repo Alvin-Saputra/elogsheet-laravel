@@ -63,11 +63,11 @@ class COAHeader extends Model
             }
         });
 
-        static::addGlobalScope('plant', function ($query) {
-            if ($plant = session('plant_code')) {
-                $query->where('plant', $plant);
-            }
-        });
+        // static::addGlobalScope('plant', function ($query) {
+        //     if ($plant = session('plant_code')) {
+        //         $query->where('plant', $plant);
+        //     }
+        // });
     }
 
 

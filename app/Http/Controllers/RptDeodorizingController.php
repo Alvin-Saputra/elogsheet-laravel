@@ -122,7 +122,6 @@ class RptDeodorizingController extends Controller
                     'prepared_date' => now(),
                     'prepared_by' => auth()->user()->username ?? auth()->user()->name,
                 ]);
-
         } else if ($role === "MGR_PROD" or $role === "MGR") {
             if ($reports->contains(fn($r) => is_null($r->prepared_status))) {
                 return back()->with('error', 'Belum dilakukan prepared oleh shift leader.');
@@ -163,7 +162,6 @@ class RptDeodorizingController extends Controller
                 ->update(['prepared_status' => 'Rejected', 'prepared_status_remarks' => $request->remark, 'prepared_date' => now(), 'prepared_by' => $user->username ?? $user->name]);
 
             $message = "All reports for your assigned shifts on {$date} have been rejected.";
-
         } elseif ($role === 'MGR_PROD' || $role === 'MGR') {
             LSDeodorizingFiltration::whereDate('posting_date', $date)
                 ->update(['checked_status' => 'Rejected', 'checked_status_remarks' => $request->remark, 'checked_date' => now(), 'checked_by' => $user->username ?? $user->name]);
@@ -255,27 +253,80 @@ class RptDeodorizingController extends Controller
         return ['shift1' => $this->checkShiftStatus($tanggal, '08:00:00', '15:59:59'), 'shift2' => $this->checkShiftStatus($tanggal, '16:00:00', '23:59:59'), 'shift3' => $this->checkShiftStatus($tanggal, '00:00:00', '07:59:59')];
     }
 
+    // private function renderPreview(Request $request, string $view)
+    // {
+    //     $tanggal = $request->input('filter_tanggal', now()->toDateString());
+    //     $refineryMachine = $request->input('filter_refinery_machine');
+    //     $data = $this->getMainData($tanggal, $refineryMachine);
+    //     [$formInfoFirst, $formInfoLast] = $this->getFormInfo($tanggal, $refineryMachine);
+    //     $groupedData = empty($refineryMachine) ? $data->groupBy('refinery_machine') : collect();
+    //     $signatures = $this->getSignatures($tanggal, $refineryMachine);
+    //     $sign = $data->first();
+    //     return view($view, compact('data', 'groupedData', 'tanggal', 'refineryMachine', 'signatures', 'sign', 'formInfoFirst', 'formInfoLast'));
+    // }
+
     private function renderPreview(Request $request, string $view)
     {
         $tanggal = $request->input('filter_tanggal', now()->toDateString());
         $refineryMachine = $request->input('filter_refinery_machine');
-        $data = $this->getMainData($tanggal, $refineryMachine);
+
+        // Ambil Data Mentah
+        $dataRaw = $this->getMainData($tanggal, $refineryMachine);
         [$formInfoFirst, $formInfoLast] = $this->getFormInfo($tanggal, $refineryMachine);
-        $groupedData = empty($refineryMachine) ? $data->groupBy('refinery_machine') : collect();
+
+        // Proses Filling Hours (Logika Baru)
+        $groupedData = $this->fillMissingHours($dataRaw, $tanggal);
+
         $signatures = $this->getSignatures($tanggal, $refineryMachine);
-        $sign = $data->first();
-        return view($view, compact('data', 'groupedData', 'tanggal', 'refineryMachine', 'signatures', 'sign', 'formInfoFirst', 'formInfoLast'));
+        $sign = $dataRaw->first();
+
+        // Pastikan view rpt_deodorizing.preview sudah menggunakan looping dari $groupedData
+        return view($view, compact(
+            'groupedData',
+            'tanggal',
+            'refineryMachine',
+            'signatures',
+            'sign',
+            'formInfoFirst',
+            'formInfoLast'
+        ));
     }
+
+    // private function renderPdf(Request $request, string $view)
+    // {
+    //     $tanggal = $request->input('filter_tanggal', now()->toDateString());
+    //     $refineryMachine = $request->input('filter_refinery_machine');
+    //     $data = $this->getMainData($tanggal, $refineryMachine);
+    //     [$formInfoFirst, $formInfoLast] = $this->getFormInfo($tanggal, $refineryMachine);
+    //     $groupedData = empty($refineryMachine) ? $data->groupBy('refinery_machine') : collect();
+    //     $signatures = $this->getSignatures($tanggal, $refineryMachine);
+    //     $pdf = Pdf::loadView($view, compact('data', 'groupedData', 'tanggal', 'refineryMachine', 'formInfoFirst', 'formInfoLast', 'signatures'))->setPaper('a3', 'landscape');
+    //     return $pdf->stream("deodorizing_report_{$tanggal}.pdf");
+    // }
 
     private function renderPdf(Request $request, string $view)
     {
         $tanggal = $request->input('filter_tanggal', now()->toDateString());
         $refineryMachine = $request->input('filter_refinery_machine');
-        $data = $this->getMainData($tanggal, $refineryMachine);
+
+        // Ambil Data Mentah
+        $dataRaw = $this->getMainData($tanggal, $refineryMachine);
         [$formInfoFirst, $formInfoLast] = $this->getFormInfo($tanggal, $refineryMachine);
-        $groupedData = empty($refineryMachine) ? $data->groupBy('refinery_machine') : collect();
+
+        // Proses Filling Hours
+        $groupedData = $this->fillMissingHours($dataRaw, $tanggal);
+
         $signatures = $this->getSignatures($tanggal, $refineryMachine);
-        $pdf = Pdf::loadView($view, compact('data', 'groupedData', 'tanggal', 'refineryMachine', 'formInfoFirst', 'formInfoLast', 'signatures'))->setPaper('a3', 'landscape');
+
+        $pdf = Pdf::loadView($view, compact(
+            'groupedData',
+            'tanggal',
+            'refineryMachine',
+            'formInfoFirst',
+            'formInfoLast',
+            'signatures'
+        ))->setPaper('a3', 'landscape');
+
         return $pdf->stream("deodorizing_report_{$tanggal}.pdf");
     }
 
@@ -391,5 +442,56 @@ class RptDeodorizingController extends Controller
             }
         }
         return ['canApproveReject' => $canApproveReject, 'statusMessage' => $statusMessage];
+    }
+
+    private function getOperationalHours()
+    {
+        $hours = [];
+        // Shift 1 & 2 (Hari H)
+        for ($i = 8; $i <= 23; $i++) $hours[] = sprintf('%02d:00:00', $i);
+        // Shift 3 (Hari H+1)
+        for ($i = 0; $i <= 7; $i++)  $hours[] = sprintf('%02d:00:00', $i);
+
+        return $hours;
+    }
+
+    private function fillMissingHours($data, $tanggal)
+    {
+        $hours = $this->getOperationalHours();
+
+        // Kita grouping berdasarkan refinery_machine agar setiap mesin punya tabel jam lengkap
+        return $data->groupBy('refinery_machine')->map(function ($rows, $rm) use ($hours, $tanggal) {
+            // Indexing data berdasarkan string waktu (misal '08:00:00')
+            $rowsByTime = $rows->keyBy(function ($item) {
+                return \Carbon\Carbon::parse($item->time)->format('H:i:s');
+            });
+
+            $filled = collect();
+
+            foreach ($hours as $hour) {
+                if ($rowsByTime->has($hour)) {
+                    // Jika data ada di database, pakai data itu
+                    $filled->push($rowsByTime->get($hour));
+                } else {
+                    // Jika tidak ada, buat dummy object
+                    $isNextDay = (intval(substr($hour, 0, 2)) < 8);
+                    $dateObj = \Carbon\Carbon::parse($tanggal . ' ' . $hour);
+                    if ($isNextDay) {
+                        $dateObj->addDay();
+                    }
+
+                    // Buat Object Dummy
+                    $dummy = new \stdClass();
+                    $dummy->time = $dateObj; // Carbon Object
+                    $dummy->refinery_machine = $rm;
+                    $dummy->oil_type = null;
+                    $dummy->remarks = null;
+
+                    $filled->push($dummy);
+                }
+            }
+
+            return $filled;
+        });
     }
 }

@@ -19,14 +19,10 @@
             <div class="mt-1">Date: {{ \Carbon\Carbon::parse($tanggal)->format('d-m-Y') }}</div>
         </div>
 
-        @if (!empty($refineryMachine))
-            @include('rpt_deodorizing._table', ['rows' => $data])
-        @else
             @foreach ($groupedData as $rm => $rows)
                 <h4 class="text-md font-bold mt-6 mb-2">Work Center: {{ $rm }}</h4>
                 @include('rpt_deodorizing._table', ['rows' => $rows])
             @endforeach
-        @endif
 
         <div class="grid grid-cols-4 text-center mt-10 text-xs">
             @foreach (['shift1' => '1st SHIFT', 'shift2' => '2nd SHIFT', 'shift3' => '3rd SHIFT'] as $key => $label)

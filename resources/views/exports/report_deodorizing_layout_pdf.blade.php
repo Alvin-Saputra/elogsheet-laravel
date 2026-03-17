@@ -77,10 +77,9 @@
         <p>Date: {{ \Carbon\Carbon::parse($tanggal)->format('d-m-Y') }}</p>
     </div>
 
-    @if (!empty($refineryMachine))
-        {{-- This block runs if a specific machine is selected --}}
-        <h4 class="text-md font-bold mt-6 mb-2 text-center">
-            Work Center: {{ $refineryMachine }}
+    @foreach ($groupedData as $rm => $rows)
+        <h4 class="text-center" style="font-weight:bold; margin-top: 20px; margin-bottom: 5px;">
+            Work Center: {{ $rm }}
         </h4>
         <table>
             <thead>
@@ -149,152 +148,46 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach ($data as $row)
+                @foreach ($rows as $row)
                     <tr>
-                        <td>{{ optional($row->time)->format('H:i') }}</td>
-                        <td>{{ $row->oil_type }}</td>
-                        <td>{{ $row->fit701_bpo }}</td>
-                        <td>{{ $row->d701_vacum }}</td>
-                        <td>{{ $row->d701_td701 }}</td>
-                        <td>{{ $row->e702 }}</td>
-                        <td>{{ $row->thermopac_inlet }}</td>
-                        <td>{{ $row->thermopac_outlet }}</td>
-                        <td>{{ $row->d702_inlet }}</td>
-                        <td>{{ $row->d702_outlet }}</td>
-                        <td>{{ $row->d702_vacum }}</td>
-                        <td>{{ $row->sparging_a }}</td>
-                        <td>{{ $row->sparging_b }}</td>
-                        <td>{{ $row->e730_inlet }}</td>
-                        <td>{{ $row->steam_inlet }}</td>
-                        <td>{{ $row->pish_706 }}</td>
-                        <td>{{ $row->tiwh_706 }}</td>
-                        <td>{{ $row->f702_a }}</td>
-                        <td>{{ $row->f702_b }}</td>
-                        <td>{{ $row->f702_c }}</td>
-                        <td>{{ $row->oil_type_fg }}</td>
-                        <td>{{ $row->fit704_rpo }}</td>
-                        <td>{{ $row->e704 }}</td>
-                        <td>{{ $row->oil_type_bp }}</td>
-                        <td>{{ $row->fit_705_pfad }}</td>
-                        <td>{{ $row->e705 }}</td>
-                        <td>{{ $row->clarity }}</td>
-                        <td>{{ $row->remarks }}</td>
+                        <td>{{ \Carbon\Carbon::parse($row->time)->format('H:i') }}</td>
+                        <td>{{ $row->oil_type ?? '' }}</td>
+                        <td>{{ $row->fit701_bpo ?? '' }}</td>
+                        <td>{{ $row->d701_vacum ?? '' }}</td>
+                        <td>{{ $row->d701_td701 ?? '' }}</td>
+                        <td>{{ $row->e702 ?? '' }}</td>
+                        <td>{{ $row->thermopac_inlet ?? '' }}</td>
+                        <td>{{ $row->thermopac_outlet ?? '' }}</td>
+                        <td>{{ $row->d702_inlet ?? '' }}</td>
+                        <td>{{ $row->d702_outlet ?? '' }}</td>
+                        <td>{{ $row->d702_vacum ?? '' }}</td>
+                        <td>{{ $row->sparging_a ?? '' }}</td>
+                        <td>{{ $row->sparging_b ?? '' }}</td>
+                        <td>{{ $row->e730_inlet ?? '' }}</td>
+                        <td>{{ $row->steam_inlet ?? '' }}</td>
+                        <td>{{ $row->pish_706 ?? '' }}</td>
+                        <td>{{ $row->tiwh_706 ?? '' }}</td>
+                        <td>{{ $row->f702_a ?? '' }}</td>
+                        <td>{{ $row->f702_b ?? '' }}</td>
+                        <td>{{ $row->f702_c ?? '' }}</td>
+                        <td>{{ $row->oil_type_fg ?? '' }}</td>
+                        <td>{{ $row->fit704_rpo ?? '' }}</td>
+                        <td>{{ $row->e704 ?? '' }}</td>
+                        <td>{{ $row->oil_type_bp ?? '' }}</td>
+                        <td>{{ $row->fit_705_pfad ?? '' }}</td>
+                        <td>{{ $row->e705 ?? '' }}</td>
+                        <td>{{ $row->clarity ?? '' }}</td>
+                        <td>{{ $row->remarks ?? '' }}</td>
                     </tr>
                 @endforeach
             </tbody>
         </table>
-    @else
-        {{-- This block runs if NO specific machine is selected, grouping all of them --}}
-        @foreach ($groupedData as $rm => $rows)
-            <div class="text-center" style="margin:15px 0;">
-                <h4 style="font-weight:bold;">Work Center: {{ $rm }}</h4>
-            </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th rowspan="3">Time</th>
-                        <th rowspan="3">Oil Type</th>
-                        <th rowspan="2">FIT701</th>
-                        <th colspan="2">D 701</th>
-                        <th rowspan="2">E702</th>
-                        <th colspan="2">Thermopac</th>
-                        <th colspan="3">D702</th>
-                        <th colspan="2">Sparging</th>
-                        <th colspan="1">E 703</th>
-                        <th colspan="1">Steam</th>
-                        <th rowspan="2">PISH 706</th>
-                        <th rowspan="2">TIWH 706</th>
-                        <th colspan="3">F702</th>
-                        <th rowspan="3">Oil Type FG</th>
-                        <th rowspan="2">FIT704</th>
-                        <th rowspan="2">E 704</th>
-                        <th rowspan="3">Oil Type BP</th>
-                        <th rowspan="2">FIT705</th>
-                        <th rowspan="2">E 705</th>
-                        <th rowspan="3">Clarity</th>
-                        <th rowspan="3">Remarks</th>
-                    </tr>
-                    <tr>
-                        <th>Vacum</th>
-                        <th>T D701</th>
-                        <th>Inlet</th>
-                        <th>Outlet</th>
-                        <th>Inlet</th>
-                        <th>Outlet</th>
-                        <th>Vacum</th>
-                        <th>A</th>
-                        <th>B</th>
-                        <th>Inlet</th>
-                        <th>Inlet</th>
-                        <th>A</th>
-                        <th>B</th>
-                        <th>C</th>
-                    </tr>
-                    <tr>
-                        <th>tph</th>
-                        <th>cmHg</th>
-                        <th>(°C)</th>
-                        <th>(°C)</th>
-                        <th>(°C)</th>
-                        <th>(°C)</th>
-                        <th>(°C)</th>
-                        <th>(°C)</th>
-                        <th>mbar</th>
-                        <th>bar</th>
-                        <th>bar</th>
-                        <th>(°C)</th>
-                        <th>bar</th>
-                        <th>bar</th>
-                        <th>(°C)</th>
-                        <th>bar</th>
-                        <th>bar</th>
-                        <th>bar</th>
-                        <th>tph</th>
-                        <th>(°C)</th>
-                        <th>tph</th>
-                        <th>(°C)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($data as $row)
-                        <tr>
-                            <td>{{ optional($row->time)->format('H:i') }}</td>
-                            <td>{{ $row->oil_type }}</td>
-                            <td>{{ $row->fit701_bpo }}</td>
-                            <td>{{ $row->d701_vacum }}</td>
-                            <td>{{ $row->d701_td701 }}</td>
-                            <td>{{ $row->e702 }}</td>
-                            <td>{{ $row->thermopac_inlet }}</td>
-                            <td>{{ $row->thermopac_outlet }}</td>
-                            <td>{{ $row->d702_inlet }}</td>
-                            <td>{{ $row->d702_outlet }}</td>
-                            <td>{{ $row->d702_vacum }}</td>
-                            <td>{{ $row->sparging_a }}</td>
-                            <td>{{ $row->sparging_b }}</td>
-                            <td>{{ $row->e730_inlet }}</td>
-                            <td>{{ $row->steam_inlet }}</td>
-                            <td>{{ $row->pish_706 }}</td>
-                            <td>{{ $row->tiwh_706 }}</td>
-                            <td>{{ $row->f702_a }}</td>
-                            <td>{{ $row->f702_b }}</td>
-                            <td>{{ $row->f702_c }}</td>
-                            <td>{{ $row->oil_type_fg }}</td>
-                            <td>{{ $row->fit704_rpo }}</td>
-                            <td>{{ $row->e704 }}</td>
-                            <td>{{ $row->oil_type_bp }}</td>
-                            <td>{{ $row->fit_705_pfad }}</td>
-                            <td>{{ $row->e705 }}</td>
-                            <td>{{ $row->clarity }}</td>
-                            <td>{{ $row->remarks }}</td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-            @if (!$loop->last)
-                <div class="page-break"></div>
-            @endif
-        @endforeach
-    @endif
+
+        {{-- Jangan beri page break pada tabel terakhir --}}
+        @if (!$loop->last)
+            <div class="page-break"></div>
+        @endif
+    @endforeach
 
     {{-- Signature section remains the same --}}
     <div class="mt-8">
@@ -315,10 +208,19 @@
                 @endforeach
                 <td>
                     Checked By<br><br><br>
-                    @php $first = $data->first() ?? $groupedData->first()->first(); @endphp
-                    @if ($first && $first->checked_by)
-                        <strong>({{ $first->checked_by }})</strong><br>
-                        {{ \Carbon\Carbon::parse($first->checked_date)->format('d-m-Y H:i') }}
+                    @php
+                        // Mencari data pertama yang memiliki nilai checked_by (bukan dummy object)
+                        $validData = collect($groupedData)
+                            ->flatten()
+                            ->filter(function ($item) {
+                                return isset($item->checked_by) && !empty($item->checked_by);
+                            })
+                            ->last();
+                    @endphp
+
+                    @if ($validData)
+                        <strong>({{ $validData->checked_by }})</strong><br>
+                        {{ \Carbon\Carbon::parse($validData->checked_date)->format('d-m-Y H:i') }}
                     @else
                         (_________________)
                         <br>
